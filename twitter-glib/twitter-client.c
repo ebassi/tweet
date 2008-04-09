@@ -22,7 +22,7 @@
 #include "twitter-enum-types.h"
 #include "twitter-marshal.h"
 #include "twitter-private.h"
-#include "twitter-reader.h"
+#include "twitter-client.h"
 #include "twitter-status.h"
 #include "twitter-timeline.h"
 #include "twitter-user.h"
@@ -32,9 +32,9 @@
 #define TWITTER_API_USER_TIMELINE       "http://twitter.com/statuses/user_timeline"
 #define TWITTER_API_SHOW                "http://twitter.com/statuses/show/"
 
-#define TWITTER_READER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWITTER_TYPE_READER, TwitterReaderPrivate))
+#define TWITTER_CLIENT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWITTER_TYPE_CLIENT, TwitterClientPrivate))
 
-struct _TwitterReaderPrivate
+struct _TwitterClientPrivate
 {
   SoupSession *session_sync;
   SoupSession *session_async;
@@ -64,14 +64,14 @@ enum
   LAST_SIGNAL
 };
 
-static guint reader_signals[LAST_SIGNAL] = { 0, };
+static guint client_signals[LAST_SIGNAL] = { 0, };
 
-G_DEFINE_TYPE (TwitterReader, twitter_reader, G_TYPE_OBJECT);
+G_DEFINE_TYPE (TwitterClient, twitter_client, G_TYPE_OBJECT);
 
 static void
-twitter_reader_finalize (GObject *gobject)
+twitter_client_finalize (GObject *gobject)
 {
-  TwitterReaderPrivate *priv = TWITTER_READER (gobject)->priv;
+  TwitterClientPrivate *priv = TWITTER_CLIENT (gobject)->priv;
 
   soup_session_abort (priv->session_async);
   g_object_unref (priv->session_async);
@@ -82,11 +82,11 @@ twitter_reader_finalize (GObject *gobject)
   g_free (priv->email);
   g_free (priv->password);
 
-  G_OBJECT_CLASS (twitter_reader_parent_class)->finalize (gobject);
+  G_OBJECT_CLASS (twitter_client_parent_class)->finalize (gobject);
 }
 
 static void
-twitter_reader_set_property (GObject      *gobject,
+twitter_client_set_property (GObject      *gobject,
                              guint         prop_id,
                              const GValue *value,
                              GParamSpec   *pspec)
@@ -95,7 +95,7 @@ twitter_reader_set_property (GObject      *gobject,
 }
 
 static void
-twitter_reader_get_property (GObject    *gobject,
+twitter_client_get_property (GObject    *gobject,
                              guint       prop_id,
                              GValue     *value,
                              GParamSpec *pspec)
@@ -104,15 +104,15 @@ twitter_reader_get_property (GObject    *gobject,
 }
 
 static void
-twitter_reader_class_init (TwitterReaderClass *klass)
+twitter_client_class_init (TwitterClientClass *klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
 
-  g_type_class_add_private (klass, sizeof (TwitterReaderPrivate));
+  g_type_class_add_private (klass, sizeof (TwitterClientPrivate));
 
-  gobject_class->set_property = twitter_reader_set_property;
-  gobject_class->get_property = twitter_reader_get_property;
-  gobject_class->finalize = twitter_reader_finalize;
+  gobject_class->set_property = twitter_client_set_property;
+  gobject_class->get_property = twitter_client_get_property;
+  gobject_class->finalize = twitter_client_finalize;
 
   g_object_class_install_property (gobject_class,
                                    PROP_EMAIL,
@@ -129,30 +129,30 @@ twitter_reader_class_init (TwitterReaderClass *klass)
                                                         NULL,
                                                         G_PARAM_READWRITE));
 
-  reader_signals[AUTHENTICATE] =
+  client_signals[AUTHENTICATE] =
     g_signal_new ("authenticate",
                   G_TYPE_FROM_CLASS (gobject_class),
                   G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE,
-                  G_STRUCT_OFFSET (TwitterReaderClass, authenticate),
+                  G_STRUCT_OFFSET (TwitterClientClass, authenticate),
                   NULL, NULL,
                   _twitter_marshal_BOOLEAN__ENUM,
                   G_TYPE_BOOLEAN, 1,
                   TWITTER_TYPE_AUTH_STATE);
-  reader_signals[TIMELINE_RECEIVED] =
+  client_signals[TIMELINE_RECEIVED] =
     g_signal_new ("timeline-received",
                   G_TYPE_FROM_CLASS (gobject_class),
                   G_SIGNAL_RUN_LAST,
-                  G_STRUCT_OFFSET (TwitterReaderClass, timeline_received),
+                  G_STRUCT_OFFSET (TwitterClientClass, timeline_received),
                   NULL, NULL,
                   _twitter_marshal_VOID__OBJECT_POINTER,
                   G_TYPE_NONE, 2,
                   TWITTER_TYPE_TIMELINE,
                   G_TYPE_POINTER);
-  reader_signals[STATUS_RECEIVED] =
+  client_signals[STATUS_RECEIVED] =
     g_signal_new ("status-received",
                   G_TYPE_FROM_CLASS (gobject_class),
                   G_SIGNAL_RUN_LAST,
-                  G_STRUCT_OFFSET (TwitterReaderClass, status_received),
+                  G_STRUCT_OFFSET (TwitterClientClass, status_received),
                   NULL, NULL,
                   _twitter_marshal_VOID__OBJECT_POINTER,
                   G_TYPE_NONE, 2,
@@ -161,11 +161,11 @@ twitter_reader_class_init (TwitterReaderClass *klass)
 }
 
 static void
-twitter_reader_init (TwitterReader *reader)
+twitter_client_init (TwitterClient *client)
 {
-  TwitterReaderPrivate *priv;
+  TwitterClientPrivate *priv;
 
-  reader->priv = priv = TWITTER_READER_GET_PRIVATE (reader);
+  client->priv = priv = TWITTER_CLIENT_GET_PRIVATE (client);
 
   priv->session_sync =
     soup_session_sync_new_with_options ("user-agent", "Twitter-GLib/" VERSION,
@@ -175,17 +175,17 @@ twitter_reader_init (TwitterReader *reader)
                                          NULL);
 }
 
-TwitterReader *
-twitter_reader_new (void)
+TwitterClient *
+twitter_client_new (void)
 {
-  return g_object_new (TWITTER_TYPE_READER, NULL);
+  return g_object_new (TWITTER_TYPE_CLIENT, NULL);
 }
 
-TwitterReader *
-twitter_reader_new_for_user (const gchar *email,
+TwitterClient *
+twitter_client_new_for_user (const gchar *email,
                              const gchar *password)
 {
-  return g_object_new (TWITTER_TYPE_READER,
+  return g_object_new (TWITTER_TYPE_CLIENT,
                        "email", email,
                        "password", password,
                        NULL);
@@ -197,17 +197,17 @@ typedef enum {
   USER_TIMELINE,
   REPLIES,
   SHOW
-} ReaderAction;
+} ClientAction;
 
 typedef struct {
-  ReaderAction action;
-  TwitterReader *reader;
+  ClientAction action;
+  TwitterClient *client;
   TwitterTimeline *timeline;
 } GetTimelineClosure;
 
 typedef struct {
-  ReaderAction action;
-  TwitterReader *reader;
+  ClientAction action;
+  TwitterClient *client;
   TwitterStatus *status;
 } GetStatusClosure;
 
@@ -217,7 +217,7 @@ get_timeline_cb (SoupSession *session,
                  gpointer     user_data)
 {
   GetTimelineClosure *closure = user_data;
-  TwitterReader *reader = closure->reader; 
+  TwitterClient *client = closure->client; 
   guint status;
 
   status = msg->status_code;
@@ -229,7 +229,7 @@ get_timeline_cb (SoupSession *session,
                    twitter_error_from_status (status),
                    msg->reason_phrase);
 
-      g_signal_emit (reader, reader_signals[TIMELINE_RECEIVED], 0,
+      g_signal_emit (client, client_signals[TIMELINE_RECEIVED], 0,
                      closure->timeline, error);
     }
   else
@@ -243,14 +243,14 @@ get_timeline_cb (SoupSession *session,
       else
         twitter_timeline_load_from_data (closure->timeline, buffer);
 
-      g_signal_emit (reader, reader_signals[TIMELINE_RECEIVED], 0,
+      g_signal_emit (client, client_signals[TIMELINE_RECEIVED], 0,
                      closure->timeline, NULL);
 
       g_free (buffer);
     }
 
   g_object_unref (closure->timeline);
-  g_object_unref (closure->reader);
+  g_object_unref (closure->client);
 
   g_free (closure);
 }
@@ -261,7 +261,7 @@ get_status_cb (SoupSession *session,
                gpointer     user_data)
 {
   GetStatusClosure *closure = user_data;
-  TwitterReader *reader = closure->reader; 
+  TwitterClient *client = closure->client; 
 
   if (!SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
     {
@@ -271,7 +271,7 @@ get_status_cb (SoupSession *session,
                    twitter_error_from_status (msg->status_code),
                    msg->reason_phrase);
 
-      g_signal_emit (reader, reader_signals[STATUS_RECEIVED], 0,
+      g_signal_emit (client, client_signals[STATUS_RECEIVED], 0,
                      closure->status, error);
     }
   else
@@ -285,32 +285,32 @@ get_status_cb (SoupSession *session,
       else
         twitter_status_load_from_data (closure->status, buffer);
 
-      g_signal_emit (reader, reader_signals[STATUS_RECEIVED], 0,
+      g_signal_emit (client, client_signals[STATUS_RECEIVED], 0,
                      closure->status, NULL);
 
       g_free (buffer);
     }
 
-  g_object_unref (closure->reader);
+  g_object_unref (closure->client);
   g_object_unref (closure->status);
 
   g_free (closure);
 }
 
 static void
-twitter_reader_auth (SoupSession *session,
+twitter_client_auth (SoupSession *session,
                      SoupMessage *msg,
                      SoupAuth    *auth,
                      gboolean     retrying,
                      gpointer     user_data)
 {
-  TwitterReader *reader = user_data;
-  TwitterReaderPrivate *priv = reader->priv;
+  TwitterClient *client = user_data;
+  TwitterClientPrivate *priv = client->priv;
   gboolean retval = FALSE;
 
   if (!retrying)
     {
-      g_signal_emit (reader, reader_signals[AUTHENTICATE], 0,
+      g_signal_emit (client, client_signals[AUTHENTICATE], 0,
                      TWITTER_AUTH_NEGOTIATING, &retval);
 
       soup_auth_authenticate (auth, priv->email, priv->password);
@@ -319,7 +319,7 @@ twitter_reader_auth (SoupSession *session,
     }
   else
     {
-      g_signal_emit (reader, reader_signals[AUTHENTICATE], 0,
+      g_signal_emit (client, client_signals[AUTHENTICATE], 0,
                      TWITTER_AUTH_RETRY, &retval);
 
       if (G_LIKELY (retval))
@@ -329,7 +329,7 @@ twitter_reader_auth (SoupSession *session,
         }
       else
         {
-          g_signal_emit (reader, reader_signals[AUTHENTICATE], 0,
+          g_signal_emit (client, client_signals[AUTHENTICATE], 0,
                          TWITTER_AUTH_FAILED, &retval);
           priv->auth_complete = FALSE;
         }
@@ -337,21 +337,21 @@ twitter_reader_auth (SoupSession *session,
 }
 
 static void
-twitter_reader_queue_message (TwitterReader       *reader,
+twitter_client_queue_message (TwitterClient       *client,
                               const gchar         *url,
                               gboolean             requires_auth,
                               SoupSessionCallback  callback,
                               gpointer             data)
 {
-  TwitterReaderPrivate *priv = reader->priv;
+  TwitterClientPrivate *priv = client->priv;
   SoupMessage *msg;
 
   msg = soup_message_new (SOUP_METHOD_GET, url);
 
   if (requires_auth && !priv->auth_id)
     priv->auth_id = g_signal_connect (priv->session_async, "authenticate",
-                                      G_CALLBACK (twitter_reader_auth),
-                                      reader);
+                                      G_CALLBACK (twitter_client_auth),
+                                      client);
 
   soup_session_queue_message (priv->session_async, msg,
                               callback,
@@ -359,13 +359,13 @@ twitter_reader_queue_message (TwitterReader       *reader,
 }
 
 void
-twitter_reader_get_public_timeline (TwitterReader *reader,
+twitter_client_get_public_timeline (TwitterClient *client,
                                     guint          since_id)
 {
   GetTimelineClosure *clos;
   gchar *url;
 
-  g_return_if_fail (TWITTER_IS_READER (reader));
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
 
   if (since_id > 0)
     url = g_strdup_printf ("%s?since=%u",
@@ -376,10 +376,10 @@ twitter_reader_get_public_timeline (TwitterReader *reader,
 
   clos = g_new0 (GetTimelineClosure, 1);
   clos->action = PUBLIC_TIMELINE;
-  clos->reader = g_object_ref (reader);
+  clos->client = g_object_ref (client);
   clos->timeline = twitter_timeline_new ();
 
-  twitter_reader_queue_message (reader, url, FALSE,
+  twitter_client_queue_message (client, url, FALSE,
                                 get_timeline_cb,
                                 clos);
 
@@ -387,14 +387,14 @@ twitter_reader_get_public_timeline (TwitterReader *reader,
 }
 
 void
-twitter_reader_get_friends_timeline (TwitterReader *reader,
+twitter_client_get_friends_timeline (TwitterClient *client,
                                      const gchar   *friend_,
                                      const gchar   *since_date)
 {
   GetTimelineClosure *clos;
   gchar *base_url, *url;
 
-  g_return_if_fail (TWITTER_IS_READER (reader));
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
 
   if (friend_ && *friend_ != '\0')
     base_url = g_strconcat (TWITTER_API_FRIENDS_TIMELINE "/",
@@ -410,10 +410,10 @@ twitter_reader_get_friends_timeline (TwitterReader *reader,
 
   clos = g_new0 (GetTimelineClosure, 1);
   clos->action = FRIENDS_TIMELINE;
-  clos->reader = g_object_ref (reader);
+  clos->client = g_object_ref (client);
   clos->timeline = twitter_timeline_new ();
 
-  twitter_reader_queue_message (reader, url, TRUE,
+  twitter_client_queue_message (client, url, TRUE,
                                 get_timeline_cb,
                                 clos);
 
@@ -424,7 +424,7 @@ twitter_reader_get_friends_timeline (TwitterReader *reader,
 }
 
 void
-twitter_reader_get_user_timeline (TwitterReader *reader,
+twitter_client_get_user_timeline (TwitterClient *client,
                                   const gchar   *user,
                                   guint          count,
                                   const gchar   *since_date)
@@ -432,7 +432,7 @@ twitter_reader_get_user_timeline (TwitterReader *reader,
   GetTimelineClosure *clos;
   gchar *base_url, *url;
 
-  g_return_if_fail (TWITTER_IS_READER (reader));
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
 
   if (user && *user != '\0')
     base_url = g_strconcat (TWITTER_API_USER_TIMELINE "/",
@@ -448,10 +448,10 @@ twitter_reader_get_user_timeline (TwitterReader *reader,
 
   clos = g_new0 (GetTimelineClosure, 1);
   clos->action = USER_TIMELINE;
-  clos->reader = g_object_ref (reader);
+  clos->client = g_object_ref (client);
   clos->timeline = twitter_timeline_new ();
 
-  twitter_reader_queue_message (reader, url, TRUE,
+  twitter_client_queue_message (client, url, TRUE,
                                 get_timeline_cb,
                                 clos);
 
@@ -462,23 +462,23 @@ twitter_reader_get_user_timeline (TwitterReader *reader,
 }
 
 void
-twitter_reader_show (TwitterReader *reader,
+twitter_client_show (TwitterClient *client,
                      guint          status_id)
 {
   GetStatusClosure *clos;
   gchar *url;
 
-  g_return_if_fail (TWITTER_IS_READER (reader));
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
   g_return_if_fail (status_id > 0);
 
   url = g_strdup_printf ("%s/%u.json", TWITTER_API_SHOW, status_id);
 
   clos = g_new0 (GetStatusClosure, 1);
   clos->action = SHOW;
-  clos->reader = g_object_ref (reader);
+  clos->client = g_object_ref (client);
   clos->status = twitter_status_new ();
 
-  twitter_reader_queue_message (reader, url, FALSE,
+  twitter_client_queue_message (client, url, FALSE,
                                 get_status_cb,
                                 clos);
 

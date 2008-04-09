@@ -1,5 +1,5 @@
-#ifndef __TWITTER_READER_H__
-#define __TWITTER_READER_H__
+#ifndef __TWITTER_CLIENT_H__
+#define __TWITTER_CLIENT_H__
 
 #include <glib-object.h>
 #include <twitter-glib/twitter-status.h>
@@ -7,61 +7,61 @@
 
 G_BEGIN_DECLS
 
-#define TWITTER_TYPE_READER             (twitter_reader_get_type ())
-#define TWITTER_READER(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), TWITTER_TYPE_READER, TwitterReader))
-#define TWITTER_IS_READER(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), TWITTER_TYPE_READER))
-#define TWITTER_READER_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), TWITTER_TYPE_READER, TwitterReaderClass))
-#define TWITTER_IS_READER_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), TWITTER_TYPE_READER))
-#define TWITTER_READER_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), TWITTER_TYPE_READER, TwitterReaderClass))
+#define TWITTER_TYPE_CLIENT             (twitter_client_get_type ())
+#define TWITTER_CLIENT(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), TWITTER_TYPE_CLIENT, TwitterClient))
+#define TWITTER_IS_CLIENT(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), TWITTER_TYPE_CLIENT))
+#define TWITTER_CLIENT_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), TWITTER_TYPE_CLIENT, TwitterClientClass))
+#define TWITTER_IS_CLIENT_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), TWITTER_TYPE_CLIENT))
+#define TWITTER_CLIENT_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), TWITTER_TYPE_CLIENT, TwitterClientClass))
 
-typedef struct _TwitterReader           TwitterReader;
-typedef struct _TwitterReaderPrivate    TwitterReaderPrivate;
-typedef struct _TwitterReaderClass      TwitterReaderClass;
+typedef struct _TwitterClient           TwitterClient;
+typedef struct _TwitterClientPrivate    TwitterClientPrivate;
+typedef struct _TwitterClientClass      TwitterClientClass;
 
-struct _TwitterReader
+struct _TwitterClient
 {
   GObject parent_instance;
 
-  TwitterReaderPrivate *priv;
+  TwitterClientPrivate *priv;
 };
 
-struct _TwitterReaderClass
+struct _TwitterClientClass
 {
   GObjectClass parent_instance;
 
-  gboolean (* authenticate)      (TwitterReader    *reader,
+  gboolean (* authenticate)      (TwitterClient    *client,
                                   TwitterAuthState  state);
-  void     (* timeline_received) (TwitterReader    *reader,
+  void     (* timeline_received) (TwitterClient    *client,
                                   TwitterTimeline  *timeline,
                                   const GError     *error);
-  void     (* status_received)   (TwitterReader    *reader,
+  void     (* status_received)   (TwitterClient    *client,
                                   TwitterStatus    *status,
                                   const GError     *error);
 };
 
-GType          twitter_reader_get_type             (void) G_GNUC_CONST;
+GType          twitter_client_get_type             (void) G_GNUC_CONST;
 
-TwitterReader *twitter_reader_new                  (void);
-TwitterReader *twitter_reader_new_for_user         (const gchar    *email,
+TwitterClient *twitter_client_new                  (void);
+TwitterClient *twitter_client_new_for_user         (const gchar    *email,
                                                     const gchar    *password);
-void           twitter_reader_set_user             (TwitterReader  *reader,
+void           twitter_client_set_user             (TwitterClient  *client,
                                                     const gchar    *email,
                                                     const gchar    *password);
-void           twitter_reader_get_user             (TwitterReader  *reader,
+void           twitter_client_get_user             (TwitterClient  *client,
                                                     gchar         **email,
                                                     gchar         **password);
-void           twitter_reader_get_public_timeline  (TwitterReader  *reader,
+void           twitter_client_get_public_timeline  (TwitterClient  *client,
                                                     guint           since_id);
-void           twitter_reader_get_friends_timeline (TwitterReader  *reader,
+void           twitter_client_get_friends_timeline (TwitterClient  *client,
                                                     const gchar    *friend_,
                                                     const gchar    *since_date);
-void           twitter_reader_get_user_timeline    (TwitterReader  *reader,
+void           twitter_client_get_user_timeline    (TwitterClient  *client,
                                                     const gchar    *user,
                                                     guint           count,
                                                     const gchar    *since_date);
-void           twitter_reader_get_replies          (TwitterReader  *reader);
-void           twitter_reader_show                 (TwitterReader  *reader,
+void           twitter_client_get_replies          (TwitterClient  *client);
+void           twitter_client_show                 (TwitterClient  *client,
                                                     guint           status_id);
 G_END_DECLS
 
-#endif /* __TWITTER_READER_H__ */
+#endif /* __TWITTER_CLIENT_H__ */
