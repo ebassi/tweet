@@ -29,6 +29,7 @@
 
 #define TWITTER_API_PUBLIC_TIMELINE     "http://twitter.com/statuses/public_timeline.json"
 #define TWITTER_API_FRIENDS_TIMELINE    "http://twitter.com/statuses/friends_timeline"
+#define TWITTER_API_USER_TIMELINE       "http://twitter.com/statuses/user_timeline"
 #define TWITTER_API_SHOW                "http://twitter.com/statuses/show/"
 
 #define TWITTER_READER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWITTER_TYPE_READER, TwitterReaderPrivate))
@@ -409,6 +410,44 @@ twitter_reader_get_friends_timeline (TwitterReader *reader,
 
   clos = g_new0 (GetTimelineClosure, 1);
   clos->action = FRIENDS_TIMELINE;
+  clos->reader = g_object_ref (reader);
+  clos->timeline = twitter_timeline_new ();
+
+  twitter_reader_queue_message (reader, url, TRUE,
+                                get_timeline_cb,
+                                clos);
+
+  if (base_url != url)
+    g_free (url);
+
+  g_free (base_url);
+}
+
+void
+twitter_reader_get_user_timeline (TwitterReader *reader,
+                                  const gchar   *user,
+                                  guint          count,
+                                  const gchar   *since_date)
+{
+  GetTimelineClosure *clos;
+  gchar *base_url, *url;
+
+  g_return_if_fail (TWITTER_IS_READER (reader));
+
+  if (user && *user != '\0')
+    base_url = g_strconcat (TWITTER_API_USER_TIMELINE "/",
+                            user, ".json",
+                            NULL);
+  else
+    base_url = g_strdup (TWITTER_API_USER_TIMELINE ".json");
+
+  if (count > 0)
+    url = g_strdup_printf ("%s?count=%u", base_url, count);
+  else
+    url = base_url;
+
+  clos = g_new0 (GetTimelineClosure, 1);
+  clos->action = USER_TIMELINE;
   clos->reader = g_object_ref (reader);
   clos->timeline = twitter_timeline_new ();
 
