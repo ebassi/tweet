@@ -412,7 +412,7 @@ twitter_reader_get_friends_timeline (TwitterReader *reader,
   clos->reader = g_object_ref (reader);
   clos->timeline = twitter_timeline_new ();
 
-  twitter_reader_queue_message (reader, url, FALSE,
+  twitter_reader_queue_message (reader, url, TRUE,
                                 get_timeline_cb,
                                 clos);
 
