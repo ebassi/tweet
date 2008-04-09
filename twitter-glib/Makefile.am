@@ -22,7 +22,7 @@ BUILT_SOURCES = $(MARSHALFILES) $(ENUMFILES)
 
 sources_public_h = \
 	$(top_srcdir)/twitter-glib/twitter-common.h \
-	$(top_srcdir)/twitter-glib/twitter-reader.h \
+	$(top_srcdir)/twitter-glib/twitter-client.h \
 	$(top_srcdir)/twitter-glib/twitter-status.h \
 	$(top_srcdir)/twitter-glib/twitter-timeline.h \
 	$(top_srcdir)/twitter-glib/twitter-user.h \
@@ -34,7 +34,7 @@ sources_private_h = \
 
 sources_c = \
 	twitter-common.c \
-	twitter-reader.c \
+	twitter-client.c \
 	twitter-status.c \
 	twitter-timeline.c \
 	twitter-user.c \
