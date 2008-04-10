@@ -1,4 +1,4 @@
-SUBDIRS = twitter-glib src
+SUBDIRS = twitter-glib tests src
 
 dist-hook:
 	git-log --stat > ChangeLog.in && \
