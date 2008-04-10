@@ -189,14 +189,31 @@ twitter_timeline_get_count (TwitterTimeline *timeline)
 }
 
 TwitterStatus *
-twitter_timeline_get_status (TwitterTimeline *timeline,
-                             guint            id)
+twitter_timeline_get_id (TwitterTimeline *timeline,
+                         guint            id)
 {
   g_return_val_if_fail (TWITTER_IS_TIMELINE (timeline), NULL);
-  g_return_val_if_fail (index_ < twitter_timeline_get_count (timeline), NULL);
 
   return g_hash_table_lookup (timeline->priv->status_by_id,
                               GUINT_TO_POINTER (id));
+}
+
+TwitterStatus *
+twitter_timeline_get_pos (TwitterTimeline *timeline,
+                          gint             index_)
+{
+  g_return_val_if_fail (TWITTER_IS_TIMELINE (timeline), NULL);
+  g_return_val_if_fail (ABS (index_) < twitter_timeline_get_count (timeline), NULL);
+
+  if (index_ >= 0)
+    return g_list_nth_data (timeline->priv->status_list, index_);
+  else
+    {
+      guint roll = g_list_length (timeline->priv->status_list);
+
+      roll += index_;
+      return g_list_nth_data (timeline->priv->status_list, roll);
+    }
 }
 
 GList *
