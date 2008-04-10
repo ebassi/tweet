@@ -46,7 +46,8 @@ twitter_status_finalize (GObject *gobject)
   g_free (priv->created_at);
   g_free (priv->text);
 
-  g_object_unref (priv->user);
+  if (priv->user)
+    g_object_unref (priv->user);
 
   G_OBJECT_CLASS (twitter_status_parent_class)->finalize (gobject);
 }
@@ -160,7 +161,8 @@ twitter_status_clean (TwitterStatus *status)
   g_free (priv->created_at);
   g_free (priv->text);
 
-  g_object_unref (priv->user);
+  if (priv->user)
+    g_object_unref (priv->user);
 }
 
 static void
