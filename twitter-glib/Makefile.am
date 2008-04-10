@@ -26,18 +26,22 @@ sources_public_h = \
 	$(top_srcdir)/twitter-glib/twitter-status.h \
 	$(top_srcdir)/twitter-glib/twitter-timeline.h \
 	$(top_srcdir)/twitter-glib/twitter-user.h \
+	$(top_srcdir)/twitter-glib/twitter-user-list.h \
 	$(NULL)
 
 sources_private_h = \
+	$(top_srcdir)/twitter-glib/twitter-api.h \
 	$(top_srcdir)/twitter-glib/twitter-private.h \
 	$(NULL)
 
 sources_c = \
+	twitter-api.c \
 	twitter-common.c \
 	twitter-client.c \
 	twitter-status.c \
 	twitter-timeline.c \
 	twitter-user.c \
+	twitter-user-list.c \
 	$(NULL)
 
 twitter-marshal.h: stamp-twitter-marshal.h
