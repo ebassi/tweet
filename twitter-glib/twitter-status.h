@@ -27,7 +27,7 @@ struct _TwitterStatus
 
 struct _TwitterStatusClass
 {
-  GInitiallyUnowned parent_class;
+  GInitiallyUnownedClass parent_class;
 };
 
 GType                 twitter_status_get_type       (void) G_GNUC_CONST;
