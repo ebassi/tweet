@@ -2,7 +2,8 @@ include $(top_srcdir)/Makefile.decl
 
 NULL =
 
-noinst_PROGRAMS = $(TEST_PROGS)
+#noinst_PROGRAMS = $(TEST_PROGS)
+noinst_PROGRAMS = test-user-timeline test-status-send
 
 INCLUDES = -I$(top_srcdir) $(TWITTER_GLIB_CFLAGS)
 progs_ldadd = $(top_builddir)/twitter-glib/libtwitter-glib-1.0.la $(TWITTER_GLIB_LIBS)
@@ -14,9 +15,13 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = -g
 
-TESTS_ENVIRONMENT = srcdir=$(srcdir)
+#TESTS_ENVIRONMENT = srcdir=$(srcdir)
 
-TEST_PROGS                   += test-public-timeline
-test_public_timeline_SOURCES  = test-public-timeline.c
-test_public_timeline_LDADD    = $(progs_ldadd)
+TEST_PROGS                 += test-user-timeline
+test_user_timeline_SOURCES  = test-user-timeline.c
+test_user_timeline_LDADD    = $(progs_ldadd)
+
+TEST_PROGS               += test-status-send
+test_status_send_SOURCES  = test-status-send.c
+test_status_send_LDADD    = $(progs_ldadd)
 
