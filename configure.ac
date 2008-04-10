@@ -43,7 +43,7 @@ AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_PATH_PROG([GLIB_GENMARSHAL], [glib-genmarshal])
 AC_PATH_PROG([GLIB_MKENUMS], [glib-mkenums])
-AC_CHECK_FUNCS([strptime])
+AC_CHECK_FUNCS([strptime localtime_r])
 
 TWEET_MAJOR_VERSION=tweet_major_version
 TWEET_MINOR_VERSION=tweet_minor_version
