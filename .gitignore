@@ -17,3 +17,12 @@ xmldocs.make
 .libs
 twitter-glib.pc
 twitter-glib-1.0.pc
+*.lo
+*.la
+*.o
+test-status-send
+test-user-timeline
+stamp-*.h
+twitter-marshal.[ch]
+twitter-enum-types.[ch]
+twitter-version.h
