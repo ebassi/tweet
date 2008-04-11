@@ -10,6 +10,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "twitter-common.h"
+#include "twitter-private.h"
 #include "twitter-user.h"
 
 #define TWITTER_USER_GET_PRIVATE(obj)   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWITTER_TYPE_USER, TwitterUserPrivate))
@@ -26,6 +28,8 @@ struct _TwitterUserPrivate
   guint id;
 
   guint protected : 1;
+
+  TwitterStatus *status;
 };
 
 enum
@@ -39,7 +43,8 @@ enum
   PROP_SCREEN_NAME,
   PROP_PROFILE_IMAGE_URL,
   PROP_ID,
-  PROP_PROTECTED
+  PROP_PROTECTED,
+  PROP_STATUS
 };
 
 G_DEFINE_TYPE (TwitterUser, twitter_user, G_TYPE_INITIALLY_UNOWNED);
@@ -99,6 +104,10 @@ twitter_user_get_property (GObject    *gobject,
 
     case PROP_PROTECTED:
       g_value_set_boolean (value, priv->protected);
+      break;
+
+    case PROP_STATUS:
+      g_value_set_object (value, priv->status);
       break;
 
     default:
@@ -173,6 +182,13 @@ twitter_user_class_init (TwitterUserClass *klass)
                                                          "Whether the user entries are protected",
                                                          FALSE,
                                                          G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_STATUS,
+                                   g_param_spec_object ("status",
+                                                        "Status",
+                                                        "The user status",
+                                                        TWITTER_TYPE_STATUS,
+                                                        G_PARAM_READABLE));
 }
 
 static void
@@ -192,6 +208,9 @@ twitter_user_clean (TwitterUser *user)
   g_free (priv->location);
   g_free (priv->screen_name);
   g_free (priv->profile_image_url);
+
+  if (priv->status)
+    g_object_unref (priv->status);
 }
 
 static void
@@ -234,6 +253,13 @@ twitter_user_build (TwitterUser *user,
   member = json_object_get_member (obj, "protected");
   if (member)
     priv->protected = json_node_get_boolean (member);
+
+  member = json_object_get_member (obj, "status");
+  if (member)
+    {
+      priv->status = twitter_status_from_node (member);
+      g_object_ref_sink (priv->status);
+    }
 }
 
 TwitterUser *
@@ -372,4 +398,12 @@ twitter_user_get_protected (TwitterUser *user)
   g_return_val_if_fail (TWITTER_IS_USER (user), FALSE);
 
   return user->priv->protected == TRUE;
+}
+
+TwitterStatus *
+twitter_user_get_status (TwitterUser *user)
+{
+  g_return_val_if_fail (TWITTER_IS_USER (user), NULL);
+
+  return user->priv->status;
 }

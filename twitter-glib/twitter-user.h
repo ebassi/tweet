@@ -25,6 +25,8 @@ G_CONST_RETURN gchar *twitter_user_get_profile_image_url (TwitterUser *user);
 guint                 twitter_user_get_id                (TwitterUser *user);
 gboolean              twitter_user_get_protected         (TwitterUser *user);
 
+TwitterStatus *       twitter_user_get_status            (TwitterUser *user);
+
 G_END_DECLS
 
 #endif /* __TWITTER_USER_H__ */
