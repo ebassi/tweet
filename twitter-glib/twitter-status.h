@@ -2,33 +2,11 @@
 #define __TWITTER_POST_H__
 
 #include <glib-object.h>
-#include <json-glib/json-glib.h>
-#include <twitter-glib/twitter-user.h>
+#include <twitter-glib/twitter-common.h>
 
 G_BEGIN_DECLS
 
-#define TWITTER_TYPE_STATUS             (twitter_status_get_type ())
-#define TWITTER_STATUS(obj)             (G_TYPE_CHECK_INSTANCE_CAST ((obj), TWITTER_TYPE_STATUS, TwitterStatus))
-#define TWITTER_IS_STATUS(obj)          (G_TYPE_CHECK_INSTANCE_TYPE ((obj), TWITTER_TYPE_STATUS))
-#define TWITTER_STATUS_CLASS(klass)     (G_TYPE_CHECK_CLASS_CAST ((klass), TWITTER_TYPE_STATUS, TwitterStatusClass))
-#define TWITTER_IS_STATUS_CLASS(klass)  (G_TYPE_CHECK_CLASS_TYPE ((klass), TWITTER_TYPE_STATUS))
-#define TWITTER_STATUS_GET_CLASS(obj)   (G_TYPE_INSTANCE_GET_CLASS ((obj), TWITTER_TYPE_STATUS, TwitterStatusClass))
-
-typedef struct _TwitterStatus           TwitterStatus;
-typedef struct _TwitterStatusPrivate    TwitterStatusPrivate;
-typedef struct _TwitterStatusClass      TwitterStatusClass;
-
-struct _TwitterStatus
-{
-  GInitiallyUnowned parent_instance;
-
-  TwitterStatusPrivate *priv;
-};
-
-struct _TwitterStatusClass
-{
-  GInitiallyUnownedClass parent_class;
-};
+/* TwitterStatus is declared inside twitter-common.h */
 
 GType                 twitter_status_get_type       (void) G_GNUC_CONST;
 
