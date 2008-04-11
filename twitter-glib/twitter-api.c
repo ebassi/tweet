@@ -271,39 +271,6 @@ twitter_api_friends (const gchar *user,
 }
 
 SoupMessage *
-twitter_api_followers (gint     page,
-                       gboolean lite)
-{
-  gchar *url;
-  SoupMessage *msg;
-
-  if (page >= 0)
-    {
-      if (lite)
-        url = g_strdup_printf ("%s?page=%d&lite=true",
-                               TWITTER_API_FOLLOWERS,
-                               page);
-      else
-        url = g_strdup_printf ("%s?page=%d",
-                               TWITTER_API_FOLLOWERS,
-                               page);
-    }
-  else
-    {
-      if (lite)
-        url = g_strconcat (TWITTER_API_FOLLOWERS, "?lite=true", NULL);
-      else
-        url = g_strdup (TWITTER_API_FOLLOWERS);
-    }
-
-  msg = soup_message_new (SOUP_METHOD_GET, url);
-
-  g_free (url);
-
-  return msg;
-}
-
-SoupMessage *
 twitter_api_featured (void)
 {
   return soup_message_new (SOUP_METHOD_GET, TWITTER_API_FEATURED);
