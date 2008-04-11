@@ -14,6 +14,9 @@
 /* @param (optional): since=%s, http date (If-Modified-Since) */
 #define TWITTER_API_FRIENDS_TIMELINE            \
         "http://twitter.com/statuses/friends_timeline.json"
+
+/* @param (required): id=%s, user id */
+/* @param (optional): since=%s, http date (If-Modified-Since) */
 #define TWITTER_API_FRIENDS_TIMELINE_ID         \
         "http://twitter.com/statuses/friends_timeline/%s.json"
 
@@ -21,6 +24,10 @@
 /* @param (optional): count=%u, number of items (< 20) */
 #define TWITTER_API_USER_TIMELINE               \
         "http://twitter.com/statuses/user_timeline.json"
+
+/* @param (required): id=%s, user id */
+/* @param (optional): since=%s, http date (If-Modified-Since) */
+/* @param (optional): count=%u, number of items (< 20) */
 #define TWITTER_API_USER_TIMELINE_ID            \
         "http://twitter.com/statuses/user_timeline/%s.json"
 
@@ -42,6 +49,10 @@
 /* @param (optional): page=%u, page number */
 #define TWITTER_API_FRIENDS                     \
         "http://twitter.com/statuses/friends.json"
+
+/* @param (required): id=%s, user id */
+/* @param (optional): lite=true, no status */
+/* @param (optional): page=%u, page number */
 #define TWITTER_API_FRIENDS_ID                  \
         "http://twitter.com/statuses/friends/%s.json"
 
@@ -53,6 +64,7 @@
 #define TWITTER_API_FEATURED                    \
         "http://twitter.com/statuses/featured.json"
 
+/* @param (required): id=user id */
 #define TWITTER_API_USER_SHOW                   \
         "http://twitter.com/users/show/%s.json"
 
