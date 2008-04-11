@@ -481,13 +481,46 @@ get_user_cb (SoupSession *session,
 void
 twitter_client_verify_user (TwitterClient *client)
 {
+#if 0
+  SoupMessage *msg;
 
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+
+  msg = twitter_api_verify_credentials ();
+
+  clos = g_new0 (VerifyClosure, 1);
+  clos->action = VERIFY_CREDENTIALS;
+  clos->client = g_object_ref (client);
+  clos->reply = NULL;
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                verify_cb,
+                                clos);
+#endif
+}
+
+static void
+end_session_cb (SoupSession *session,
+                SoupMessage *message,
+                gpointer     user_data)
+{
+  TwitterClient *client = user_data;
+
+  client->priv->auth_complete = FALSE;
 }
 
 void
 twitter_client_end_session (TwitterClient *client)
 {
+  SoupMessage *msg;
 
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+
+  msg = twitter_api_end_session ();
+
+  twitter_client_queue_message (client, msg, FALSE,
+                                end_session_cb,
+                                client);
 }
 
 typedef struct {
@@ -685,7 +718,23 @@ void
 twitter_client_get_favorites (TwitterClient *client,
                               const gchar   *user)
 {
+#if 0
+  GetTimelineClosure *clos;
+  SoupMessage *msg;
 
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+
+  msg = twitter_api_favorites (user, -1);
+
+  clos = g_new0 (GetTimelineClosure, 1);
+  clos->action = FAVORITES;
+  clos->client = g_object_ref (client);
+  clos->timeline = twitter_timeline_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_timeline_cb,
+                                clos);
+#endif
 }
 
 static void
