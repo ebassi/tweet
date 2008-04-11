@@ -10,7 +10,25 @@ authenticate_cb (TwitterClient    *client,
                  TwitterAuthState  state,
                  gpointer          user_data)
 {
-  g_print ("Authenticating...\n");
+  gchar *user = NULL;
+
+  twitter_client_get_user (client, &user, NULL);
+
+  switch (state)
+    {
+    case TWITTER_AUTH_NEGOTIATING:
+      g_print ("*** Authenticating as '%s'\n", user);
+      break;
+
+    case TWITTER_AUTH_SUCCESS:
+      g_print ("*** Authentication successful\n");
+      break;
+
+    default:
+      break;
+    }
+
+  g_free (user);
 
   return TRUE;
 }
