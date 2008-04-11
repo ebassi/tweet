@@ -100,7 +100,13 @@ twitterinclude_DATA = \
 	$(top_srcdir)/twitter-glib/twitter-glib.h \
 	$(NULL)
 
-CLEANFILES = $(STAMPFILES) $(BUILT_SOURCES)
+pcfiledir = $(libdir)/pkgconfig
+pcfile_DATA = twitter-glib-1.0.pc
+
+twitter-glib-1.0.pc: twitter-glib.pc
+	@cp -f $< $@
+
+CLEANFILES = $(STAMPFILES) $(BUILT_SOURCES) $(pcfile_DATA)
 
 DISTCLEANFILES = \
 	$(ENUMFILES) \
