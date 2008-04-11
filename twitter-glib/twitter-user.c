@@ -257,7 +257,7 @@ twitter_user_build (TwitterUser *user,
   member = json_object_get_member (obj, "status");
   if (member)
     {
-      priv->status = twitter_status_from_node (member);
+      priv->status = twitter_status_new_from_node (member);
       g_object_ref_sink (priv->status);
     }
 }
