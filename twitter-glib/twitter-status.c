@@ -5,6 +5,7 @@
 #include <string.h>
 #include <glib.h>
 
+#include "twitter-common.h"
 #include "twitter-private.h"
 #include "twitter-status.h"
 
