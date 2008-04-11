@@ -68,6 +68,10 @@
 #include "twitter-user.h"
 #include "twitter-user-list.h"
 
+#ifndef G_WARN_NOT_IMPLEMENTED
+#define G_WARN_NOT_IMPLEMENTED  (g_warning (G_STRLOC ": This function has not been implemented yet"))
+#endif
+
 #define TWITTER_CLIENT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWITTER_TYPE_CLIENT, TwitterClientPrivate))
 
 struct _TwitterClientPrivate
@@ -248,53 +252,77 @@ typedef enum {
   FRIENDS_TIMELINE,
   USER_TIMELINE,
   STATUS_SHOW,
-  UPDATE,
-  REPLIES,
-  DESTROY,
+  STATUS_UPDATE,
+  STATUS_REPLIES,
+  STATUS_DESTROY,
   FRIENDS,
   FOLLOWERS,
   FEATURED,
   VERIFY_CREDENTIALS,
   END_SESSION,
+  FRIEND_CREATE,
+  FRIEND_DESTROY,
+  FAVORITE_CREATE,
+  FAVORITE_DESTROY,
+  FAVORITE,
+  NOTIFICATION_FOLLOW,
+  NOTIFICATION_LEAVE,
 
   N_CLIENT_ACTIONS
 } ClientAction;
 
 static const gchar *action_names[N_CLIENT_ACTIONS] = {
-  "public-timeline",
-  "friends-timeline",
-  "user-timeline",
-  "status-show",
-  "update",
-  "replies",
-  "destroy",
-  "friends",
-  "followers",
-  "verify-credentials",
-  "end-session"
+  "statuses/public_timeline",
+  "statuses/friends_timeline",
+  "statuses/user_timeline",
+  "statuses/show",
+  "statuses/update",
+  "statuses/replies",
+  "statuses/destroy",
+  "statuses/friends",
+  "statuses/followers",
+  "statuses/featured",
+  "account/verify_credentials",
+  "account/end_session",
+  "friendship/create",
+  "friendship/destroy",
+  "favorites/create",
+  "favorites/destroy",
+  "favorites",
+  "notifications/follow",
+  "notifications/leave"
 };
 
 typedef struct {
   ClientAction action;
   TwitterClient *client;
+  guint requires_auth : 1;
+} ClientClosure;
+
+typedef struct {
+  ClientClosure closure;
   TwitterTimeline *timeline;
 } GetTimelineClosure;
 
+#define closure_set_action(c,v)        (((ClientClosure *) (c))->action) = (v)
+#define closure_get_action(c)          (((ClientClosure *) (c))->action)
+#define closure_set_client(c,v)        (((ClientClosure *) (c))->client) = (v)
+#define closure_get_client(c)          (((ClientClosure *) (c))->client)
+#define closure_set_requires_auth(c,v) (((ClientClosure *) (c))->requires_auth) = (v)
+#define closure_get_requires_auth(c)   (((ClientClosure *) (c))->requires_auth)
+
 typedef struct {
-  ClientAction action;
-  TwitterClient *client;
+  ClientClosure closure;
   TwitterStatus *status;
 } GetStatusClosure;
 
 typedef struct {
-  ClientAction action;
-  TwitterClient *client;
+  ClientClosure closure;
   TwitterUserList *user_list;
 } GetUserListClosure;
 
 typedef struct {
-  ClientAction action;
-  TwitterClient *client;
+  ClientClosure closure;
   TwitterUser *user;
 } GetUserClosure;
 
@@ -314,9 +342,13 @@ twitter_client_auth (SoupSession *session,
       g_signal_emit (client, client_signals[AUTHENTICATE], 0,
                      TWITTER_AUTH_NEGOTIATING, &retval);
 
-      soup_auth_authenticate (auth, priv->email, priv->password);
+      if (!priv->email || !priv->password)
+        {
+          priv->auth_complete = FALSE;
+          return;
+        }
 
-      priv->auth_complete = TRUE;
+      soup_auth_authenticate (auth, priv->email, priv->password);
     }
   else
     {
@@ -324,10 +356,7 @@ twitter_client_auth (SoupSession *session,
                      TWITTER_AUTH_RETRY, &retval);
 
       if (G_LIKELY (retval))
-        {
-          soup_auth_authenticate (auth, priv->email, priv->password);
-          priv->auth_complete = TRUE;
-        }
+        soup_auth_authenticate (auth, priv->email, priv->password);
       else
         {
           g_signal_emit (client, client_signals[AUTHENTICATE], 0,
@@ -412,7 +441,7 @@ twitter_client_get_user (TwitterClient  *client,
 
 typedef struct {
   TwitterClient *client;
-  GList *users;
+  TwitterUserList *user_list;
   guint n_users;
   guint current_user;
 } EmitUserClosure;
@@ -420,33 +449,80 @@ typedef struct {
 static gboolean
 do_emit_user_received (gpointer data)
 {
-  return FALSE;
+  EmitUserClosure *closure = data;
+  TwitterUser *user;
+
+  user = twitter_user_list_get_pos (closure->user_list,
+                                    closure->current_user);
+  if (!user)
+    return FALSE;
+
+  g_signal_emit (closure->client, client_signals[USER_RECEIVED], 0,
+                 user, NULL);
+
+  closure->current_user += 1;
+
+  if (closure->current_user == closure->n_users)
+    return FALSE;
+
+  return TRUE;
 }
 
 static void
 cleanup_emit_user_received (gpointer data)
 {
+  EmitUserClosure *closure = data;
 
+  g_object_unref (closure->client);
+  g_object_unref (closure->user_list);
+
+  g_free (closure);
 }
 
 static void
-emit_user_received (TwitterClient *client,
-                    TwitterUserList *list)
+emit_user_received (TwitterClient   *client,
+                    TwitterUserList *user_list)
 {
+  EmitUserClosure *closure;
+  guint count;
 
+  count = twitter_user_list_get_count (user_list);
+
+  closure = g_new (EmitUserClosure, 1);
+  closure->client = g_object_ref (client);
+  closure->user_list = g_object_ref (user_list);
+  closure->n_users = count;
+  closure->current_user = 0;
+
+  g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+                   do_emit_user_received,
+                   closure,
+                   cleanup_emit_user_received);
 }
 
 static void
-get_user_cb (SoupSession *session,
-             SoupMessage *msg,
-             gpointer     user_data)
+get_status_cb (SoupSession *session,
+               SoupMessage *msg,
+               gpointer     user_data)
 {
   GetStatusClosure *closure = user_data;
-  TwitterClient *client = closure->client; 
+  gboolean requires_auth = closure_get_requires_auth (closure);
+  TwitterClient *client = closure_get_client (closure);
+  TwitterClientPrivate *priv = client->priv;
 
   if (!SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
     {
       GError *error = NULL;
+
+      if (msg->status_code == SOUP_STATUS_UNAUTHORIZED)
+        {
+          gboolean retval = FALSE;
+
+          g_signal_emit (client, client_signals[AUTHENTICATE], 0,
+                         TWITTER_AUTH_FAILED, &retval);
+
+          priv->auth_complete = FALSE;
+        }
 
       g_set_error (&error, TWITTER_ERROR,
                    twitter_error_from_status (msg->status_code),
@@ -454,10 +530,20 @@ get_user_cb (SoupSession *session,
 
       g_signal_emit (client, client_signals[STATUS_RECEIVED], 0,
                      closure->status, error);
+
+      g_error_free (error);
     }
   else
     {
+      gboolean retval = FALSE;
       gchar *buffer;
+
+      if (requires_auth && !priv->auth_complete)
+        {
+          g_signal_emit (client, client_signals[AUTHENTICATE], 0,
+                         TWITTER_AUTH_SUCCESS, &retval);
+          priv->auth_complete = TRUE;
+        }
 
       buffer = g_strndup (msg->response_body->data,
                           msg->response_body->length);
@@ -472,8 +558,8 @@ get_user_cb (SoupSession *session,
       g_free (buffer);
     }
 
-  g_object_unref (closure->client);
   g_object_unref (closure->status);
+  g_object_unref (client);
 
   g_free (closure);
 }
@@ -590,24 +676,44 @@ get_timeline_cb (SoupSession *session,
                  gpointer     user_data)
 {
   GetTimelineClosure *closure = user_data;
-  TwitterClient *client = closure->client;
-  guint status;
+  gboolean requires_auth = closure_get_requires_auth (closure);
+  TwitterClient *client = closure_get_client (closure);
+  TwitterClientPrivate *priv = client->priv;
 
-  status = msg->status_code;
-  if (!SOUP_STATUS_IS_SUCCESSFUL (status))
+  if (!SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
     {
       GError *error = NULL;
 
+      if (msg->status_code == SOUP_STATUS_UNAUTHORIZED)
+        {
+          gboolean retval = FALSE;
+
+          g_signal_emit (client, client_signals[AUTHENTICATE], 0,
+                         TWITTER_AUTH_FAILED, &retval);
+
+          priv->auth_complete = FALSE;
+        }
+
       g_set_error (&error, TWITTER_ERROR,
-                   twitter_error_from_status (status),
+                   twitter_error_from_status (msg->status_code),
                    msg->reason_phrase);
 
       g_signal_emit (client, client_signals[STATUS_RECEIVED], 0,
                      NULL, error);
+
+      g_error_free (error);
     }
   else
     {
+      gboolean retval = FALSE;
       gchar *buffer;
+
+      if (requires_auth && !priv->auth_complete)
+        {
+          g_signal_emit (client, client_signals[AUTHENTICATE], 0,
+                         TWITTER_AUTH_SUCCESS, &retval);
+          priv->auth_complete = TRUE;
+        }
 
       buffer = g_strndup (msg->response_body->data,
                           msg->response_body->length);
@@ -617,13 +723,13 @@ get_timeline_cb (SoupSession *session,
       else
         twitter_timeline_load_from_data (closure->timeline, buffer);
 
-      emit_status_received (closure->client, closure->timeline);
+      emit_status_received (client, closure->timeline);
 
       g_free (buffer);
     }
 
   g_object_unref (closure->timeline);
-  g_object_unref (closure->client);
+  g_object_unref (client);
 
   g_free (closure);
 }
@@ -640,8 +746,9 @@ twitter_client_get_public_timeline (TwitterClient *client,
   msg = twitter_api_public_timeline (since_id);
 
   clos = g_new0 (GetTimelineClosure, 1);
-  clos->action = PUBLIC_TIMELINE;
-  clos->client = g_object_ref (client);
+  closure_set_action (clos, PUBLIC_TIMELINE);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, FALSE);
   clos->timeline = twitter_timeline_new ();
 
   twitter_client_queue_message (client, msg, FALSE,
@@ -662,8 +769,9 @@ twitter_client_get_friends_timeline (TwitterClient *client,
   msg = twitter_api_friends_timeline (friend_, since_date);
 
   clos = g_new0 (GetTimelineClosure, 1);
-  clos->action = FRIENDS_TIMELINE;
-  clos->client = g_object_ref (client);
+  closure_set_action (clos, FRIENDS_TIMELINE);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
   clos->timeline = twitter_timeline_new ();
 
   twitter_client_queue_message (client, msg, TRUE,
@@ -685,8 +793,9 @@ twitter_client_get_user_timeline (TwitterClient *client,
   msg = twitter_api_user_timeline (user, count, since_date);
 
   clos = g_new0 (GetTimelineClosure, 1);
-  clos->action = USER_TIMELINE;
-  clos->client = g_object_ref (client);
+  closure_set_action (clos, USER_TIMELINE);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
   clos->timeline = twitter_timeline_new ();
 
   twitter_client_queue_message (client, msg, TRUE,
@@ -705,8 +814,9 @@ twitter_client_get_replies (TwitterClient *client)
   msg = twitter_api_replies ();
 
   clos = g_new0 (GetTimelineClosure, 1);
-  clos->action = REPLIES;
-  clos->client = g_object_ref (client);
+  closure_set_action (clos, STATUS_REPLIES);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (close, TRUE);
   clos->timeline = twitter_timeline_new ();
 
   twitter_client_queue_message (client, msg, TRUE,
@@ -716,7 +826,8 @@ twitter_client_get_replies (TwitterClient *client)
 
 void
 twitter_client_get_favorites (TwitterClient *client,
-                              const gchar   *user)
+                              const gchar   *user,
+                              gint           page)
 {
 #if 0
   GetTimelineClosure *clos;
@@ -724,41 +835,65 @@ twitter_client_get_favorites (TwitterClient *client,
 
   g_return_if_fail (TWITTER_IS_CLIENT (client));
 
-  msg = twitter_api_favorites (user, -1);
+  msg = twitter_api_favorites (user, page);
 
   clos = g_new0 (GetTimelineClosure, 1);
-  clos->action = FAVORITES;
-  clos->client = g_object_ref (client);
+  closure_set_action (clos, FAVORITES);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
   clos->timeline = twitter_timeline_new ();
 
   twitter_client_queue_message (client, msg, TRUE,
                                 get_timeline_cb,
                                 clos);
 #endif
+  G_WARN_NOT_IMPLEMENTED;
 }
 
 static void
-get_status_cb (SoupSession *session,
-               SoupMessage *msg,
-               gpointer     user_data)
+get_user_cb (SoupSession *session,
+             SoupMessage *msg,
+             gpointer     user_data)
 {
-  GetStatusClosure *closure = user_data;
-  TwitterClient *client = closure->client;
+  GetUserClosure *closure = user_data;
+  gboolean requires_auth = closure_get_requires_auth (closure);
+  TwitterClient *client = closure_get_client (closure);
+  TwitterClientPrivate *priv = client->priv;
 
   if (!SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
     {
       GError *error = NULL;
 
+      if (msg->status_code == SOUP_STATUS_UNAUTHORIZED)
+        {
+          gboolean retval = FALSE;
+
+          g_signal_emit (client, client_signals[AUTHENTICATE], 0,
+                         TWITTER_AUTH_FAILED, &retval);
+
+          priv->auth_complete = FALSE;
+        }
+
       g_set_error (&error, TWITTER_ERROR,
                    twitter_error_from_status (msg->status_code),
                    msg->reason_phrase);
 
-      g_signal_emit (client, client_signals[STATUS_RECEIVED], 0,
+      g_signal_emit (client, client_signals[USER_RECEIVED], 0,
                      NULL, error);
+
+      g_error_free (error);
     }
   else
     {
+      gboolean retval = FALSE;
       gchar *buffer;
+
+      if (requires_auth && !priv->auth_complete)
+        {
+          g_signal_emit (client, client_signals[AUTHENTICATE], 0,
+                         TWITTER_AUTH_SUCCESS, &retval);
+          priv->auth_complete = TRUE;
+        }
 
       buffer = g_strndup (msg->response_body->data,
                           msg->response_body->length);
@@ -766,16 +901,16 @@ get_status_cb (SoupSession *session,
       if (G_UNLIKELY (!buffer))
         g_warning ("No data received");
       else
-        twitter_status_load_from_data (closure->status, buffer);
+        twitter_user_load_from_data (closure->user, buffer);
 
-      g_signal_emit (client, client_signals[STATUS_RECEIVED], 0,
-                     closure->status, NULL);
+      g_signal_emit (client, client_signals[USER_RECEIVED], 0,
+                     closure->user, NULL);
 
       g_free (buffer);
     }
 
-  g_object_unref (closure->client);
-  g_object_unref (closure->status);
+  g_object_unref (closure->user);
+  g_object_unref (client);
 
   g_free (closure);
 }
@@ -793,8 +928,9 @@ twitter_client_get_status (TwitterClient *client,
   msg = twitter_api_status_show (status_id);
 
   clos = g_new0 (GetStatusClosure, 1);
-  clos->action = STATUS_SHOW;
-  clos->client = g_object_ref (client);
+  closure_set_action (clos, STATUS_SHOW);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, FALSE);
   clos->status = twitter_status_new ();
 
   twitter_client_queue_message (client, msg, FALSE,
@@ -815,8 +951,9 @@ twitter_client_add_status (TwitterClient *client,
   msg = twitter_api_update (text);
 
   clos = g_new0 (GetStatusClosure, 1);
-  clos->action = UPDATE;
-  clos->client = g_object_ref (client);
+  closure_set_action (clos, STATUS_UPDATE);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
   clos->status = twitter_status_new ();
 
   twitter_client_queue_message (client, msg, TRUE,
@@ -837,8 +974,9 @@ twitter_client_remove_status (TwitterClient *client,
   msg = twitter_api_destroy (status_id);
 
   clos = g_new0 (GetStatusClosure, 1);
-  clos->action = DESTROY;
-  clos->client = g_object_ref (client);
+  closure_set_action (clos, STATUS_DESTROY);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
   clos->status = twitter_status_new ();
 
   twitter_client_queue_message (client, msg, TRUE,
@@ -846,44 +984,222 @@ twitter_client_remove_status (TwitterClient *client,
                                 clos);
 }
 
+static void
+get_user_list_cb (SoupSession *session,
+                  SoupMessage *msg,
+                  gpointer     user_data)
+{
+  GetUserListClosure *closure = user_data;
+  gboolean requires_auth = closure_get_requires_auth (closure);
+  TwitterClient *client = closure_get_client (closure);
+  TwitterClientPrivate *priv = client->priv;
+
+  if (!SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
+    {
+      GError *error = NULL;
+
+      if (msg->status_code == SOUP_STATUS_UNAUTHORIZED)
+        {
+          gboolean retval = FALSE;
+
+          g_signal_emit (client, client_signals[AUTHENTICATE], 0,
+                         TWITTER_AUTH_FAILED, &retval);
+
+          priv->auth_complete = FALSE;
+        }
+
+      g_set_error (&error, TWITTER_ERROR,
+                   twitter_error_from_status (msg->status_code),
+                   msg->reason_phrase);
+
+      g_signal_emit (client, client_signals[USER_RECEIVED], 0,
+                     NULL, error);
+
+      g_error_free (error);
+    }
+  else
+    {
+      gboolean retval = FALSE;
+      gchar *buffer;
+
+      if (requires_auth && !priv->auth_complete)
+        {
+          g_signal_emit (client, client_signals[AUTHENTICATE], 0,
+                         TWITTER_AUTH_SUCCESS, &retval);
+          priv->auth_complete = TRUE;
+        }
+
+      buffer = g_strndup (msg->response_body->data,
+                          msg->response_body->length);
+
+      if (G_UNLIKELY (!buffer))
+        g_warning ("No data received");
+      else
+        twitter_user_list_load_from_data (closure->user_list, buffer);
+
+      emit_user_received (client, closure->user_list);
+
+      g_free (buffer);
+    }
+
+  g_object_unref (closure->user_list);
+  g_object_unref (client);
+
+  g_free (closure);
+}
+
 void
 twitter_client_add_friend (TwitterClient *client,
                            const gchar   *user)
 {
+#if 0
+  GetUserClosure *clos;
+  SoupMessage *msg;
 
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+  g_return_if_fail (user != NULL);
+
+  msg = twitter_api_create_friend (user);
+
+  clos = g_new0 (GetUserClosure, 1);
+  closure_set_action (clos, FRIEND_CREATE);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
+  clos->user = twitter_user_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_user_cb,
+                                clos);
+#endif
+  G_WARN_NOT_IMPLEMENTED;
 }
 
 void
 twitter_client_remove_friend (TwitterClient *client,
                               const gchar   *user)
 {
+#if 0
+  GetUserClosure *clos;
+  SoupMessage *msg;
 
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+  g_return_if_fail (user != NULL);
+
+  msg = twitter_api_destroy_friend (user);
+
+  clos = g_new0 (GetUserClosure, 1);
+  closure_set_action (clos, FRIEND_DESTROY);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
+  clos->user = twitter_user_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_user_cb,
+                                clos);
+#endif
+  G_WARN_NOT_IMPLEMENTED;
 }
 
 void
 twitter_client_follow_user (TwitterClient *client,
                             const gchar   *user)
 {
+#if 0
+  GetUserClosure *clos;
+  SoupMessage *msg;
 
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+  g_return_if_fail (user != NULL);
+
+  msg = twitter_api_follow (user);
+
+  clos = g_new0 (GetUserClosure, 1);
+  closure_set_action (clos, NOTIFICATION_FOLLOW);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
+  clos->user = twitter_user_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_user_cb,
+                                clos);
+#endif
+  G_WARN_NOT_IMPLEMENTED;
 }
 
 void
 twitter_client_leave_user (TwitterClient  *client,
                            const gchar    *user)
 {
+#if 0
+  GetUserClosure *clos;
+  SoupMessage *msg;
 
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+  g_return_if_fail (user != NULL);
+
+  msg = twitter_api_leave (user);
+
+  clos = g_new0 (GetUserClosure, 1);
+  closure_set_action (clos, NOTIFICATION_LEAVE);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
+  clos->user = twitter_user_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_user_cb,
+                                clos);
+#endif
+  G_WARN_NOT_IMPLEMENTED;
 }
 
 void
 twitter_client_add_favorite (TwitterClient  *client,
                              guint           status_id)
 {
+#if 0
+  GetStatusClosure *clos;
+  SoupMessage *msg;
 
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+  g_return_if_fail (status_id > 0);
+
+  msg = twitter_api_create_favorite (status_id);
+
+  clos = g_new0 (GetStatusClosure, 1);
+  closure_set_action (clos, FAVORITE_CREATE);
+  closure_set_client (close, g_object_ref (client));
+  closure_set_requires_auth (close, TRUE);
+  clos->status = twitter_status_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_status_cb,
+                                clos);
+#endif
+  G_WARN_NOT_IMPLEMENTED;
 }
 
 void
 twitter_client_remove_favorite (TwitterClient  *client,
                                 guint           status_id)
 {
+#if 0
+  GetStatusClosure *clos;
+  SoupMessage *msg;
 
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+  g_return_if_fail (status_id > 0);
+
+  msg = twitter_api_destroy_favorite (status_id);
+
+  clos = g_new0 (GetStatusClosure, 1);
+  closure_set_action (clos, FAVORITE_DESTROY);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (close, TRUE);
+  clos->status = twitter_status_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_status_cb,
+                                clos);
+#endif
+  G_WARN_NOT_IMPLEMENTED;
 }
