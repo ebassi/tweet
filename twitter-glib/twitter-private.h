@@ -7,6 +7,8 @@
 
 G_BEGIN_DECLS
 
+#define I_(str) (g_intern_static_string ((str)))
+
 TwitterStatus *twitter_status_new_from_node (JsonNode *node);
 TwitterUser   *twitter_user_new_from_node   (JsonNode *node);
 
