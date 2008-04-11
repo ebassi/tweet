@@ -241,6 +241,10 @@ twitter_user_build (TwitterUser *user,
   member = json_object_get_member (obj, "location");
   if (member)
     priv->location = json_node_dup_string (member);
+    
+  member = json_object_get_member (obj, "screen_name");
+  if (member)
+    priv->screen_name = json_node_dup_string (member);
 
   member = json_object_get_member (obj, "profile_image_url");
   if (member)
