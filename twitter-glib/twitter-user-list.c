@@ -188,7 +188,7 @@ twitter_user_list_get_count (TwitterUserList *user_list)
   return g_hash_table_size (user_list->priv->user_by_id);
 }
 
-TwitterStatus *
+TwitterUser *
 twitter_user_list_get_id (TwitterUserList *user_list,
                           guint            id)
 {
@@ -198,7 +198,7 @@ twitter_user_list_get_id (TwitterUserList *user_list,
                               GUINT_TO_POINTER (id));
 }
 
-TwitterStatus *
+TwitterUser *
 twitter_user_list_get_pos (TwitterUserList *user_list,
                            gint             index_)
 {
