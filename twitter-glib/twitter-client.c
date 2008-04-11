@@ -198,7 +198,7 @@ twitter_client_class_init (TwitterClientClass *klass)
                                                         G_PARAM_READWRITE));
 
   client_signals[AUTHENTICATE] =
-    g_signal_new ("authenticate",
+    g_signal_new (I_("authenticate"),
                   G_TYPE_FROM_CLASS (gobject_class),
                   G_SIGNAL_RUN_LAST | G_SIGNAL_NO_RECURSE,
                   G_STRUCT_OFFSET (TwitterClientClass, authenticate),
@@ -207,7 +207,7 @@ twitter_client_class_init (TwitterClientClass *klass)
                   G_TYPE_BOOLEAN, 1,
                   TWITTER_TYPE_AUTH_STATE);
   client_signals[USER_RECEIVED] =
-    g_signal_new ("user-received",
+    g_signal_new (I_("user-received"),
                   G_TYPE_FROM_CLASS (gobject_class),
                   G_SIGNAL_RUN_LAST,
                   G_STRUCT_OFFSET (TwitterClientClass, user_received),
@@ -217,7 +217,7 @@ twitter_client_class_init (TwitterClientClass *klass)
                   TWITTER_TYPE_USER,
                   G_TYPE_POINTER);
   client_signals[STATUS_RECEIVED] =
-    g_signal_new ("status-received",
+    g_signal_new (I_("status-received"),
                   G_TYPE_FROM_CLASS (gobject_class),
                   G_SIGNAL_RUN_LAST,
                   G_STRUCT_OFFSET (TwitterClientClass, status_received),
