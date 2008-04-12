@@ -264,7 +264,7 @@ typedef enum {
   FRIEND_DESTROY,
   FAVORITE_CREATE,
   FAVORITE_DESTROY,
-  FAVORITE,
+  FAVORITES,
   NOTIFICATION_FOLLOW,
   NOTIFICATION_LEAVE,
 
@@ -583,6 +583,7 @@ twitter_client_verify_user (TwitterClient *client)
                                 verify_cb,
                                 clos);
 #endif
+  G_WARN_NOT_IMPLEMENTED;
 }
 
 static void
@@ -829,7 +830,6 @@ twitter_client_get_favorites (TwitterClient *client,
                               const gchar   *user,
                               gint           page)
 {
-#if 0
   GetTimelineClosure *clos;
   SoupMessage *msg;
 
@@ -846,8 +846,6 @@ twitter_client_get_favorites (TwitterClient *client,
   twitter_client_queue_message (client, msg, TRUE,
                                 get_timeline_cb,
                                 clos);
-#endif
-  G_WARN_NOT_IMPLEMENTED;
 }
 
 static void
@@ -1052,7 +1050,6 @@ void
 twitter_client_add_friend (TwitterClient *client,
                            const gchar   *user)
 {
-#if 0
   GetUserClosure *clos;
   SoupMessage *msg;
 
@@ -1070,15 +1067,12 @@ twitter_client_add_friend (TwitterClient *client,
   twitter_client_queue_message (client, msg, TRUE,
                                 get_user_cb,
                                 clos);
-#endif
-  G_WARN_NOT_IMPLEMENTED;
 }
 
 void
 twitter_client_remove_friend (TwitterClient *client,
                               const gchar   *user)
 {
-#if 0
   GetUserClosure *clos;
   SoupMessage *msg;
 
@@ -1096,15 +1090,12 @@ twitter_client_remove_friend (TwitterClient *client,
   twitter_client_queue_message (client, msg, TRUE,
                                 get_user_cb,
                                 clos);
-#endif
-  G_WARN_NOT_IMPLEMENTED;
 }
 
 void
 twitter_client_follow_user (TwitterClient *client,
                             const gchar   *user)
 {
-#if 0
   GetUserClosure *clos;
   SoupMessage *msg;
 
@@ -1122,15 +1113,12 @@ twitter_client_follow_user (TwitterClient *client,
   twitter_client_queue_message (client, msg, TRUE,
                                 get_user_cb,
                                 clos);
-#endif
-  G_WARN_NOT_IMPLEMENTED;
 }
 
 void
 twitter_client_leave_user (TwitterClient  *client,
                            const gchar    *user)
 {
-#if 0
   GetUserClosure *clos;
   SoupMessage *msg;
 
@@ -1148,15 +1136,12 @@ twitter_client_leave_user (TwitterClient  *client,
   twitter_client_queue_message (client, msg, TRUE,
                                 get_user_cb,
                                 clos);
-#endif
-  G_WARN_NOT_IMPLEMENTED;
 }
 
 void
 twitter_client_add_favorite (TwitterClient  *client,
                              guint           status_id)
 {
-#if 0
   GetStatusClosure *clos;
   SoupMessage *msg;
 
@@ -1174,15 +1159,12 @@ twitter_client_add_favorite (TwitterClient  *client,
   twitter_client_queue_message (client, msg, TRUE,
                                 get_status_cb,
                                 clos);
-#endif
-  G_WARN_NOT_IMPLEMENTED;
 }
 
 void
 twitter_client_remove_favorite (TwitterClient  *client,
                                 guint           status_id)
 {
-#if 0
   GetStatusClosure *clos;
   SoupMessage *msg;
 
@@ -1200,6 +1182,4 @@ twitter_client_remove_favorite (TwitterClient  *client,
   twitter_client_queue_message (client, msg, TRUE,
                                 get_status_cb,
                                 clos);
-#endif
-  G_WARN_NOT_IMPLEMENTED;
 }

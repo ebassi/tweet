@@ -93,6 +93,10 @@
 
 #define TWITTER_API_FAVORITES                   \
         "http://twitter.com/favorites.json"
+
+#define TWITTER_API_FAVORITES_ID                \
+        "http://twitter.com/favorites/%s.json"
+
 #define TWITTER_API_CREATE_FAVORITE             \
         "http://twitter.com/favorites/create/%u.json"
 #define TWITTER_API_DESTROY_FAVORITE            \
@@ -325,6 +329,127 @@ twitter_api_followers (gint     page,
 
   msg = soup_message_new (SOUP_METHOD_GET, url);
 
+  g_free (url);
+
+  return msg;
+}
+
+SoupMessage *
+twitter_api_create_friend (const gchar *user)
+{
+  SoupMessage *msg;
+  gchar *url;
+
+  url = g_strdup_printf (TWITTER_API_CREATE_FRIEND, user);
+  msg = soup_message_new (SOUP_METHOD_GET, url);
+  g_free (url);
+
+  return msg;
+}
+
+SoupMessage *
+twitter_api_destroy_friend (const gchar *user)
+{
+  SoupMessage *msg;
+  gchar *url;
+
+  url = g_strdup_printf (TWITTER_API_DESTROY_FRIEND, user);
+  msg = soup_message_new (SOUP_METHOD_GET, url);
+  g_free (url);
+
+  return msg;
+}
+
+SoupMessage *
+twitter_api_favorites (const gchar *user,
+                       gint         page)
+{
+  gchar *base_url, *url;
+  SoupMessage *msg;
+
+  if (user && *user != '\0')
+    base_url = g_strdup_printf (TWITTER_API_FAVORITES_ID, user);
+  else
+    base_url = g_strdup (TWITTER_API_FAVORITES);
+
+  if (page >= 0)
+    url = g_strdup_printf ("%s?page=%d", base_url, page);
+  else
+    url = base_url;
+
+  msg = soup_message_new (SOUP_METHOD_GET, url);
+
+  if (url != base_url)
+    g_free (url);
+  g_free (base_url);
+
+  return msg;
+}
+
+SoupMessage *
+twitter_api_create_favorite (guint status_id)
+{
+  SoupMessage *msg;
+  gchar *url;
+
+  url = g_strdup_printf (TWITTER_API_CREATE_FAVORITE, status_id);
+  msg = soup_message_new (SOUP_METHOD_GET, url);
+  g_free (url);
+
+  return msg;
+}
+
+SoupMessage *
+twitter_api_destroy_favorite (guint status_id)
+{
+  SoupMessage *msg;
+  gchar *url;
+
+  url = g_strdup_printf (TWITTER_API_DESTROY_FAVORITE, status_id);
+  msg = soup_message_new (SOUP_METHOD_GET, url);
+  g_free (url);
+
+  return msg;
+}
+
+SoupMessage *
+twitter_api_follow (const gchar *user)
+{
+  SoupMessage *msg;
+  gchar *url;
+
+  url = g_strdup_printf (TWITTER_API_FOLLOW, user);
+  msg = soup_message_new (SOUP_METHOD_GET, url);
+  g_free (url);
+
+  return msg;
+}
+
+SoupMessage *
+twitter_api_leave (const gchar *user)
+{
+  SoupMessage *msg;
+  gchar *url;
+
+  url = g_strdup_printf (TWITTER_API_LEAVE, user);
+  msg = soup_message_new (SOUP_METHOD_GET, url);
+  g_free (url);
+
+  return msg;
+}
+
+SoupMessage *
+twitter_api_archive (gint page)
+{
+  SoupMessage *msg;
+  gchar *url;
+
+  if (page < 0)
+    url = g_strdup (TWITTER_API_ARCHIVE);
+  else
+    url = g_strdup_printf ("%s?page=%u", TWITTER_API_ARCHIVE, page);
+
+  msg = soup_message_new (SOUP_METHOD_GET, url);
   g_free (url);
 
   return msg;
