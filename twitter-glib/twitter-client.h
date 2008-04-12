@@ -122,6 +122,8 @@ void           twitter_client_get_user             (TwitterClient  *client,
                                                     gchar         **password);
 void           twitter_client_verify_user          (TwitterClient  *client);
 void           twitter_client_end_session          (TwitterClient  *client);
+void           twitter_client_show_user            (TwitterClient  *client,
+                                                    const gchar    *user);
 
 void           twitter_client_get_public_timeline  (TwitterClient  *client,
                                                     guint           since_id);
