@@ -140,9 +140,11 @@ void           twitter_client_get_favorites        (TwitterClient  *client,
                                                     gint            page);
 void           twitter_client_get_friends          (TwitterClient  *client,
                                                     const gchar    *user,
-                                                    gint            page);
+                                                    gint            page,
+                                                    gboolean        omit_status);
 void           twitter_client_get_followers        (TwitterClient  *client,
-                                                    gint            page);
+                                                    gint            page,
+                                                    gboolean        omit_status);
 
 void           twitter_client_get_status           (TwitterClient  *client,
                                                     guint           status_id);

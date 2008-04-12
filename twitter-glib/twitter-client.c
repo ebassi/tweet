@@ -1185,3 +1185,74 @@ twitter_client_remove_favorite (TwitterClient  *client,
                                 get_status_cb,
                                 clos);
 }
+
+void
+twitter_client_get_friends (TwitterClient *client,
+                            const gchar   *user,
+                            gint           page,
+                            gboolean       omit_status)
+{
+  GetUserListClosure *clos;
+  SoupMessage *msg;
+
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+  g_return_if_fail (status_id > 0);
+
+  msg = twitter_api_friends (user, page, omit_status);
+
+  clos = g_new0 (GetUserListClosure, 1);
+  closure_set_action (clos, FRIENDS);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (close, TRUE);
+  clos->user_list = twitter_user_list_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_user_list_cb,
+                                clos);
+}
+
+void
+twitter_client_get_followers (TwitterClient *client,
+                              gint           page,
+                              gboolean       omit_status)
+{
+  GetUserListClosure *clos;
+  SoupMessage *msg;
+
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+
+  msg = twitter_api_followers (page, omit_status);
+
+  clos = g_new0 (GetUserListClosure, 1);
+  closure_set_action (clos, FOLLOWERS);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (close, TRUE);
+  clos->user_list = twitter_user_list_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_user_list_cb,
+                                clos);
+}
+
+void
+twitter_client_show_user (TwitterClient *client,
+                          const gchar   *user)
+{
+  GetUserClosure *clos;
+  SoupMessage *msg;
+
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+  g_return_if_fail (user != NULL);
+
+  msg = twitter_api_user_show (user);
+
+  clos = g_new0 (GetUserClosure, 1);
+  closure_set_action (clos, USER_SHOW);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, FALSE);
+  clos->user = twitter_user_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_user_cb,
+                                clos);
+}
