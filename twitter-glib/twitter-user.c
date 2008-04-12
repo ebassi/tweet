@@ -24,10 +24,19 @@ struct _TwitterUserPrivate
   gchar *location;
   gchar *screen_name;
   gchar *profile_image_url;
+  gchar *created_at;
+  gchar *time_zone;
 
   guint id;
+  guint friends_count;
+  guint statuses_count;
+  guint followers_count;
+  guint favorites_count;
+
+  gint utc_offset;
 
   guint protected : 1;
+  guint following : 1;
 
   TwitterStatus *status;
 };
@@ -44,7 +53,15 @@ enum
   PROP_PROFILE_IMAGE_URL,
   PROP_ID,
   PROP_PROTECTED,
-  PROP_STATUS
+  PROP_STATUS,
+  PROP_FOLLOWING,
+  PROP_FRIENDS_COUNT,
+  PROP_STATUSES_COUNT,
+  PROP_FOLLOWERS_COUNT,
+  PROP_FAVORITES_COUNT,
+  PROP_CREATED_AT,
+  PROP_TIME_ZONE,
+  PROP_UTC_OFFSET
 };
 
 G_DEFINE_TYPE (TwitterUser, twitter_user, G_TYPE_INITIALLY_UNOWNED);
@@ -60,6 +77,8 @@ twitter_user_finalize (GObject *gobject)
   g_free (priv->location);
   g_free (priv->screen_name);
   g_free (priv->profile_image_url);
+  g_free (priv->created_at);
+  g_free (priv->time_zone);
 
   G_OBJECT_CLASS (twitter_user_parent_class)->finalize (gobject);
 }
@@ -108,6 +127,34 @@ twitter_user_get_property (GObject    *gobject,
 
     case PROP_STATUS:
       g_value_set_object (value, priv->status);
+      break;
+
+    case PROP_FOLLOWING:
+      g_value_set_boolean (value, priv->following);
+      break;
+
+    case PROP_FRIENDS_COUNT:
+      g_value_set_uint (value, priv->friends_count);
+      break;
+
+    case PROP_STATUSES_COUNT:
+      g_value_set_uint (value, priv->statuses_count);
+      break;
+
+    case PROP_FOLLOWERS_COUNT:
+      g_value_set_uint (value, priv->followers_count);
+      break;
+
+    case PROP_CREATED_AT:
+      g_value_set_string (value, priv->created_at);
+      break;
+
+    case PROP_TIME_ZONE:
+      g_value_set_string (value, priv->time_zone);
+      break;
+
+    case PROP_UTC_OFFSET:
+      g_value_set_int (value, priv->utc_offset);
       break;
 
     default:
@@ -189,6 +236,62 @@ twitter_user_class_init (TwitterUserClass *klass)
                                                         "The user status",
                                                         TWITTER_TYPE_STATUS,
                                                         G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_FOLLOWING,
+                                   g_param_spec_boolean ("following",
+                                                         "Following",
+                                                         "Whether we are following the user",
+                                                         FALSE,
+                                                         G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_FRIENDS_COUNT,
+                                   g_param_spec_uint ("friends-count",
+                                                      "Friends Count",
+                                                      "The number of friends the user has",
+                                                      0, G_MAXUINT, 0,
+                                                      G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_STATUSES_COUNT,
+                                   g_param_spec_uint ("statuses-count",
+                                                      "Statuses Count",
+                                                      "The number of statuses the user wrote",
+                                                      0, G_MAXUINT, 0,
+                                                      G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_FOLLOWERS_COUNT,
+                                   g_param_spec_uint ("followers-count",
+                                                      "Followers Count",
+                                                      "The number of followers the user has",
+                                                      0, G_MAXUINT, 0,
+                                                      G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_FAVORITES_COUNT,
+                                   g_param_spec_uint ("favorites-count",
+                                                      "Favorites Count",
+                                                      "The number of favorite statues the user has",
+                                                      0, G_MAXUINT, 0,
+                                                      G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_CREATED_AT,
+                                   g_param_spec_string ("created-at",
+                                                        "Created At",
+                                                        "The date the user profile was created",
+                                                        NULL,
+                                                        G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_TIME_ZONE,
+                                   g_param_spec_string ("time-zone",
+                                                        "Time Zone",
+                                                        "The name of the time zone of the user",
+                                                        NULL,
+                                                        G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_UTC_OFFSET,
+                                   g_param_spec_int ("utc-offset",
+                                                     "Offset from UTC",
+                                                     "The offset of the time zone of the user from UTC",
+                                                     G_MININT, G_MAXINT, 0,
+                                                     G_PARAM_READABLE));
 }
 
 static void
@@ -208,6 +311,8 @@ twitter_user_clean (TwitterUser *user)
   g_free (priv->location);
   g_free (priv->screen_name);
   g_free (priv->profile_image_url);
+  g_free (priv->created_at);
+  g_free (priv->time_zone);
 
   if (priv->status)
     g_object_unref (priv->status);
@@ -264,6 +369,39 @@ twitter_user_build (TwitterUser *user,
       priv->status = twitter_status_new_from_node (member);
       g_object_ref_sink (priv->status);
     }
+
+  member = json_object_get_member (obj, "following");
+  if (member)
+    priv->following = json_node_get_boolean (member);
+
+  member = json_object_get_member (obj, "friends_count");
+  if (member)
+    priv->friends_count = json_node_get_int (member);
+
+  member = json_object_get_member (obj, "statuses_count");
+  if (member)
+    priv->statuses_count = json_node_get_int (member);
+
+  member = json_object_get_member (obj, "followers_count");
+  if (member)
+    priv->followers_count = json_node_get_int (member);
+
+  /* XXX - english spelling */
+  member = json_object_get_member (obj, "favourites_count");
+  if (member)
+    priv->favorites_count = json_node_get_int (member);
+
+  member = json_object_get_member (obj, "created_at");
+  if (member)
+    priv->created_at = json_node_dup_string (member);
+
+  member = json_object_get_member (obj, "time_zone");
+  if (member)
+    priv->time_zone = json_node_dup_string (member);
+
+  member = json_object_get_member (obj, "utc_offset");
+  if (member)
+    priv->utc_offset = json_node_get_int (member);
 }
 
 TwitterUser *
@@ -410,4 +548,68 @@ twitter_user_get_status (TwitterUser *user)
   g_return_val_if_fail (TWITTER_IS_USER (user), NULL);
 
   return user->priv->status;
+}
+
+gboolean
+twitter_user_get_following (TwitterUser *user)
+{
+  g_return_val_if_fail (TWITTER_IS_USER (user), FALSE);
+
+  return user->priv->following;
+}
+
+guint
+twitter_user_get_friends_count (TwitterUser *user)
+{
+  g_return_val_if_fail (TWITTER_IS_USER (user), 0);
+
+  return user->priv->friends_count;
+}
+
+guint
+twitter_user_get_statuses_count (TwitterUser *user)
+{
+  g_return_val_if_fail (TWITTER_IS_USER (user), 0);
+
+  return user->priv->statuses_count;
+}
+
+guint
+twitter_user_get_followers_count (TwitterUser *user)
+{
+  g_return_val_if_fail (TWITTER_IS_USER (user), 0);
+
+  return user->priv->followers_count;
+}
+
+guint
+twitter_user_get_favorites_count (TwitterUser *user)
+{
+  g_return_val_if_fail (TWITTER_IS_USER (user), 0);
+
+  return user->priv->favorites_count;
+}
+
+G_CONST_RETURN gchar *
+twitter_user_get_created_at (TwitterUser *user)
+{
+  g_return_val_if_fail (TWITTER_IS_USER (user), NULL);
+
+  return user->priv->created_at;
+}
+
+G_CONST_RETURN gchar *
+twitter_user_get_time_zone (TwitterUser *user)
+{
+  g_return_val_if_fail (TWITTER_IS_USER (user), NULL);
+
+  return user->priv->time_zone;
+}
+
+gint
+twitter_user_get_utc_offset (TwitterUser *user)
+{
+  g_return_val_if_fail (TWITTER_IS_USER (user), 0);
+
+  return user->priv->utc_offset;
 }
