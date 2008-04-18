@@ -3,6 +3,7 @@ Makefile
 Makefile.in
 aclocal.m4
 autom4te.cache
+compile
 config.*
 configure
 depcomp
@@ -20,6 +21,7 @@ twitter-glib-1.0.pc
 *.lo
 *.la
 *.o
+*.json
 test-status-send
 test-user-timeline
 stamp-*.h
