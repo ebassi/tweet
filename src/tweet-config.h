@@ -34,7 +34,11 @@ GType                 tweet_config_get_type     (void) G_GNUC_CONST;
 
 TweetConfig *         tweet_config_get_default  (void);
 
+void                  tweet_config_set_username (TweetConfig *config,
+                                                 const gchar *username);
 G_CONST_RETURN gchar *tweet_config_get_username (TweetConfig *config);
+void                  tweet_config_set_password (TweetConfig *config,
+                                                 const gchar *password);
 G_CONST_RETURN gchar *tweet_config_get_password (TweetConfig *config);
 
 void                  tweet_config_save         (TweetConfig *config);

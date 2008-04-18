@@ -58,18 +58,16 @@ tweet_config_set_property (GObject      *gobject,
                            const GValue *value,
                            GParamSpec   *pspec)
 {
-  TweetConfigPrivate *priv = TWEET_CONFIG (gobject)->priv;
+  TweetConfig *config = TWEET_CONFIG (gobject);
 
   switch (prop_id)
     {
     case PROP_USERNAME:
-      g_free (priv->username);
-      priv->username = g_value_dup_string (value);
+      tweet_config_set_username (config, g_value_get_string (value));
       break;
 
     case PROP_PASSWORD:
-      g_free (priv->password);
-      priv->password = g_value_dup_string (value);
+      tweet_config_set_password (config, g_value_get_string (value));
       break;
 
     default:
@@ -190,12 +188,46 @@ tweet_config_get_default (void)
   return default_config;
 }
 
+void
+tweet_config_set_username (TweetConfig *config,
+                           const gchar *username)
+{
+  TweetConfigPrivate *priv;
+
+  g_return_if_fail (TWEET_IS_CONFIG (config));
+  g_return_if_fail (username != NULL);
+
+  priv = config->priv;
+
+  g_free (priv->username);
+  priv->username = g_strdup (username);
+
+  g_object_notify (G_OBJECT (config), "username");
+}
+
 G_CONST_RETURN gchar *
 tweet_config_get_username (TweetConfig *config)
 {
   g_return_val_if_fail (TWEET_IS_CONFIG (config), NULL);
 
   return config->priv->username;
+}
+
+void
+tweet_config_set_password (TweetConfig *config,
+                           const gchar *password)
+{
+  TweetConfigPrivate *priv;
+
+  g_return_if_fail (TWEET_IS_CONFIG (config));
+  g_return_if_fail (password != NULL);
+
+  priv = config->priv;
+
+  g_free (priv->password);
+  priv->password = g_strdup (password);
+
+  g_object_notify (G_OBJECT (config), "password");
 }
 
 G_CONST_RETURN gchar *
