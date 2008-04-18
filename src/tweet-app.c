@@ -61,7 +61,14 @@ tweet_app_run (TweetApp *app)
   g_return_val_if_fail (TWEET_IS_APP (app), EXIT_FAILURE);
   g_return_val_if_fail (!tweet_app_is_running (app), EXIT_SUCCESS);
 
+  if (!tweet_config_get_username (app->config))
+    {
+      /* ask the user for the credentials */
+    }
+
   gtk_main ();
+
+  tweet_config_save (app->config);
 
   return EXIT_SUCCESS;
 }
