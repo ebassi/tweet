@@ -1,13 +1,15 @@
 Tweet - A simple Twitter desktop client
 
-Tweet is a desktop client for the Twitter web service. Twitter is:
+Tweet is a desktop client for the Twitter web service. The Twitter
+web service is described as:
 
   Twitter is for staying in touch and keeping up with friends no matter
   where you are or what you’re doing. For some friends you might want
   instant mobile updates - for others, you can just check the web. Invite
   your friends to Twitter and decide how connected you want you to be.
+                -- from http://twitter.com
 
-In short, is a web-based SMS like service.
+In short, is a web-based SMS-like service.
 
 Tweet is a client written to read your friends' status and update your
 own without using a web browser.
@@ -17,11 +19,14 @@ Tweet depends on:
   - GLib >= 2.16
   - JSON-GLib >= 0.5
   - Clutter >= 0.6
+  - ClutterGtk >= 0.6
+  - ClutterCairo >= 0.6
   - libsoup >= 2.23
+  - GTK+ >= 2.12
 
-Tweet is based on, and provides a GObject-based library for reading and
-updating the Twitter status so that other applications can integrate with
-it.
+Tweet is based on, and provides for third parties, a GObject-based library
+for reading and updating the Twitter status; the library is installed and
+it is available so that other applications can integrate with it.
 
 Tweet is released under the terms of the GNU General Public License,
 version 2 or, at your option, any later version.
