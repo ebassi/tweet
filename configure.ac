@@ -20,6 +20,9 @@ m4_define([json_glib_req_version], [0.5])
 m4_define([soup_req_version], [2.23])
 m4_define([clutter_req_version], [0.6.2])
 m4_define([tidy_req_version], [0.0])
+m4_define([gtk_req_version], [2.12])
+m4_define([clutter_gtk_req_version], [0.6])
+m4_define([clutter_cairo_req_version], [0.6])
 
 AC_PREREQ([2.59])
 AC_INIT([tweet], [tweet_version], [], [tweet])
@@ -33,9 +36,9 @@ GNOME_DEBUG_CHECK
 
 AM_DISABLE_STATIC
 AM_PATH_GLIB_2_0
+AM_PROG_CC_C_O
 AM_PROG_LIBTOOL
 
-AC_PROG_CC
 AC_HEADER_STDC
 AC_CHECK_HEADERS([unistd.h])
 AC_C_CONST
@@ -72,8 +75,12 @@ AC_SUBST(TWITTER_GLIB_LIBS)
 dnl tweet checks
 PKG_CHECK_MODULES(TWEET,
                   gobject-2.0 >= glib_req_version dnl
+                  json-glib-1.0 >= json_glib_req_version dnl
                   clutter-0.6 >= clutter_req_version dnl
-                  tidy-1.0 >= tidy_req_version)
+                  tidy-1.0 >= tidy_req_version dnl
+                  gtk+-2.0 >= gtk_req_version dnl
+                  clutter-gtk-0.6 >= clutter_gtk_req_version dnl
+                  clutter-cairo-0.6 >= clutter_cairo_req_version)
 AC_SUBST(TWEET_CFLAGS)
 AC_SUBST(TWEET_LIBS)
 
