@@ -8,9 +8,11 @@
 #include <glib.h>
 
 #include <clutter/clutter.h>
-#include <clutter-gtk/clutter-gtk.h>
+#include <clutter-gtk/gtk-clutter-embed.h>
 
 #include "tweet-app.h"
+#include "tweet-config.h"
+#include "tweet-window.h"
 
 static TweetApp *default_app = NULL;
 
@@ -24,6 +26,8 @@ tweet_app_class_init (TweetAppClass *klass)
 static void
 tweet_app_init (TweetApp *app)
 {
+  app->config = tweet_config_get_default ();
+  app->main_window = tweet_window_new ();
 }
 
 TweetApp *
@@ -33,6 +37,7 @@ tweet_app_get_default (int      *argc,
 {
   if (!default_app)
     {
+      g_thread_init (NULL);
       gtk_init (argc, argv);
       clutter_init (argc, argv);
 
@@ -54,7 +59,7 @@ gint
 tweet_app_run (TweetApp *app)
 {
   g_return_val_if_fail (TWEET_IS_APP (app), EXIT_FAILURE);
-  g_return_val_if_fail (tweet_app_is_running (app), EXIT_SUCCESS);
+  g_return_val_if_fail (!tweet_app_is_running (app), EXIT_SUCCESS);
 
   gtk_main ();
 

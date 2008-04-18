@@ -4,6 +4,8 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 
+#include "tweet-config.h"
+
 G_BEGIN_DECLS
 
 #define TWEET_TYPE_APP            (tweet_app_get_type ())
@@ -19,6 +21,8 @@ typedef struct _TweetAppClass   TweetAppClass;
 struct _TweetApp
 {
   GObject parent_instance;
+
+  TweetConfig *config;
 
   GtkWidget *main_window;
 
