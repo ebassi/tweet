@@ -50,41 +50,12 @@ twitter_error_quark (void)
 gchar *
 twitter_http_date_from_time_t (time_t time_)
 {
-  struct tm tmp;
-  char buffer[256];
+  SoupDate *soup_date;
   gchar *retval;
 
-#ifdef HAVE_LOCALTIME_R
-  localtime_r (&time_, &tmp);
-#else
-  {
-    struct tm *ptm = localtime (&time_);
-
-    if (ptm == NULL)
-      {
-        /* Happens at least in Microsoft's C library if you pass a
-         * negative time_t. Use 2000-01-01 as default date.
-         */
-# ifndef G_DISABLE_CHECKS
-        g_return_if_fail_warning (G_LOG_DOMAIN,
-                                  "twitter_http_date_from_time_t",
-                                  "ptm != NULL");
-# endif /* G_DISABLE_CHECKS */
-
-        tmp.tm_mon = 0;
-        tmp.tm_mday = 1;
-        tmp.tm_year = 100;
-      }
-    else
-      memcpy ((void *) &tmp, (void *) ptm, sizeof(struct tm));
-  }
-#endif /* HAVE_LOCALTIME_R */
-
-  /* see RFC 1123 */
-  if (strftime (buffer, sizeof (buffer), "%a, %d %b %Y %T %Z", &tmp) == 0)
-    return NULL;
-  else
-    retval = g_strdup (buffer);
+  soup_date = soup_date_new_from_time_t (time_);
+  retval = soup_date_to_string (soup_date, SOUP_DATE_HTTP);
+  soup_date_free (soup_date);
 
   return retval;
 }
@@ -103,14 +74,14 @@ twitter_http_date_from_delta (gint seconds)
 time_t
 twitter_http_date_to_time_t (const gchar *date)
 {
-#ifdef HAVE_STRPTIME
-  struct tm tmp;
+  SoupDate *soup_date;
+  time_t retval;
 
-  if (strptime (date, "%a, %d %b %Y %T %Z", &tmp) == NULL)
-    return mktime (&tmp);
-  else
-#endif /* HAVE_STRPTIME */
-    return time (NULL);
+  soup_date = soup_date_new_from_string (date);
+  retval = soup_date_to_time_t (soup_date);
+  soup_date_free (soup_date);
+
+  return retval;
 }
 
 gint
