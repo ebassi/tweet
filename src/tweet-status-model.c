@@ -687,6 +687,39 @@ tweet_status_model_new (void)
   return g_object_new (TWEET_TYPE_STATUS_MODEL, NULL);
 }
 
+static void
+status_changed_cb (TwitterStatus    *status,
+                   TweetStatusModel *model)
+{
+  ClutterModelIter *iter;
+
+  iter = clutter_model_get_first_iter (CLUTTER_MODEL (model));
+  while (!clutter_model_iter_is_last (iter))
+    {
+      TwitterStatus *iter_status;
+      guint iter_status_id, status_id;
+
+      clutter_model_iter_get (iter, 0, &iter_status, -1);
+      if (!iter_status)
+        {
+          iter = clutter_model_iter_next (iter);
+          continue;
+        }
+
+      iter_status_id = twitter_status_get_id (iter_status);
+      status_id = twitter_status_get_id (status);
+
+      if (iter_status == status || iter_status_id == status_id)
+        g_signal_emit_by_name (model, "row-changed", iter);
+
+      g_object_unref (iter_status);
+
+      iter = clutter_model_iter_next (iter);
+    }
+
+  g_object_unref (iter);
+}
+
 void
 tweet_status_model_append_status (TweetStatusModel *model,
                                   TwitterStatus    *status)
@@ -694,9 +727,10 @@ tweet_status_model_append_status (TweetStatusModel *model,
   g_return_if_fail (TWEET_IS_STATUS_MODEL (model));
   g_return_if_fail (TWITTER_IS_STATUS (status));
 
-  clutter_model_append (CLUTTER_MODEL (model),
-                        0, status,
-                        -1);
+  clutter_model_append (CLUTTER_MODEL (model), 0, status, -1);
+  g_signal_connect (status, "changed",
+                    G_CALLBACK (status_changed_cb),
+                    model);
 }
 
 void
