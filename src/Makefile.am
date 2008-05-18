@@ -12,11 +12,13 @@ INCLUDES = \
 common_cflags = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/twitter-glib \
+	-I$(top_srcdir)/copy-and-paste \
 	$(TWEET_CFLAGS)
 	$(NULL)
 
 common_ldadd = \
 	$(top_builddir)/twitter-glib/libtwitter-glib-1.0.la \
+	$(top_builddir)/copy-and-paste/tidy/libtidy.la \
 	$(TWEET_LIBS) \
 	$(NULL)
 

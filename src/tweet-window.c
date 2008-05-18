@@ -12,7 +12,7 @@
 #include <clutter/clutter.h>
 #include <clutter-gtk/gtk-clutter-embed.h>
 
-#include <tidy/tidy.h>
+#include <tidy/tidy-finger-scroll.h>
 
 #include <twitter-glib/twitter-glib.h>
 

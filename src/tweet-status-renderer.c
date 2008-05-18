@@ -12,7 +12,10 @@
 
 #include <clutter/clutter.h>
 #include <clutter-cairo/clutter-cairo.h>
-#include <tidy/tidy.h>
+#include <tidy/tidy-cell-renderer.h>
+#include <tidy/tidy-frame.h>
+#include <tidy/tidy-list-view.h>
+#include <tidy/tidy-stylable.h>
 
 #include <twitter-glib/twitter-glib.h>
 

@@ -79,7 +79,6 @@ PKG_CHECK_MODULES(TWEET,
                   gobject-2.0 >= glib_req_version dnl
                   json-glib-1.0 >= json_glib_req_version dnl
                   clutter-0.6 >= clutter_req_version dnl
-                  tidy-1.0 >= tidy_req_version dnl
                   gtk+-2.0 >= gtk_req_version dnl
                   clutter-gtk-0.6 >= clutter_gtk_req_version dnl
                   clutter-cairo-0.6 >= clutter_cairo_req_version)
@@ -132,6 +131,8 @@ AC_CONFIG_FILES([
         twitter-glib/Makefile
         twitter-glib/twitter-version.h
         twitter-glib/twitter-glib.pc
+        copy-and-paste/Makefile
+        copy-and-paste/tidy/Makefile
         src/Makefile
         tests/Makefile
 ])
