@@ -6,6 +6,7 @@
 #include <glib.h>
 
 #include "twitter-common.h"
+#include "twitter-marshal.h"
 #include "twitter-private.h"
 #include "twitter-status.h"
 
@@ -14,6 +15,7 @@
 struct _TwitterStatusPrivate
 {
   TwitterUser *user;
+  guint user_changed_id;
 
   gchar *source;
   gchar *created_at;
@@ -36,6 +38,15 @@ enum
   PROP_TRUNCATED
 };
 
+enum
+{
+  CHANGED,
+
+  LAST_SIGNAL
+};
+
+static guint status_signals[LAST_SIGNAL] = { 0, };
+
 G_DEFINE_TYPE (TwitterStatus, twitter_status, G_TYPE_INITIALLY_UNOWNED);
 
 static void
@@ -48,7 +59,10 @@ twitter_status_finalize (GObject *gobject)
   g_free (priv->text);
 
   if (priv->user)
-    g_object_unref (priv->user);
+    {
+      g_signal_handler_disconnect (priv->user, priv->user_changed_id);
+      g_object_unref (priv->user);
+    }
 
   G_OBJECT_CLASS (twitter_status_parent_class)->finalize (gobject);
 }
@@ -145,12 +159,28 @@ twitter_status_class_init (TwitterStatusClass *klass)
                                                          "Whether this status was truncated",
                                                          FALSE,
                                                          G_PARAM_READABLE));
+
+  status_signals[CHANGED] =
+    g_signal_new ("changed",
+                  G_TYPE_FROM_CLASS (klass),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (TwitterStatusClass, changed),
+                  NULL, NULL,
+                  _twitter_marshal_VOID__VOID,
+                  G_TYPE_NONE, 0);
 }
 
 static void
 twitter_status_init (TwitterStatus *status)
 {
   status->priv = TWITTER_STATUS_GET_PRIVATE (status);
+}
+
+static void
+user_changed_cb (TwitterUser   *user,
+                 TwitterStatus *status)
+{
+  g_signal_emit (status, status_signals[CHANGED], 0);
 }
 
 static void
@@ -163,7 +193,10 @@ twitter_status_clean (TwitterStatus *status)
   g_free (priv->text);
 
   if (priv->user)
-    g_object_unref (priv->user);
+    {
+      g_signal_handler_disconnect (priv->user, priv->user_changed_id);
+      g_object_unref (priv->user);
+    }
 }
 
 static void
@@ -184,6 +217,10 @@ twitter_status_build (TwitterStatus *status,
     {
       priv->user = twitter_user_new_from_node (member);
       g_object_ref_sink (priv->user);
+
+      priv->user_changed_id = g_signal_connect (priv->user, "changed",
+                                                G_CALLBACK (user_changed_cb),
+                                                status);
     }
 
   member = json_object_get_member (obj, "source");
