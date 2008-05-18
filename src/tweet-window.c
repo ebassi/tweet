@@ -2,6 +2,9 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
+#include <string.h>
+
 #include <glib-object.h>
 
 #include <gtk/gtk.h>
@@ -22,12 +25,16 @@
 
 struct _TweetWindowPrivate
 {
+  GtkWidget *vbox;
+  GtkWidget *entry;
   GtkWidget *canvas;
 
   TwitterClient *client;
 
   TweetConfig *config;
   TweetStatusModel *model;
+
+  guint refresh_id;
 };
 
 G_DEFINE_TYPE (TweetWindow, tweet_window, GTK_TYPE_WINDOW);
@@ -36,6 +43,12 @@ static void
 tweet_window_dispose (GObject *gobject)
 {
   TweetWindowPrivate *priv = TWEET_WINDOW (gobject)->priv;
+
+  if (priv->refresh_id)
+    {
+      g_source_remove (priv->refresh_id);
+      priv->refresh_id = 0;
+    }
 
   if (priv->client)
     {
@@ -70,6 +83,37 @@ on_status_received (TwitterClient *client,
 }
 
 static void
+on_entry_activate (GtkEntry *entry,
+                   TweetWindow *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+  gchar *status_text;
+
+  status_text = g_markup_escape_text (gtk_entry_get_text (entry), -1);
+  if (!status_text || strlen (status_text) == 0)
+    {
+      g_free (status_text);
+      return;
+    }
+
+  twitter_client_add_status (priv->client, status_text);
+
+  gtk_entry_set_text (priv->entry, "");
+
+  g_free (status_text);
+}
+
+static gboolean
+refresh_timeout (gpointer data)
+{
+  TweetWindow *window = data;
+
+  twitter_client_get_user_timeline (window->priv->client, NULL, 0, NULL);
+
+  return FALSE;
+}
+
+static void
 tweet_window_constructed (GObject *gobject)
 {
   TweetWindow *window = TWEET_WINDOW (gobject);
@@ -96,6 +140,9 @@ tweet_window_constructed (GObject *gobject)
   gtk_widget_show (GTK_WIDGET (window));
 
   twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+  priv->refresh_id = g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
+                                            refresh_timeout,
+                                            window);
 }
 
 static void
@@ -121,8 +168,19 @@ tweet_window_init (TweetWindow *window)
 
   window->priv = priv = TWEET_WINDOW_GET_PRIVATE (window);
 
+  priv->vbox = gtk_vbox_new (FALSE, 6);
+  gtk_container_add (GTK_CONTAINER (window), priv->vbox);
+  gtk_widget_show (priv->vbox);
+
+  priv->entry = gtk_entry_new ();
+  gtk_box_pack_start (GTK_BOX (priv->vbox), priv->entry, FALSE, FALSE, 0);
+  gtk_widget_show (priv->entry);
+  g_signal_connect (priv->entry, "activate",
+                    G_CALLBACK (on_entry_activate),
+                    window);
+
   priv->canvas = gtk_clutter_embed_new ();
-  gtk_container_add (GTK_CONTAINER (window), priv->canvas);
+  gtk_container_add (GTK_CONTAINER (priv->vbox), priv->canvas);
   gtk_widget_show (priv->canvas);
 
   priv->model = TWEET_STATUS_MODEL (tweet_status_model_new ());
