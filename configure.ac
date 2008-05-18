@@ -15,14 +15,14 @@ m4_define([lt_revision], [tweet_interface_age])
 m4_define([lt_age],
           [m4_eval(tweet_binary_age - tweet_interface_age)])
 
-m4_define([glib_req_version], [2.12])
-m4_define([json_glib_req_version], [0.5])
-m4_define([soup_req_version], [2.23])
+m4_define([glib_req_version], [2.16])
+m4_define([json_glib_req_version], [0.6.0])
+m4_define([soup_req_version], [2.4.1])
 m4_define([clutter_req_version], [0.6.2])
 m4_define([tidy_req_version], [0.0])
 m4_define([gtk_req_version], [2.12])
-m4_define([clutter_gtk_req_version], [0.6])
-m4_define([clutter_cairo_req_version], [0.6])
+m4_define([clutter_gtk_req_version], [0.6.0])
+m4_define([clutter_cairo_req_version], [0.6.0])
 
 AC_PREREQ([2.59])
 AC_INIT([tweet], [tweet_version], [], [tweet])
@@ -67,8 +67,10 @@ AC_SUBST(TWITTER_GLIB_LT_LDFLAGS)
 
 PKG_CHECK_MODULES(TWITTER_GLIB,
                   gobject-2.0 >= glib_req_version dnl
+                  gio-2.0 >= glib_req_version dnl
                   json-glib-1.0 >= json_glib_req_version dnl
-                  libsoup-2.4 >= soup_req_version)
+                  libsoup-2.4 >= soup_req_version dnl
+                  gdk-pixbuf-2.0)
 AC_SUBST(TWITTER_GLIB_CFLAGS)
 AC_SUBST(TWITTER_GLIB_LIBS)
 
