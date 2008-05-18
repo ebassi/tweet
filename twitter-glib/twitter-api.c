@@ -114,8 +114,7 @@ twitter_api_public_timeline (gint since_id)
   gchar *url;
 
   if (since_id > 0)
-    url = g_strdup_printf (TWITTER_API_PUBLIC_TIMELINE "?since_id=%d",
-                           since_id);
+    url = g_strdup_printf (TWITTER_API_PUBLIC_TIMELINE "?since_id=%d", since_id);
   else
     url = g_strdup (TWITTER_API_PUBLIC_TIMELINE);
 
