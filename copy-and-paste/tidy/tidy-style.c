@@ -47,7 +47,7 @@ struct _TidyStylePrivate
 
 static guint style_signals[LAST_SIGNAL] = { 0, };
 
-static const gchar *tidy_default_font_name          = "Sans 12px";
+static const gchar *tidy_default_font_name          = "Sans 10px";
 static const ClutterColor tidy_default_text_color   = { 0x00, 0x00, 0x00, 0xff };
 static const ClutterColor tidy_default_bg_color     = { 0xcc, 0xcc, 0xcc, 0xff };
 static const ClutterColor tidy_default_active_color = { 0xf5, 0x79, 0x00, 0xff };
