@@ -2,6 +2,7 @@
 #define __TWITTER_USER_H__
 
 #include <glib-object.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 #include <twitter-glib/twitter-common.h>
 
 G_BEGIN_DECLS
@@ -35,6 +36,8 @@ guint                 twitter_user_get_favorites_count   (TwitterUser *user);
 G_CONST_RETURN gchar *twitter_user_get_created_at        (TwitterUser *user);
 G_CONST_RETURN gchar *twitter_user_get_time_zone         (TwitterUser *user);
 gint                  twitter_user_get_utc_offset        (TwitterUser *user);
+
+GdkPixbuf *           twitter_user_get_profile_image     (TwitterUser *user);
 
 G_END_DECLS
 
