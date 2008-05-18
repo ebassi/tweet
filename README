@@ -17,11 +17,11 @@ own without using a web browser.
 Tweet depends on:
 
   - GLib >= 2.16
-  - JSON-GLib >= 0.5
-  - Clutter >= 0.6
-  - ClutterGtk >= 0.6
-  - ClutterCairo >= 0.6
-  - libsoup >= 2.23
+  - JSON-GLib >= 0.6
+  - Clutter >= 0.6.2
+  - ClutterGtk >= 0.6.1
+  - ClutterCairo >= 0.6.1
+  - libsoup >= 2.4.1
   - GTK+ >= 2.12
 
 Tweet is based on, and provides for third parties, a GObject-based library
