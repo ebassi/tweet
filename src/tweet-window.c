@@ -98,7 +98,7 @@ on_entry_activate (GtkEntry *entry,
 
   twitter_client_add_status (priv->client, status_text);
 
-  gtk_entry_set_text (priv->entry, "");
+  gtk_entry_set_text (entry, "");
 
   g_free (status_text);
 }
@@ -160,11 +160,11 @@ static void
 tweet_window_init (TweetWindow *window)
 {
   TweetWindowPrivate *priv;
+  GtkWidget *hbox, *button;
 
   GTK_WINDOW (window)->type = GTK_WINDOW_TOPLEVEL;
   gtk_window_set_default_size (GTK_WINDOW (window), 364, 500);
   gtk_window_set_title (GTK_WINDOW (window), "Tweet");
-  g_signal_connect (window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
 
   window->priv = priv = TWEET_WINDOW_GET_PRIVATE (window);
 
@@ -172,12 +172,24 @@ tweet_window_init (TweetWindow *window)
   gtk_container_add (GTK_CONTAINER (window), priv->vbox);
   gtk_widget_show (priv->vbox);
 
+  hbox = gtk_hbox_new (FALSE, 12);
+  gtk_box_pack_start (GTK_BOX (priv->vbox), hbox, FALSE, FALSE, 0);
+  gtk_widget_show (hbox);
+
   priv->entry = gtk_entry_new ();
-  gtk_box_pack_start (GTK_BOX (priv->vbox), priv->entry, FALSE, FALSE, 0);
+  gtk_box_pack_start (GTK_BOX (hbox), priv->entry, TRUE, TRUE, 0);
   gtk_widget_show (priv->entry);
   g_signal_connect (priv->entry, "activate",
                     G_CALLBACK (on_entry_activate),
                     window);
+
+  button = gtk_button_new ();
+  gtk_button_set_image (GTK_BUTTON (button),
+                        gtk_image_new_from_stock (GTK_STOCK_JUMP_TO,
+                                                  GTK_ICON_SIZE_BUTTON));
+  gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
+  gtk_widget_show (button);
+  g_signal_connect_swapped (button, "clicked", G_CALLBACK (gtk_widget_activate), priv->entry);
 
   priv->canvas = gtk_clutter_embed_new ();
   gtk_container_add (GTK_CONTAINER (priv->vbox), priv->canvas);
