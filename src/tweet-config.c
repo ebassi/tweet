@@ -142,7 +142,7 @@ tweet_config_class_init (TweetConfigClass *klass)
                                                       "Refresh Time",
                                                       "Refresh interval",
                                                       0, G_MAXUINT,
-                                                      30,
+                                                      300,
                                                       G_PARAM_READWRITE));
 
   config_signals[CHANGED] =
@@ -160,7 +160,7 @@ tweet_config_init (TweetConfig *config)
 {
   config->priv = TWEET_CONFIG_GET_PRIVATE (config);
 
-  config->priv->refresh_time = 30;
+  config->priv->refresh_time = 300;
 }
 
 TweetConfig *
