@@ -285,14 +285,14 @@ tidy_stylable_iface_init (TidyStylableIface *iface)
       pspec = g_param_spec_uint ("xthickness",
                                   "Vertical scroll-bar thickness",
                                   "Thickness of vertical scrollbar, in px",
-                                  0, G_MAXUINT, 32,
+                                  0, G_MAXUINT, 12,
                                   G_PARAM_READWRITE);
       tidy_stylable_iface_install_property (iface, TIDY_TYPE_SCROLL_VIEW, pspec);
 
       pspec = g_param_spec_uint ("ythickness",
                                   "Horizontal scroll-bar thickness",
                                   "Thickness of horizontal scrollbar, in px",
-                                  0, G_MAXUINT, 32,
+                                  0, G_MAXUINT, 12,
                                   G_PARAM_READWRITE);
       tidy_stylable_iface_install_property (iface, TIDY_TYPE_SCROLL_VIEW, pspec);
     }
