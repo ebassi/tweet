@@ -18,6 +18,8 @@ struct _TweetConfigPrivate
 {
   gchar *username;
   gchar *password;
+
+  guint refresh_time;
 };
 
 enum
@@ -25,7 +27,8 @@ enum
   PROP_0,
 
   PROP_USERNAME,
-  PROP_PASSWORD
+  PROP_PASSWORD,
+  PROP_REFRESH_TIME
 };
 
 enum
@@ -70,6 +73,10 @@ tweet_config_set_property (GObject      *gobject,
       tweet_config_set_password (config, g_value_get_string (value));
       break;
 
+    case PROP_REFRESH_TIME:
+      tweet_config_set_refresh_time (config, g_value_get_uint (value));
+      break;
+
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (gobject, prop_id, pspec);
       break;
@@ -92,6 +99,10 @@ tweet_config_get_property (GObject    *gobject,
 
     case PROP_PASSWORD:
       g_value_set_string (value, priv->password);
+      break;
+
+    case PROP_REFRESH_TIME:
+      g_value_set_uint (value, priv->refresh_time);
       break;
 
     default:
@@ -125,6 +136,14 @@ tweet_config_class_init (TweetConfigClass *klass)
                                                         "Password",
                                                         NULL,
                                                         G_PARAM_READWRITE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_REFRESH_TIME,
+                                   g_param_spec_uint ("refresh-time",
+                                                      "Refresh Time",
+                                                      "Refresh interval",
+                                                      0, G_MAXUINT,
+                                                      30,
+                                                      G_PARAM_READWRITE));
 
   config_signals[CHANGED] =
     g_signal_new (g_intern_static_string ("changed"),
@@ -140,6 +159,8 @@ static void
 tweet_config_init (TweetConfig *config)
 {
   config->priv = TWEET_CONFIG_GET_PRIVATE (config);
+
+  config->priv->refresh_time = 30;
 }
 
 TweetConfig *
@@ -236,6 +257,32 @@ tweet_config_get_password (TweetConfig *config)
   g_return_val_if_fail (TWEET_IS_CONFIG (config), NULL);
 
   return config->priv->password;
+}
+
+void
+tweet_config_set_refresh_time (TweetConfig *config,
+                               guint        seconds)
+{
+  TweetConfigPrivate *priv;
+
+  g_return_if_fail (TWEET_IS_CONFIG (config));
+
+  priv = config->priv;
+
+  if (priv->refresh_time != seconds)
+    {
+      priv->refresh_time = seconds;
+
+      g_object_notify (G_OBJECT (config), "refresh-time");
+    }
+}
+
+guint
+tweet_config_get_refresh_time (TweetConfig *config)
+{
+  g_return_val_if_fail (TWEET_IS_CONFIG (config), 0);
+
+  return config->priv->refresh_time;
 }
 
 void
