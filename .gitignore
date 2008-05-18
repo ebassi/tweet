@@ -28,3 +28,4 @@ stamp-*.h
 twitter-marshal.[ch]
 twitter-enum-types.[ch]
 twitter-version.h
+tweet
