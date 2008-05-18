@@ -139,6 +139,7 @@ create_cell (TwitterStatus *status,
   clutter_label_set_font_name (CLUTTER_LABEL (label), font_name);
   clutter_label_set_line_wrap (CLUTTER_LABEL (label), TRUE);
   clutter_label_set_text (CLUTTER_LABEL (label), twitter_status_get_text (status));
+  clutter_label_set_use_markup (CLUTTER_LABEL (label), TRUE);
   clutter_container_add_actor (CLUTTER_CONTAINER (base), label);
   clutter_actor_set_position (label, TEXT_X, TEXT_Y + user_label_height);
   clutter_actor_set_width (label, 230);
