@@ -19,6 +19,17 @@ static TweetApp *default_app = NULL;
 G_DEFINE_TYPE (TweetApp, tweet_app, G_TYPE_OBJECT);
 
 static void
+on_window_destroy (GtkWidget *widget,
+                   TweetApp  *app)
+{
+  app->main_window = NULL;
+
+  tweet_config_save (app->config);
+
+  gtk_main_quit ();
+}
+
+static void
 tweet_app_class_init (TweetAppClass *klass)
 {
 }
@@ -27,7 +38,11 @@ static void
 tweet_app_init (TweetApp *app)
 {
   app->config = tweet_config_get_default ();
+
   app->main_window = tweet_window_new ();
+  g_signal_connect (app->main_window, "destroy",
+                    G_CALLBACK (on_window_destroy),
+                    app);
 }
 
 TweetApp *
