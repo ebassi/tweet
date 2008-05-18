@@ -66,10 +66,6 @@ on_status_received (TwitterClient *client,
       return;
     }
 
-  g_print ("Received status [%u] from user %s\n",
-           twitter_status_get_id (status),
-           twitter_user_get_screen_name (twitter_status_get_user (status)));
-
   tweet_status_model_append_status (window->priv->model, status);
 }
 
