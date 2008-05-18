@@ -29,6 +29,8 @@ struct _TwitterUserClass
 {
   /*< private >*/
   GInitiallyUnownedClass parent_class;
+
+  void (* changed) (TwitterUser *user);
 };
 
 /* TwitterStatus */
@@ -53,6 +55,8 @@ struct _TwitterStatus
 struct _TwitterStatusClass
 {
   GInitiallyUnownedClass parent_class;
+
+  void (* changed) (TwitterStatus);
 };
 
 /**

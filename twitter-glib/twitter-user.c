@@ -10,7 +10,16 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <errno.h>
+
+#include <gio/gio.h>
+
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
+#include <libsoup/soup.h>
+
 #include "twitter-common.h"
+#include "twitter-marshal.h"
 #include "twitter-private.h"
 #include "twitter-user.h"
 
@@ -39,6 +48,12 @@ struct _TwitterUserPrivate
   guint following : 1;
 
   TwitterStatus *status;
+
+  GdkPixbuf *profile_image;
+
+  guint profile_image_load : 1;
+
+  SoupSession *async_session;
 };
 
 enum
@@ -64,6 +79,15 @@ enum
   PROP_UTC_OFFSET
 };
 
+enum
+{
+  CHANGED,
+
+  LAST_SIGNAL
+};
+
+static guint user_signals[LAST_SIGNAL] = { 0, };
+
 G_DEFINE_TYPE (TwitterUser, twitter_user, G_TYPE_INITIALLY_UNOWNED);
 
 static void
@@ -79,6 +103,33 @@ twitter_user_finalize (GObject *gobject)
   g_free (priv->profile_image_url);
   g_free (priv->created_at);
   g_free (priv->time_zone);
+
+  G_OBJECT_CLASS (twitter_user_parent_class)->finalize (gobject);
+}
+
+static void
+twitter_user_dispose (GObject *gobject)
+{
+  TwitterUserPrivate *priv = TWITTER_USER (gobject)->priv;
+
+  if (priv->status)
+    {
+      g_object_unref (priv->status);
+      priv->status = NULL;
+    }
+
+  if (priv->profile_image)
+    {
+      g_object_unref (priv->profile_image);
+      priv->profile_image = NULL;
+    }
+
+  if (priv->async_session)
+    {
+      soup_session_abort (priv->async_session);
+      g_object_unref (priv->async_session);
+      priv->async_session = NULL;
+    }
 
   G_OBJECT_CLASS (twitter_user_parent_class)->finalize (gobject);
 }
@@ -172,6 +223,7 @@ twitter_user_class_init (TwitterUserClass *klass)
 
   gobject_class->get_property = twitter_user_get_property;
   gobject_class->finalize = twitter_user_finalize;
+  gobject_class->dispose = twitter_user_dispose;
 
   g_object_class_install_property (gobject_class,
                                    PROP_NAME,
@@ -292,6 +344,15 @@ twitter_user_class_init (TwitterUserClass *klass)
                                                      "The offset of the time zone of the user from UTC",
                                                      G_MININT, G_MAXINT, 0,
                                                      G_PARAM_READABLE));
+
+  user_signals[CHANGED] =
+    g_signal_new ("changed",
+                  G_TYPE_FROM_CLASS (gobject_class),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (TwitterUserClass, changed),
+                  NULL, NULL,
+                  _twitter_marshal_VOID__VOID,
+                  G_TYPE_NONE, 0);
 }
 
 static void
@@ -524,6 +585,278 @@ twitter_user_get_profile_image_url (TwitterUser *user)
   g_return_val_if_fail (TWITTER_IS_USER (user), NULL);
 
   return user->priv->profile_image_url;
+}
+
+typedef struct {
+  TwitterUser *user;
+  GFile *profile_image_file;
+  SoupSession *async_session;
+} GetProfileImageClosure;
+
+static void
+get_profile_image_vfs (GObject      *source_object,
+                       GAsyncResult *res,
+                       gpointer      data)
+{
+  GFile *file = G_FILE (source_object);
+  GetProfileImageClosure *closure = data;
+  TwitterUser *user = closure->user;
+  GError *error;
+  gchar *contents = NULL;
+  gsize len;
+  gchar *etags = NULL;
+  GdkPixbufLoader *loader;
+
+  error = NULL;
+  g_file_load_contents_finish (file, res, &contents, &len, &etags, &error);
+  if (error)
+    {
+      g_warning ("Unable to retrieve the contents for `%s': %s",
+                 user->priv->profile_image_url,
+                 error->message);
+      g_error_free (error);
+      goto out;
+    }
+
+  loader = gdk_pixbuf_loader_new ();
+  if (!gdk_pixbuf_loader_write (loader, (const guchar *) contents, len, &error))
+    {
+      if (error)
+        {
+          g_warning ("Unable to load the pixbuf: %s", error->message);
+          g_error_free (error);
+        }
+
+      g_object_unref (loader);
+      g_free (contents);
+      g_free (etags);
+
+      goto out;
+    }
+
+  gdk_pixbuf_loader_close (loader, &error);
+  if (error)
+    {
+      g_warning ("Unable to close the pixbuf loader: %s", error->message);
+      g_error_free (error);
+    }
+  else
+    {
+#if 0
+      /* FIXME - remove with http support for GVFS */
+      gchar *user_sha1;
+      gchar *cache_dir;
+      gchar *cached_profile;
+
+      user_sha1 = g_compute_checksum_for_string (G_CHECKSUM_SHA1,
+                                                 user->priv->profile_image_url,
+                                                 -1);
+      cache_dir = g_build_filename (g_get_user_cache_dir (),
+                                    "twitter-glib",
+                                    "profile_images",
+                                    NULL);
+
+      if (g_mkdir_with_parents (cache_dir, 0700) == -1)
+        {
+          if (errno != EEXIST)
+            {
+              g_warning ("Unable to create the profile image cache: %s",
+                         g_strerror (errno));
+              g_object_unref (loader);
+              g_free (contents);
+              g_free (etags);
+              goto out;
+            }
+        }
+
+      cached_profile = g_build_filename (cache_dir, user_sha1, NULL);
+      g_file_set_contents (cached_profile, contents, len, NULL);
+
+      g_free (cached_profile);
+      g_free (cache_dir);
+      g_free (user_sha1);
+#endif
+    }
+
+  user->priv->profile_image = gdk_pixbuf_loader_get_pixbuf (loader);
+  if (user->priv->profile_image)
+    g_object_ref (user->priv->profile_image);
+
+  g_object_unref (loader);
+
+  g_free (contents);
+  g_free (etags);
+
+  g_signal_emit (user, user_signals[CHANGED], 0);
+
+out:
+  user->priv->profile_image_load = FALSE;
+
+  g_object_unref (closure->profile_image_file);
+  g_object_unref (closure->user);
+  g_free (closure);
+}
+
+static void
+get_profile_image_soup (SoupSession *session,
+                        SoupMessage *msg,
+                        gpointer     data)
+{
+  GetProfileImageClosure *closure = data;
+  TwitterUser *user = closure->user;
+  GdkPixbufLoader *loader;
+  GError *error = NULL;
+
+  if (!SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
+    {
+      g_warning ("Unable to retrieve the contents for `%s': %s",
+                 user->priv->profile_image_url,
+                 msg->reason_phrase);
+      goto out;
+    }
+
+  loader = gdk_pixbuf_loader_new ();
+
+  if (!gdk_pixbuf_loader_write (loader,
+                                (const guchar *) msg->response_body->data,
+                                msg->response_body->length,
+                                &error))
+    {
+      if (error)
+        {
+          g_warning ("Unable to load the pixbuf: %s", error->message);
+          g_error_free (error);
+        }
+
+      g_object_unref (loader);
+      goto out;
+    }
+
+  gdk_pixbuf_loader_close (loader, &error);
+  if (error)
+    {
+      g_warning ("Unable to close the pixbuf loader: %s", error->message);
+      g_error_free (error);
+      g_object_unref (loader);
+    }
+  else
+    {
+      gchar *user_sha1;
+      gchar *cache_dir;
+      gchar *cached_profile;
+
+      user_sha1 = g_compute_checksum_for_string (G_CHECKSUM_SHA1,
+                                                 user->priv->profile_image_url,
+                                                 -1);
+      cache_dir = g_build_filename (g_get_user_cache_dir (),
+                                    "twitter-glib",
+                                    "profile_images",
+                                    NULL);
+
+      if (g_mkdir_with_parents (cache_dir, 0700) == -1)
+        {
+          if (errno != EEXIST)
+            {
+              g_warning ("Unable to create the profile image cache: %s",
+                         g_strerror (errno));
+              g_object_unref (loader);
+              goto out;
+            }
+        }
+
+      cached_profile = g_build_filename (cache_dir, user_sha1, NULL);
+      g_file_set_contents (cached_profile,
+                           msg->response_body->data,
+                           msg->response_body->length,
+                           NULL);
+
+      g_free (cached_profile);
+      g_free (cache_dir);
+      g_free (user_sha1);
+    }
+
+  user->priv->profile_image = gdk_pixbuf_loader_get_pixbuf (loader);
+  if (user->priv->profile_image)
+    g_object_ref (user->priv->profile_image);
+
+  g_object_unref (loader);
+
+  g_signal_emit (user, user_signals[CHANGED], 0);
+
+out:
+  user->priv->profile_image_load = FALSE;
+
+  g_object_unref (closure->user);
+  g_free (closure);
+}
+
+GdkPixbuf *
+twitter_user_get_profile_image (TwitterUser *user)
+{
+  TwitterUserPrivate *priv;
+  GetProfileImageClosure *closure;
+  gchar *user_sha1, *cached_profile;
+
+  g_return_val_if_fail (TWITTER_IS_USER (user), NULL);
+
+  priv = user->priv;
+
+  if (!priv->profile_image_url)
+    return NULL;
+
+  if (priv->profile_image)
+    return priv->profile_image;
+
+  if (priv->profile_image_load)
+    return NULL;
+
+  priv->profile_image_load = TRUE;
+
+  user_sha1 = g_compute_checksum_for_string (G_CHECKSUM_SHA1,
+                                             priv->profile_image_url,
+                                             -1);
+  cached_profile = g_build_filename (g_get_user_cache_dir (),
+                                     "twitter-glib",
+                                     "profile_images",
+                                     user_sha1,
+                                     NULL);
+
+  closure = g_new0 (GetProfileImageClosure, 1);
+  closure->user = g_object_ref (user);
+
+  if (g_file_test (cached_profile, G_FILE_TEST_EXISTS))
+    {
+      gchar *profile_image_uri;
+
+      profile_image_uri = g_filename_to_uri (cached_profile, NULL, NULL);
+
+      closure->profile_image_file = g_file_new_for_uri (profile_image_uri);
+
+      g_file_load_contents_async (closure->profile_image_file,
+                                  NULL,
+                                  get_profile_image_vfs,
+                                  closure);
+
+      g_free (profile_image_uri);
+    }
+  else
+    {
+      SoupMessage *msg;
+
+      if (!priv->async_session)
+        priv->async_session = soup_session_async_new ();
+
+      msg = soup_message_new (SOUP_METHOD_GET, priv->profile_image_url);
+
+      soup_session_queue_message (priv->async_session, msg,
+                                  get_profile_image_soup,
+                                  closure);
+    }
+
+  g_free (user_sha1);
+  g_free (cached_profile);
+
+  return NULL;
 }
 
 guint
