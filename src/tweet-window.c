@@ -100,7 +100,7 @@ on_status_received (TwitterClient *client,
                        (ClutterEffectCompleteFunc) clutter_actor_hide,
                        NULL);
 
-  tweet_status_model_append_status (window->priv->status_model, status);
+  tweet_status_model_prepend_status (window->priv->status_model, status);
 }
 
 static void
