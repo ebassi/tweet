@@ -116,7 +116,7 @@ twitter_timeline_build (TwitterTimeline *timeline,
         }
     }
 
-  priv->status_list = g_list_reverse (status_list);
+  priv->status_list = status_list;
 }
 
 TwitterTimeline *
