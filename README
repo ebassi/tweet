@@ -28,6 +28,24 @@ Tweet is based on, and provides for third parties, a GObject-based library
 for reading and updating the Twitter status; the library is installed and
 it is available so that other applications can integrate with it.
 
+INSTALLATION
+------------
+Se the INSTALL file. Until a login dialog is added, in order to run Tweet
+you need to create a tweet.json file in:
+
+  $HOME/.config/tweet/tweet.json
+
+containing your username and password for accessing. The format is JSON,
+and looks like:
+
+  {
+    "username" : "your-username",
+    "password" : "your-password"
+  }
+
+change "your-username" with your username and "your-password" with your
+password.
+
 Tweet is released under the terms of the GNU General Public License,
 version 2 or, at your option, any later version.
 
