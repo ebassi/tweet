@@ -31,6 +31,8 @@ libtweet_ui_la_SOURCES = \
 	tweet-app.h \
 	tweet-config.c \
 	tweet-config.h \
+	tweet-spinner.c \
+	tweet-spinner.h \
 	tweet-status-column.c \
 	tweet-status-column.h \
 	tweet-status-model.c \
@@ -39,6 +41,8 @@ libtweet_ui_la_SOURCES = \
 	tweet-status-renderer.h \
 	tweet-status-view.c \
 	tweet-status-view.h \
+	tweet-utils.c \
+	tweet-utils.h \
 	tweet-window.c \
 	tweet-window.h \
 	$(NULL)
