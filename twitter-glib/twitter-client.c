@@ -496,7 +496,7 @@ emit_user_received (TwitterClient   *client,
   closure->n_users = count;
   closure->current_user = 0;
 
-  g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+  g_idle_add_full (G_PRIORITY_DEFAULT_IDLE + 30,
                    do_emit_user_received,
                    closure,
                    cleanup_emit_user_received);
@@ -667,7 +667,7 @@ emit_status_received (TwitterClient   *client,
   closure->n_status = count;
   closure->current_status = 0;
 
-  g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+  g_idle_add_full (G_PRIORITY_DEFAULT_IDLE + 30,
                    do_emit_status_received,
                    closure,
                    cleanup_emit_status_received);
