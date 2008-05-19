@@ -734,6 +734,19 @@ tweet_status_model_append_status (TweetStatusModel *model,
 }
 
 void
+tweet_status_model_prepend_status (TweetStatusModel *model,
+                                   TwitterStatus    *status)
+{
+  g_return_if_fail (TWEET_IS_STATUS_MODEL (model));
+  g_return_if_fail (TWITTER_IS_STATUS (status));
+
+  clutter_model_prepend (CLUTTER_MODEL (model), 0, status, -1);
+  g_signal_connect (status, "changed",
+                    G_CALLBACK (status_changed_cb),
+                    model);
+}
+
+void
 tweet_status_model_set_max_size (TweetStatusModel *model,
                                  gint              max_size)
 {

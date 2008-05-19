@@ -31,11 +31,13 @@ struct _TweetStatusModelClass
 
 GType tweet_status_model_get_type (void);
 
-ClutterModel *tweet_status_model_new           (void);
-void          tweet_status_model_append_status (TweetStatusModel *model,
-                                                TwitterStatus    *status);
-void          tweet_status_model_set_max_size  (TweetStatusModel *model,
-                                                gint              max_size);
+ClutterModel *tweet_status_model_new            (void);
+void          tweet_status_model_append_status  (TweetStatusModel *model,
+                                                 TwitterStatus    *status);
+void          tweet_status_model_prepend_status (TweetStatusModel *model,
+                                                 TwitterStatus    *status);
+void          tweet_status_model_set_max_size   (TweetStatusModel *model,
+                                                 gint              max_size);
 
 G_END_DECLS
 
