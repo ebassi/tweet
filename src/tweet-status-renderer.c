@@ -20,6 +20,7 @@
 #include <twitter-glib/twitter-glib.h>
 
 #include "tweet-status-renderer.h"
+#include "tweet-utils.h"
 
 #define ICON_WIDTH      48
 #define ICON_HEIGHT     48
@@ -31,7 +32,7 @@
 #define DEFAULT_HEIGHT  (96 + (2 * V_PADDING))
 
 #define ICON_X          (H_PADDING)
-#define ICON_Y          (V_PADDING)
+#define ICON_Y          (V_PADDING + 24)
 
 #define TEXT_X          (ICON_WIDTH + (2 * H_PADDING))
 #define TEXT_Y          (V_PADDING)
@@ -98,16 +99,7 @@ create_cell (TwitterStatus *status,
   /* icon */
   pixbuf = twitter_user_get_profile_image (user);
   if (pixbuf)
-    {
-      icon = clutter_texture_new ();
-      clutter_texture_set_from_rgb_data (CLUTTER_TEXTURE (icon),
-                                         gdk_pixbuf_get_pixels (pixbuf),
-                                         gdk_pixbuf_get_has_alpha (pixbuf),
-                                         gdk_pixbuf_get_width (pixbuf),
-                                         gdk_pixbuf_get_height (pixbuf),
-                                         gdk_pixbuf_get_rowstride (pixbuf),
-                                         4, 0, NULL);
-    }
+    icon = tweet_texture_new_from_pixbuf (pixbuf);
   else
     {
       icon = clutter_rectangle_new ();
