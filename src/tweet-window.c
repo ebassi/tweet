@@ -188,12 +188,10 @@ tweet_window_constructed (GObject *gobject)
 
   twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
 
-#if 0
   priv->refresh_id =
     g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
                            refresh_timeout,
                            window);
-#endif
 }
 
 static void
