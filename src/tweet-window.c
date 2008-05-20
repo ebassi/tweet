@@ -214,7 +214,7 @@ tweet_window_style_set (GtkWidget *widget,
   ClutterColor bg_color = { 0, };
   gchar *font_name;
 
-  tweet_widget_get_fg_color (priv->canvas, GTK_STATE_SELECTED, &active_color);
+  tweet_widget_get_base_color (widget, GTK_STATE_SELECTED, &active_color);
   tweet_widget_get_text_color (widget, GTK_STATE_NORMAL, &text_color);
   tweet_widget_get_bg_color (widget, GTK_STATE_NORMAL, &bg_color);
 
