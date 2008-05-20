@@ -30,6 +30,8 @@ ClutterActor *tweet_texture_new_from_icon_name (GtkWidget   *widget,
                                                 const gchar *icon_name,
                                                 GtkIconSize  size);
 
+gchar *tweet_format_time_for_display (GTimeVal *time_);
+
 G_END_DECLS
 
 #endif /* __TWEET_UTILS_H__ */
