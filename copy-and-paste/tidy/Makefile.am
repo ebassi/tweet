@@ -24,7 +24,6 @@ noinst_LTLIBRARIES = libtidy.la
 
 source_h = \
 	$(top_srcdir)/copy-and-paste/tidy/tidy-actor.h 		\
-	$(top_srcdir)/copy-and-paste/tidy/tidy-button.h 	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-adjustment.h	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-cell-renderer.h 	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-finger-scroll.h	\
@@ -47,7 +46,6 @@ source_h_private = \
 
 source_c = \
 	tidy-actor.c \
-	tidy-button.c \
 	tidy-adjustment.c \
 	tidy-cell-renderer.c \
 	tidy-finger-scroll.c \
