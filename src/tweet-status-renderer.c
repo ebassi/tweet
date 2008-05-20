@@ -114,11 +114,6 @@ create_cell (TwitterStatus *status,
 
   twitter_date_to_time_val (twitter_status_get_created_at (status), &timeval);
 
-  g_debug ("%s: created at: %s (time_t: %ld)",
-           G_STRLOC,
-           twitter_status_get_created_at (status),
-           timeval.tv_sec);
-
   created_at = tweet_format_time_for_display (&timeval);
   text = g_strdup_printf ("<b>%s</b> %s <small>%s</small>",
                           twitter_user_get_screen_name (user),
