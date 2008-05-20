@@ -85,22 +85,32 @@ static void
 on_status_received (TwitterClient *client,
                     TwitterStatus *status,
                     const GError  *error,
-                    gpointer       user_data)
+                    TweetWindow   *window)
 {
-  TweetWindow *window = user_data;
+  TweetWindowPrivate *priv = window->priv;
 
   if (error)
     {
+      tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
+      clutter_effect_fade (priv->spin_tmpl, priv->spinner, 0,
+                           (ClutterEffectCompleteFunc) clutter_actor_hide,
+                           NULL);
       g_warning ("Unable to retrieve status from Twitter: %s", error->message);
-      return;
     }
+  else
+    tweet_status_model_prepend_status (window->priv->status_model, status);
+}
 
-  tweet_spinner_stop (TWEET_SPINNER (window->priv->spinner));
-  clutter_effect_fade (window->priv->spin_tmpl, window->priv->spinner, 0,
+static void
+on_timeline_complete (TwitterClient *client,
+                      TweetWindow   *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+
+  tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
+  clutter_effect_fade (priv->spin_tmpl, priv->spinner, 0,
                        (ClutterEffectCompleteFunc) clutter_actor_hide,
                        NULL);
-
-  tweet_status_model_prepend_status (window->priv->status_model, status);
 }
 
 static void
@@ -144,7 +154,7 @@ refresh_timeout (gpointer data)
 
   twitter_client_get_user_timeline (window->priv->client, NULL, 0, NULL);
 
-  return FALSE;
+  return TRUE;
 }
 
 static void
@@ -204,7 +214,7 @@ tweet_window_style_set (GtkWidget *widget,
   ClutterColor bg_color = { 0, };
   gchar *font_name;
 
-  tweet_widget_get_fg_color (widget, GTK_STATE_ACTIVE, &active_color);
+  tweet_widget_get_fg_color (priv->canvas, GTK_STATE_SELECTED, &active_color);
   tweet_widget_get_text_color (widget, GTK_STATE_NORMAL, &text_color);
   tweet_widget_get_bg_color (widget, GTK_STATE_NORMAL, &bg_color);
 
@@ -288,6 +298,9 @@ tweet_window_init (TweetWindow *window)
                                               tweet_config_get_password (priv->config));
   g_signal_connect (priv->client,
                     "status-received", G_CALLBACK (on_status_received),
+                    window);
+  g_signal_connect (priv->client,
+                    "timeline-complete", G_CALLBACK (on_timeline_complete),
                     window);
 }
 
