@@ -47,6 +47,7 @@ tweet_widget_get_component (GtkWidget    *widget,
   color->red   = CLAMP (((gtk_color.red   / 65535.0) * 255), 0, 255);
   color->green = CLAMP (((gtk_color.green / 65535.0) * 255), 0, 255);
   color->blue  = CLAMP (((gtk_color.blue  / 65535.0) * 255), 0, 255);
+  color->alpha = 255;
 }
 
 void
