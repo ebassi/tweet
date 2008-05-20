@@ -100,6 +100,7 @@ enum
   AUTHENTICATE,
   STATUS_RECEIVED,
   USER_RECEIVED,
+  TIMELINE_COMPLETE,
 
   LAST_SIGNAL
 };
@@ -230,6 +231,14 @@ twitter_client_class_init (TwitterClientClass *klass)
                   G_TYPE_NONE, 2,
                   TWITTER_TYPE_STATUS,
                   G_TYPE_POINTER);
+  client_signals[TIMELINE_COMPLETE] =
+    g_signal_new (I_("timeline-complete"),
+                  G_TYPE_FROM_CLASS (gobject_class),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (TwitterClientClass, timeline_complete),
+                  NULL, NULL,
+                  _twitter_marshal_VOID__VOID,
+                  G_TYPE_NONE, 0);
 }
 
 static void
@@ -636,7 +645,10 @@ do_emit_status_received (gpointer data)
   closure->current_status += 1;
 
   if (closure->current_status == closure->n_status)
-    return FALSE;
+    {
+      g_signal_emit (closure->client, client_signals[TIMELINE_COMPLETE], 0);
+      return FALSE;
+    }
 
   return TRUE;
 }

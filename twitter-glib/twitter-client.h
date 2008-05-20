@@ -96,6 +96,8 @@ struct _TwitterClientClass
                                   TwitterUser      *user,
                                   const GError     *error);
 
+  void     (* timeline_complete) (TwitterClient    *client);
+
   /*< private >*/
   /* padding, for future expansion */
   void     (* _twitter_padding1) (void);
