@@ -32,7 +32,6 @@
 #include "tidy-stylable.h"
 #include "tidy-enum-types.h"
 #include "tidy-frame.h"
-#include "tidy-button.h"
 #include "tidy-private.h"
 
 static void tidy_stylable_iface_init (TidyStylableIface *iface);
@@ -145,6 +144,25 @@ tidy_scroll_bar_request_coords (ClutterActor    *actor,
     adjustment_changed_cb (priv->adjustment, TIDY_SCROLL_BAR (actor));
 }
 
+static void
+on_style_change (TidyStyle     *style,
+                 TidyScrollBar *bar)
+{
+  TidyScrollBarPrivate *priv = bar->priv;
+
+  if (CLUTTER_IS_RECTANGLE (priv->handle))
+    {
+      ClutterColor *color = NULL;
+
+      tidy_stylable_get (TIDY_STYLABLE (bar), "active-color", &color, NULL);
+      if (color)
+        {
+          clutter_rectangle_set_color (CLUTTER_RECTANGLE (priv->handle), color);
+          clutter_color_free (color);
+        }
+    }
+}
+
 static GObject*
 tidy_scroll_bar_constructor (GType                  type,
                              guint                  n_construct_properties,
@@ -166,7 +184,6 @@ tidy_scroll_bar_constructor (GType                  type,
       ClutterColor *color;
       ClutterActor *rect = clutter_rectangle_new ();
   
-      /* TODO: Hook onto a style-changed signal */
       tidy_stylable_get (TIDY_STYLABLE (bar), "active-color", &color, NULL);
       if (color)
         {
@@ -176,6 +193,10 @@ tidy_scroll_bar_constructor (GType                  type,
 
       tidy_scroll_bar_set_handle (bar, rect);
     }
+
+  g_signal_connect (tidy_stylable_get_style (TIDY_STYLABLE (bar)),
+                    "changed", G_CALLBACK (on_style_change),
+                    bar);
 
   return obj;
 }
@@ -536,7 +557,7 @@ tidy_scroll_bar_set_handle (TidyScrollBar *bar,
   if (priv->handle)
     {
       clutter_actor_query_coords (priv->handle, &box);
-      
+
       g_signal_handlers_disconnect_by_func(priv->handle, 
                                            G_CALLBACK (button_press_event_cb),
                                            bar);
