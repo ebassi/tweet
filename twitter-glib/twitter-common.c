@@ -77,7 +77,12 @@ twitter_http_date_to_time_t (const gchar *date)
   SoupDate *soup_date;
   time_t retval;
 
+  g_return_val_if_fail (date != NULL, (time_t) -1);
+
   soup_date = soup_date_new_from_string (date);
+  if (!soup_date)
+    return (time_t) -1;
+
   retval = soup_date_to_time_t (soup_date);
   soup_date_free (soup_date);
 
@@ -96,4 +101,47 @@ twitter_http_date_to_delta (const gchar *date)
   time (&now);
 
   return (now - res);
+}
+
+gboolean
+twitter_date_to_time_val (const gchar *date,
+                          GTimeVal    *time_)
+{
+  time_t res;
+  SoupDate *soup_date;
+
+  g_return_val_if_fail (date != NULL, FALSE);
+  g_return_val_if_fail (time_ != NULL, FALSE);
+
+  soup_date = soup_date_new_from_string (date);
+  if (soup_date)
+    {
+      res = soup_date_to_time_t (soup_date);
+      soup_date_free (soup_date);
+
+      time_->tv_sec = res;
+      time_->tv_usec = 0;
+
+      return TRUE;
+    }
+
+#ifdef HAVE_STRPTIME
+  {
+    struct tm tmp;
+
+    /* OMFG, what are they? insane? */
+    strptime (date, "%a %b %d %T %z %Y", &tmp);
+
+    res = mktime (&tmp);
+    if (res != 0)
+      {
+        time_->tv_sec = res;
+        time_->tv_usec = 0;
+
+        return TRUE;
+      }
+  }
+#endif /* HAVE_STRPTIME */
+
+  return FALSE;
 }

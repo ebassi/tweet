@@ -90,10 +90,13 @@ GQuark twitter_error_quark (void);
 
 TwitterError twitter_error_from_status (guint status);
 
-gchar *twitter_http_date_from_time_t (time_t       time_);
-gchar *twitter_http_date_from_delta  (gint         seconds);
-time_t twitter_http_date_to_time_t   (const gchar *date);
-gint   twitter_http_date_to_delta    (const gchar *date);
+gchar *  twitter_http_date_from_time_t (time_t       time_);
+gchar *  twitter_http_date_from_delta  (gint         seconds);
+time_t   twitter_http_date_to_time_t   (const gchar *date);
+gint     twitter_http_date_to_delta    (const gchar *date);
+
+gboolean twitter_date_to_time_val      (const gchar *date,
+                                        GTimeVal    *time_);
 
 G_END_DECLS
 
