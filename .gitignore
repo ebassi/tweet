@@ -31,4 +31,5 @@ twitter-version.h
 tweet
 copy-and-paste/tidy/tidy-enum-types.[ch]
 copy-and-paste/tidy/tidy-marshal.[ch]
-
+src/tweet-enum-types.[ch]
+.*.swp
