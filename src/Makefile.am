@@ -26,11 +26,51 @@ common_ldadd = \
 noinst_LTLIBRARIES = libtweet-ui.la
 bin_PROGRAMS = tweet
 
+tweet_h = \
+	tweet-animation.h \
+	tweet-app.h \
+	tweet-config.h \
+	tweet-interval.h \
+	tweet-spinner.h \
+	tweet-status-column.h \
+	tweet-status-model.h \
+	tweet-status-renderer.h \
+	tweet-status-view.h \
+	tweet-utils.h \
+	tweet-window.h \
+	$(NULL)
+
+tweet-enum-types.h: stamp-tweet-enum-types.h
+	@true
+stamp-tweet-enum-types.h: $(tweet_h) Makefile
+	( cd $(top_srcdir)/src && \
+	  $(GLIB_MKENUMS) \
+		--template $(top_srcdir)/src/tweet-enum-types.h.in \
+	  $(tweet_h) ) > xgen-ceth \
+	&& (cmp xgen-ceth tweet-enum-types.h || cp xgen-ceth tweet-enum-types.h) \
+	&& rm -f xgen-ceth \
+	&& echo timestamp > $(@F)
+
+tweet-enum-types.c: tweet-enum-types.h
+	( cd $(top_srcdir)/src && \
+	  $(GLIB_MKENUMS) \
+		--template $(top_srcdir)/src/tweet-enum-types.c.in \
+	  $(tweet_h) ) > xgen-cetc \
+	&& cp xgen-cetc tweet-enum-types.c \
+	&& rm -f xgen-cetc
+
+BUILT_SOURCES = tweet-enum-types.h tweet-enum-types.c
+
 libtweet_ui_la_SOURCES = \
+	tweet-animation.c \
 	tweet-app.c \
 	tweet-app.h \
 	tweet-config.c \
 	tweet-config.h \
+	tweet-enum-types.c \
+	tweet-enum-types.h \
+	tweet-interval.c \
+	tweet-interval.h \
 	tweet-spinner.c \
 	tweet-spinner.h \
 	tweet-status-column.c \
@@ -52,3 +92,7 @@ libtweet_ui_la_LIBADD = $(common_ldadd)
 tweet_SOURCES = tweet-main.c
 tweet_CFLAGS = $(common_cflags)
 tweet_LDADD = $(common_ldadd) libtweet-ui.la
+
+CLEANFILES = stamp-tweet-enum-types.h
+
+EXTRA_DIST = tweet-enum-types.c.in tweet-enum-types.h.in
