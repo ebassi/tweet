@@ -53,10 +53,9 @@ create_cell (TwitterStatus *status,
   cairo_t *cr;
   ClutterColor bg_color = { 162, 162, 162, 0xcc };
   ClutterColor text_color = { 0xee, 0xee, 0xee, 255 };
-  ClutterColor user_color = { 255, 255, 255, 255 };
   TwitterUser *user;
-  gchar *display_name;
-  guint user_label_height;
+  gchar *text, *created_at, *escaped;
+  GTimeVal timeval = { 0, };
   GdkPixbuf *pixbuf = NULL;
 
   if (width < 0)
@@ -111,45 +110,35 @@ create_cell (TwitterStatus *status,
   clutter_actor_set_position (icon, ICON_X, ICON_Y);
   clutter_actor_show (icon);
 
-  /* user name */
-  display_name = g_strdup_printf ("from <b>%s</b>:", twitter_user_get_screen_name (user));
+  escaped = g_markup_escape_text (twitter_status_get_text (status), -1);
+
+  twitter_date_to_time_val (twitter_status_get_created_at (status), &timeval);
+
+  g_debug ("%s: created at: %s (time_t: %ld)",
+           G_STRLOC,
+           twitter_status_get_created_at (status),
+           timeval.tv_sec);
+
+  created_at = tweet_format_time_for_display (&timeval);
+  text = g_strdup_printf ("<b>%s</b> %s <small>%s</small>",
+                          twitter_user_get_screen_name (user),
+                          escaped,
+                          created_at);
+  g_free (created_at);
+  g_free (escaped);
+
   label = clutter_label_new ();
-  clutter_label_set_color (CLUTTER_LABEL (label), &user_color);
+  clutter_label_set_color (CLUTTER_LABEL (label), &text_color);
   clutter_label_set_font_name (CLUTTER_LABEL (label), font_name);
-  clutter_label_set_text (CLUTTER_LABEL (label), display_name);
+  clutter_label_set_line_wrap (CLUTTER_LABEL (label), TRUE);
+  clutter_label_set_text (CLUTTER_LABEL (label), text);
   clutter_label_set_use_markup (CLUTTER_LABEL (label), TRUE);
   clutter_container_add_actor (CLUTTER_CONTAINER (base), label);
   clutter_actor_set_position (label, TEXT_X, TEXT_Y);
-  user_label_height = clutter_actor_get_height (label);
-  clutter_actor_set_width (label, 230);
-  clutter_actor_show (label);
-  g_free (display_name);
-
-  /* status text */
-  label = clutter_label_new ();
-  clutter_label_set_color (CLUTTER_LABEL (label), &text_color);
-  clutter_label_set_font_name (CLUTTER_LABEL (label), font_name);
-  clutter_label_set_line_wrap (CLUTTER_LABEL (label), TRUE);
-  clutter_label_set_text (CLUTTER_LABEL (label), twitter_status_get_text (status));
-  clutter_label_set_use_markup (CLUTTER_LABEL (label), TRUE);
-  clutter_container_add_actor (CLUTTER_CONTAINER (base), label);
-  clutter_actor_set_position (label, TEXT_X, TEXT_Y + user_label_height);
   clutter_actor_set_width (label, 230);
   clutter_actor_show (label);
 
-#if 0
-  /* created at */
-  label = clutter_label_new ();
-  clutter_label_set_color (CLUTTER_LABEL (label), &text_color);
-  clutter_label_set_font_name (CLUTTER_LABEL (label), font_name);
-  clutter_label_set_line_wrap (CLUTTER_LABEL (label), TRUE);
-  clutter_label_set_text (CLUTTER_LABEL (label), twitter_status_get_created_at (status));
-  clutter_container_add_actor (CLUTTER_CONTAINER (base), label);
-  clutter_actor_set_position (label, TEXT_X,
-                              DEFAULT_HEIGHT - clutter_actor_get_height (label));
-  clutter_actor_set_width (label, 230);
-  clutter_actor_show (label);
-#endif
+  g_free (text);
 
   return base;
 }
