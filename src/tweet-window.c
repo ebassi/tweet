@@ -17,6 +17,7 @@
 
 #include <twitter-glib/twitter-glib.h>
 
+#include "tweet-animation.h"
 #include "tweet-config.h"
 #include "tweet-spinner.h"
 #include "tweet-status-model.h"
@@ -31,8 +32,6 @@ struct _TweetWindowPrivate
   GtkWidget *vbox;
   GtkWidget *entry;
   GtkWidget *canvas;
-
-  ClutterEffectTemplate *spin_tmpl;
 
   ClutterActor *spinner;
   ClutterActor *status_view;
@@ -52,12 +51,6 @@ static void
 tweet_window_dispose (GObject *gobject)
 {
   TweetWindowPrivate *priv = TWEET_WINDOW (gobject)->priv;
-
-  if (priv->spin_tmpl)
-    {
-      g_object_unref (priv->spin_tmpl);
-      priv->spin_tmpl = NULL;
-    }
 
   if (priv->refresh_id)
     {
@@ -92,9 +85,11 @@ on_status_received (TwitterClient *client,
   if (error)
     {
       tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
-      clutter_effect_fade (priv->spin_tmpl, priv->spinner, 0,
-                           (ClutterEffectCompleteFunc) clutter_actor_hide,
+
+      tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
+                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 196, 0),
                            NULL);
+
       g_warning ("Unable to retrieve status from Twitter: %s", error->message);
     }
   else
@@ -108,8 +103,8 @@ on_timeline_complete (TwitterClient *client,
   TweetWindowPrivate *priv = window->priv;
 
   tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
-  clutter_effect_fade (priv->spin_tmpl, priv->spinner, 0,
-                       (ClutterEffectCompleteFunc) clutter_actor_hide,
+  tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
+                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 196, 0),
                        NULL);
 }
 
@@ -148,9 +143,10 @@ refresh_timeout (gpointer data)
                             CLUTTER_MODEL (priv->status_model));
 
   clutter_actor_show (window->priv->spinner);
-  clutter_effect_fade (window->priv->spin_tmpl, window->priv->spinner, 255,
-                       NULL, NULL);
   tweet_spinner_start (TWEET_SPINNER (window->priv->spinner));
+  tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
+                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 196),
+                       NULL);
 
   twitter_client_get_user_timeline (window->priv->client, NULL, 0, NULL);
 
@@ -289,8 +285,6 @@ tweet_window_init (TweetWindow *window)
   gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
   gtk_widget_show (button);
   g_signal_connect_swapped (button, "clicked", G_CALLBACK (gtk_widget_activate), priv->entry);
-
-  priv->spin_tmpl = clutter_effect_template_new_for_duration (250, CLUTTER_ALPHA_SINE_INC);
 
   priv->status_model = TWEET_STATUS_MODEL (tweet_status_model_new ());
 
