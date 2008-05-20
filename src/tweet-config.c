@@ -3,6 +3,8 @@
 #endif
 
 #include <glib.h>
+#include <glib/gstdio.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -321,6 +323,13 @@ tweet_config_save (TweetConfig *config)
     {
       g_warning ("Unable to save configuration file: %s", error->message);
       g_error_free (error);
+    }
+
+  if (g_chmod (filename, 0600) == -1)
+    {
+      g_warning ("Unable to set the permissions on the file: %s\n"
+                 "The configuration file is readable to everyone.",
+                 g_strerror (errno));
     }
 
   g_free (buffer);
