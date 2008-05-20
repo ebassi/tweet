@@ -32,6 +32,8 @@ struct _TweetWindowPrivate
   GtkWidget *vbox;
   GtkWidget *entry;
   GtkWidget *canvas;
+  GtkWidget *send_button;
+  GtkWidget *counter;
 
   ClutterActor *spinner;
   ClutterActor *status_view;
@@ -106,6 +108,40 @@ on_timeline_complete (TwitterClient *client,
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 196, 0),
                        NULL);
+}
+
+static void
+on_entry_changed (GtkEntry *entry,
+                  TweetWindow *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+  const gchar *status_text = gtk_entry_get_text (entry);
+  const gchar *color;
+  gchar *count_text;
+
+  if (strlen (status_text) == 0)
+    {
+      gtk_widget_set_sensitive (priv->send_button, FALSE);
+      color = "green";
+    }
+  else
+    {
+      gtk_widget_set_sensitive (priv->send_button, TRUE);
+
+      if (strlen (status_text) < 140)
+        color = "green";
+      else
+        color = "red";
+    }
+
+  count_text = g_strdup_printf ("<span color='%s'>%d</span>",
+                                color,
+                                strlen (status_text));
+
+  gtk_label_set_text (GTK_LABEL (priv->counter), count_text);
+  gtk_label_set_use_markup (GTK_LABEL (priv->counter), TRUE);
+
+  g_free (count_text);
 }
 
 static void
@@ -274,17 +310,29 @@ tweet_window_init (TweetWindow *window)
   gtk_box_pack_start (GTK_BOX (hbox), priv->entry, TRUE, TRUE, 0);
   gtk_widget_set_tooltip_text (priv->entry, "Update your status");
   gtk_widget_show (priv->entry);
-  g_signal_connect (priv->entry, "activate",
-                    G_CALLBACK (on_entry_activate),
+  g_signal_connect (priv->entry,
+                    "activate", G_CALLBACK (on_entry_activate),
                     window);
+  g_signal_connect (priv->entry,
+                    "changed", G_CALLBACK (on_entry_changed),
+                    window);
+
+  priv->counter = gtk_label_new ("<span color='green'>0</span>");
+  gtk_label_set_use_markup (GTK_LABEL (priv->counter), TRUE);
+  gtk_box_pack_start (GTK_BOX (hbox), priv->counter, FALSE, FALSE, 0);
+  gtk_widget_show (priv->counter);
 
   button = gtk_button_new ();
   gtk_button_set_image (GTK_BUTTON (button),
                         gtk_image_new_from_stock (GTK_STOCK_JUMP_TO,
                                                   GTK_ICON_SIZE_BUTTON));
   gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
+  gtk_widget_set_sensitive (button, FALSE);
   gtk_widget_show (button);
-  g_signal_connect_swapped (button, "clicked", G_CALLBACK (gtk_widget_activate), priv->entry);
+  g_signal_connect_swapped (button,
+                            "clicked", G_CALLBACK (gtk_widget_activate),
+                            priv->entry);
+  priv->send_button = button;
 
   priv->status_model = TWEET_STATUS_MODEL (tweet_status_model_new ());
 
