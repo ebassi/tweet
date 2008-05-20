@@ -257,7 +257,7 @@ tweet_window_init (TweetWindow *window)
   GTK_WINDOW (window)->type = GTK_WINDOW_TOPLEVEL;
   gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
   gtk_window_set_title (GTK_WINDOW (window), "Tweet");
-  gtk_widget_set_size_request (GTK_WIDGET (window), 364, 550);
+  gtk_widget_set_size_request (GTK_WIDGET (window), 364, -1);
 
   window->priv = priv = TWEET_WINDOW_GET_PRIVATE (window);
 
@@ -266,6 +266,7 @@ tweet_window_init (TweetWindow *window)
   gtk_widget_show (priv->vbox);
 
   priv->canvas = gtk_clutter_embed_new ();
+  gtk_widget_set_size_request (priv->canvas, 350, 500);
   gtk_container_add (GTK_CONTAINER (priv->vbox), priv->canvas);
   gtk_widget_show (priv->canvas);
 
