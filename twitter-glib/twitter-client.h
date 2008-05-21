@@ -85,7 +85,7 @@ struct _TwitterClientClass
                                   TwitterAuthState  state);
 
   void     (* user_verified)     (TwitterClient    *client,
-                                  TwitterUser      *user,
+                                  gboolean          is_verified,
                                   const GError     *error);
   void     (* session_ended)     (TwitterClient    *client,
                                   TwitterUser      *user,

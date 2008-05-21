@@ -104,6 +104,7 @@ enum
   STATUS_RECEIVED,
   USER_RECEIVED,
   TIMELINE_COMPLETE,
+  USER_VERIFIED,
 
   LAST_SIGNAL
 };
@@ -214,6 +215,16 @@ twitter_client_class_init (TwitterClientClass *klass)
                   _twitter_marshal_BOOLEAN__ENUM,
                   G_TYPE_BOOLEAN, 1,
                   TWITTER_TYPE_AUTH_STATE);
+  client_signals[USER_VERIFIED] =
+    g_signal_new (I_("user-verified"),
+                  G_TYPE_FROM_CLASS (gobject_class),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (TwitterClientClass, user_verified),
+                  NULL, NULL,
+                  _twitter_marshal_VOID__BOOLEAN_POINTER,
+                  G_TYPE_NONE, 2,
+                  G_TYPE_BOOLEAN,
+                  G_TYPE_POINTER);
   client_signals[USER_RECEIVED] =
     g_signal_new (I_("user-received"),
                   G_TYPE_FROM_CLASS (gobject_class),
@@ -313,17 +324,17 @@ typedef struct {
   guint requires_auth : 1;
 } ClientClosure;
 
-typedef struct {
-  ClientClosure closure;
-  TwitterTimeline *timeline;
-} GetTimelineClosure;
-
 #define closure_set_action(c,v)        (((ClientClosure *) (c))->action) = (v)
 #define closure_get_action(c)          (((ClientClosure *) (c))->action)
 #define closure_set_client(c,v)        (((ClientClosure *) (c))->client) = (v)
 #define closure_get_client(c)          (((ClientClosure *) (c))->client)
 #define closure_set_requires_auth(c,v) (((ClientClosure *) (c))->requires_auth) = (v)
 #define closure_get_requires_auth(c)   (((ClientClosure *) (c))->requires_auth)
+
+typedef struct {
+  ClientClosure closure;
+  TwitterTimeline *timeline;
+} GetTimelineClosure;
 
 typedef struct {
   ClientClosure closure;
@@ -339,6 +350,10 @@ typedef struct {
   ClientClosure closure;
   TwitterUser *user;
 } GetUserClosure;
+
+typedef struct {
+  ClientClosure closure;
+} VerifyClosure;
 
 static void
 twitter_client_auth (SoupSession *session,
@@ -579,9 +594,45 @@ get_status_cb (SoupSession *session,
 }
 
 void
+verify_cb (SoupSession *session,
+           SoupMessage *msg,
+           gpointer     user_data)
+{
+  VerifyClosure *closure = user_data;
+  TwitterClient *client = closure_get_client (closure);
+
+  if (!SOUP_STATUS_IS_SUCCESSFUL (msg->status_code))
+    {
+      GError *error = NULL;
+
+      g_set_error (&error, TWITTER_ERROR,
+                   twitter_error_from_status (msg->status_code),
+                   msg->reason_phrase);
+
+      g_signal_emit (client, client_signals[USER_VERIFIED], 0,
+                     FALSE, error);
+
+      g_error_free (error);
+    }
+  else
+    {
+      gboolean is_verified;
+
+      is_verified = (msg->status_code == 200);
+
+      g_signal_emit (client, client_signals[USER_VERIFIED], 0,
+                     is_verified, NULL);
+    }
+
+  g_object_unref (client);
+
+  g_free (closure);
+}
+
+void
 twitter_client_verify_user (TwitterClient *client)
 {
-#if 0
+  VerifyClosure *clos;
   SoupMessage *msg;
 
   g_return_if_fail (TWITTER_IS_CLIENT (client));
@@ -589,15 +640,13 @@ twitter_client_verify_user (TwitterClient *client)
   msg = twitter_api_verify_credentials ();
 
   clos = g_new0 (VerifyClosure, 1);
-  clos->action = VERIFY_CREDENTIALS;
-  clos->client = g_object_ref (client);
-  clos->reply = NULL;
+  closure_set_action (clos, VERIFY_CREDENTIALS);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
 
   twitter_client_queue_message (client, msg, TRUE,
                                 verify_cb,
                                 clos);
-#endif
-  G_WARN_NOT_IMPLEMENTED;
 }
 
 static void
