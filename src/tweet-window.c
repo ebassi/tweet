@@ -153,14 +153,14 @@ on_entry_activate (GtkEntry *entry,
                    TweetWindow *window)
 {
   TweetWindowPrivate *priv = window->priv;
+  const gchar *text;
   gchar *status_text;
 
+  text = gtk_entry_get_text (entry);
+  if (!text || *text == '\0')
+    return;
+
   status_text = g_markup_escape_text (gtk_entry_get_text (entry), -1);
-  if (!status_text || strlen (status_text) == 0)
-    {
-      g_free (status_text);
-      return;
-    }
 
   twitter_client_add_status (priv->client, status_text);
 
