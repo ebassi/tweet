@@ -93,11 +93,9 @@ on_status_received (TwitterClient *client,
   if (error)
     {
       tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
-
       tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
-                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 196, 0),
+                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
                            NULL);
-
       g_warning ("Unable to retrieve status from Twitter: %s", error->message);
     }
   else
@@ -112,7 +110,7 @@ on_timeline_complete (TwitterClient *client,
 
   tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
-                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 196, 0),
+                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
                        NULL);
 }
 
@@ -187,7 +185,7 @@ refresh_timeout (gpointer data)
   clutter_actor_show (window->priv->spinner);
   tweet_spinner_start (TWEET_SPINNER (window->priv->spinner));
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
-                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 196),
+                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 127),
                        NULL);
 
   twitter_client_get_user_timeline (window->priv->client, NULL, 0, NULL);
