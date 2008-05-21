@@ -29,6 +29,7 @@ bin_PROGRAMS = tweet
 tweet_h = \
 	tweet-animation.h \
 	tweet-app.h \
+	tweet-auth-dialog.h \
 	tweet-config.h \
 	tweet-interval.h \
 	tweet-spinner.h \
@@ -64,8 +65,11 @@ BUILT_SOURCES = tweet-enum-types.h tweet-enum-types.c
 
 libtweet_ui_la_SOURCES = \
 	tweet-animation.c \
+	tweet-animation.h \
 	tweet-app.c \
 	tweet-app.h \
+	tweet-auth-dialog.c \
+	tweet-auth-dialog.h \
 	tweet-config.c \
 	tweet-config.h \
 	tweet-enum-types.c \
