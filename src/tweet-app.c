@@ -102,7 +102,7 @@ tweet_app_run (TweetApp *app)
       goto run;
     }
 
-  dialog = tweet_auth_dialog_new (NULL, "Authentication");
+  dialog = tweet_auth_dialog_new (NULL, "Authentication - Tweet");
   res = gtk_dialog_run (GTK_DIALOG (dialog));
 
   switch (res)
