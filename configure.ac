@@ -22,7 +22,7 @@ m4_define([clutter_req_version], [0.6.2])
 m4_define([tidy_req_version], [0.0])
 m4_define([gtk_req_version], [2.12])
 m4_define([clutter_gtk_req_version], [0.6.0])
-m4_define([clutter_cairo_req_version], [0.6.0])
+m4_define([clutter_cairo_req_version], [0.6.2])
 
 AC_PREREQ([2.59])
 AC_INIT([tweet], [tweet_version], [], [tweet])
