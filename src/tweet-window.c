@@ -25,6 +25,12 @@
 #include "tweet-utils.h"
 #include "tweet-window.h"
 
+#define CANVAS_WIDTH    350
+#define CANVAS_HEIGHT   500
+#define CANVAS_PADDING  6
+
+#define WINDOW_WIDTH    (CANVAS_WIDTH + (2 * CANVAS_PADDING))
+
 #define TWEET_WINDOW_GET_PRIVATE(obj)   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWEET_TYPE_WINDOW, TweetWindowPrivate))
 
 struct _TweetWindowPrivate
@@ -206,24 +212,34 @@ tweet_window_constructed (GObject *gobject)
   priv->scroll = tidy_finger_scroll_new (TIDY_FINGER_SCROLL_MODE_KINETIC);
   clutter_container_add_actor (CLUTTER_CONTAINER (priv->scroll), view);
   clutter_actor_show (view);
+  clutter_actor_set_reactive (view, TRUE);
   priv->status_view = view;
 
-  clutter_actor_set_size (priv->scroll, 350, 500);
-  clutter_actor_set_position (priv->scroll, 6, 6);
+  clutter_actor_set_size (priv->scroll, CANVAS_WIDTH, CANVAS_HEIGHT);
+  clutter_actor_set_position (priv->scroll, CANVAS_PADDING, CANVAS_PADDING);
   clutter_container_add_actor (CLUTTER_CONTAINER (stage), priv->scroll);
+  clutter_actor_set_reactive (priv->scroll, TRUE);
   clutter_actor_show (priv->scroll);
 
   img = tweet_texture_new_from_stock (GTK_WIDGET (window),
                                       GTK_STOCK_REFRESH,
-                                      GTK_ICON_SIZE_LARGE_TOOLBAR);
+                                      GTK_ICON_SIZE_DIALOG);
+  if (!img)
+    g_warning ("Unable to load the `%s' stock icon", GTK_STOCK_REFRESH);
 
   priv->spinner = tweet_spinner_new ();
   tweet_spinner_set_image (TWEET_SPINNER (priv->spinner), img);
   clutter_container_add_actor (CLUTTER_CONTAINER (stage), priv->spinner);
+  clutter_actor_set_size (priv->spinner, 128, 128);
   clutter_actor_set_anchor_point (priv->spinner, 64, 64);
-  clutter_actor_set_position (priv->spinner, 364 / 2, 500 / 2);
-  tweet_spinner_start (TWEET_SPINNER (priv->spinner));
+  clutter_actor_set_position (priv->spinner,
+                              WINDOW_WIDTH / 2,
+                              CANVAS_HEIGHT / 2);
   clutter_actor_show (priv->spinner);
+  tweet_spinner_start (TWEET_SPINNER (priv->spinner));
+  tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
+                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 127),
+                       NULL);
 
   clutter_actor_show (stage);
   gtk_widget_show (GTK_WIDGET (window));
@@ -289,7 +305,7 @@ tweet_window_init (TweetWindow *window)
   GTK_WINDOW (window)->type = GTK_WINDOW_TOPLEVEL;
   gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
   gtk_window_set_title (GTK_WINDOW (window), "Tweet");
-  gtk_widget_set_size_request (GTK_WIDGET (window), 364, -1);
+  gtk_widget_set_size_request (GTK_WIDGET (window), WINDOW_WIDTH, -1);
 
   window->priv = priv = TWEET_WINDOW_GET_PRIVATE (window);
 
@@ -298,7 +314,7 @@ tweet_window_init (TweetWindow *window)
   gtk_widget_show (priv->vbox);
 
   priv->canvas = gtk_clutter_embed_new ();
-  gtk_widget_set_size_request (priv->canvas, 350, 500);
+  gtk_widget_set_size_request (priv->canvas, CANVAS_WIDTH, CANVAS_HEIGHT);
   gtk_container_add (GTK_CONTAINER (priv->vbox), priv->canvas);
   gtk_widget_show (priv->canvas);
 
