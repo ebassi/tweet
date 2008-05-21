@@ -32,6 +32,7 @@ tweet_h = \
 	tweet-config.h \
 	tweet-interval.h \
 	tweet-spinner.h \
+	tweet-status-cell.h \
 	tweet-status-column.h \
 	tweet-status-model.h \
 	tweet-status-renderer.h \
@@ -73,6 +74,8 @@ libtweet_ui_la_SOURCES = \
 	tweet-interval.h \
 	tweet-spinner.c \
 	tweet-spinner.h \
+	tweet-status-cell.c \
+	tweet-status-cell.h \
 	tweet-status-column.c \
 	tweet-status-column.h \
 	tweet-status-model.c \
