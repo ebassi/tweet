@@ -29,6 +29,7 @@
 #include <clutter-gtk/gtk-clutter-embed.h>
 
 #include "tweet-app.h"
+#include "tweet-auth-dialog.h"
 #include "tweet-config.h"
 #include "tweet-window.h"
 
@@ -42,8 +43,6 @@ on_window_destroy (GtkWidget *widget,
 {
   app->main_window = NULL;
 
-  tweet_config_save (app->config);
-
   gtk_main_quit ();
 }
 
@@ -56,11 +55,6 @@ static void
 tweet_app_init (TweetApp *app)
 {
   app->config = tweet_config_get_default ();
-
-  app->main_window = tweet_window_new ();
-  g_signal_connect (app->main_window, "destroy",
-                    G_CALLBACK (on_window_destroy),
-                    app);
 }
 
 TweetApp *
@@ -91,14 +85,58 @@ tweet_app_is_running (TweetApp *app)
 gint
 tweet_app_run (TweetApp *app)
 {
+  GtkWidget *dialog;
+  gint res;
+
   g_return_val_if_fail (TWEET_IS_APP (app), EXIT_FAILURE);
   g_return_val_if_fail (!tweet_app_is_running (app), EXIT_SUCCESS);
 
-  if (!tweet_config_get_username (app->config))
+  if (tweet_config_get_username (app->config) &&
+      tweet_config_get_password (app->config))
     {
-      /* ask the user for the credentials */
+      /* we already have a user */
+      app->main_window = tweet_window_new ();
+      g_signal_connect (app->main_window,
+                        "destroy", G_CALLBACK (on_window_destroy),
+                        app);
+      goto run;
     }
 
+  dialog = tweet_auth_dialog_new (NULL, "Authentication");
+  res = gtk_dialog_run (GTK_DIALOG (dialog));
+
+  switch (res)
+    {
+    case GTK_RESPONSE_OK:
+      {
+        TweetAuthDialog *auth = TWEET_AUTH_DIALOG (dialog);
+        const gchar *username, *password;
+
+        username = tweet_auth_dialog_get_username (auth);
+        password = tweet_auth_dialog_get_password (auth);
+
+        tweet_config_set_username (app->config, username);
+        tweet_config_set_password (app->config, password);
+
+        app->main_window = tweet_window_new ();
+        g_signal_connect (app->main_window,
+                          "destroy", G_CALLBACK (on_window_destroy),
+                          app);
+      }
+      break;
+
+    case GTK_RESPONSE_CANCEL:
+    case GTK_RESPONSE_DELETE_EVENT:
+      return EXIT_FAILURE;
+
+    default:
+      g_assert_not_reached ();
+      return EXIT_FAILURE;
+    }
+
+  gtk_widget_destroy (dialog);
+
+run:
   gtk_main ();
 
   tweet_config_save (app->config);
