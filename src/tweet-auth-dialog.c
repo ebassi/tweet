@@ -26,9 +26,13 @@ struct _TweetAuthDialogPrivate
   GtkWidget *verify_button;
   GtkWidget *close_button;
 
+  GtkWidget *verify_label;
+
   GtkSizeGroup *size_group;
 
   TweetConfig *config;
+
+  TwitterClient *client;
 
   guint has_email    : 1;
   guint has_password : 1;
@@ -41,6 +45,12 @@ tweet_auth_dialog_dispose (GObject *gobject)
 {
   TweetAuthDialogPrivate *priv = TWEET_AUTH_DIALOG (gobject)->priv;
 
+  if (priv->client)
+    {
+      g_object_unref (priv->client);
+      priv->client = NULL;
+    }
+
   if (priv->size_group)
     {
       g_object_unref (priv->size_group);
@@ -51,13 +61,68 @@ tweet_auth_dialog_dispose (GObject *gobject)
 }
 
 static void
+on_user_verified (TwitterClient   *client,
+                  gboolean         is_verified,
+                  const GError    *error,
+                  TweetAuthDialog *dialog)
+{
+  gchar *text;
+
+  if (error)
+    {
+      text = g_strdup_printf ("<i>Unable to verify user: %s</i>", error->message);
+      gtk_label_set_text (GTK_LABEL (dialog->priv->verify_label), text);
+      gtk_label_set_use_markup (GTK_LABEL (dialog->priv->verify_label), TRUE);
+      g_free (text);
+    }
+  else
+    {
+      if (is_verified)
+        text = "<i>User verified</i>";
+      else
+        text = "<i>Invalid user</i>";
+
+      gtk_label_set_text (GTK_LABEL (dialog->priv->verify_label), text);
+      gtk_label_set_use_markup (GTK_LABEL (dialog->priv->verify_label), TRUE);
+    }
+
+  gtk_dialog_set_response_sensitive (GTK_DIALOG (dialog), GTK_RESPONSE_OK, TRUE);
+}
+
+static void
 on_response (GtkDialog *dialog,
              gint       response_id)
 {
+  TweetAuthDialogPrivate *priv = TWEET_AUTH_DIALOG (dialog)->priv;
+
   if (response_id == 1)
     {
+      const gchar *email, *password;
+
       g_signal_stop_emission_by_name (dialog, "response");
-      g_print ("Verifying credentials...\n");
+
+      gtk_dialog_set_response_sensitive (dialog, 1, FALSE);
+      gtk_dialog_set_response_sensitive (dialog, GTK_RESPONSE_OK, FALSE);
+
+      gtk_label_set_text (GTK_LABEL (priv->verify_label),
+                          "<i>Verifying credentials...</i>");
+      gtk_label_set_use_markup (GTK_LABEL (priv->verify_label), TRUE);
+      gtk_widget_show (priv->verify_label);
+
+      email = gtk_entry_get_text (GTK_ENTRY (priv->email_entry));
+      password = gtk_entry_get_text (GTK_ENTRY (priv->password_entry));
+
+      if (!priv->client)
+        {
+          priv->client = twitter_client_new_for_user (email, password);
+          g_signal_connect (priv->client,
+                            "user-verified", G_CALLBACK (on_user_verified),
+                            dialog);
+        }
+      else
+        twitter_client_set_user (priv->client, email, password);
+
+      twitter_client_verify_user (priv->client);
     }
 }
 
@@ -145,6 +210,12 @@ tweet_auth_dialog_constructed (GObject *gobject)
 
   priv->size_group = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
 
+  label = gtk_label_new ("Please, insert the email address and password\n"
+                         "used when registering the account on Twitter.");
+  gtk_misc_set_alignment (GTK_MISC (label), 0.0, 1.0);
+  gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
+  gtk_widget_show (label);
+
   /* email entry */
   hbox = gtk_hbox_new (FALSE, 6);
   gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
@@ -182,6 +253,10 @@ tweet_auth_dialog_constructed (GObject *gobject)
                     dialog);
   gtk_box_pack_end (GTK_BOX (hbox), priv->password_entry, TRUE, TRUE, 0);
   gtk_widget_show (priv->password_entry);
+
+  priv->verify_label = gtk_label_new ("");
+  gtk_box_pack_end (GTK_BOX (vbox), priv->verify_label, FALSE, FALSE, 0);
+  gtk_widget_show (priv->verify_label);
 
   /* buttons */
   priv->ok_button = gtk_dialog_add_button (GTK_DIALOG (dialog),
