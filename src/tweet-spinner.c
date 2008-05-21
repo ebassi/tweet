@@ -22,7 +22,7 @@
 
 struct _TweetSpinnerPrivate
 {
-  ClutterActor *background;
+  ClutterActor *base;
   ClutterActor *image;
 
   ClutterColor bg_color;
@@ -39,19 +39,28 @@ enum
   PROP_BG_COLOR
 };
 
-G_DEFINE_TYPE (TweetSpinner, tweet_spinner, CLUTTER_TYPE_ACTOR);
+G_DEFINE_TYPE (TweetSpinner, tweet_spinner, CLUTTER_TYPE_GROUP);
 
 static inline void
-create_background (TweetSpinner *spinner,
-                   guint         width,
-                   guint         height)
+draw_background (TweetSpinner *spinner)
 {
   TweetSpinnerPrivate *priv = spinner->priv;
   cairo_t *cr;
+  gint width, height;
 
-  cr = clutter_cairo_create (CLUTTER_CAIRO (priv->background));
+  cr = clutter_cairo_create (CLUTTER_CAIRO (priv->base));
   g_assert (cr != NULL);
 
+  width = height = 0;
+  g_object_get (G_OBJECT (priv->base),
+                "surface-width", &width,
+                "surface-height", &height,
+                NULL);
+
+  cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
+  cairo_paint (cr);
+
+  cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
   cairo_move_to (cr, BG_ROUND_RADIUS, 0);
   cairo_line_to (cr, width - BG_ROUND_RADIUS, 0);
   cairo_curve_to (cr, width, 0, width, 0, width, BG_ROUND_RADIUS);
@@ -71,31 +80,6 @@ create_background (TweetSpinner *spinner,
 }
 
 static void
-tweet_spinner_paint (ClutterActor *actor)
-{
-  TweetSpinnerPrivate *priv = TWEET_SPINNER (actor)->priv;
-
-  cogl_push_matrix ();
-
-  cogl_enable (CGL_ENABLE_BLEND);
-
-  clutter_actor_paint (priv->background);
-  clutter_actor_paint (priv->image);
-
-  cogl_pop_matrix ();
-}
-
-static void
-tweet_spinner_query_coords (ClutterActor *actor,
-                            ClutterActorBox *box)
-{
-  TweetSpinnerPrivate *priv = TWEET_SPINNER (actor)->priv;
-
-  box->x2 = box->x1 + clutter_actor_get_widthu (priv->background);
-  box->y2 = box->x1 + clutter_actor_get_heightu (priv->background);
-}
-
-static void
 tweet_spinner_request_coords (ClutterActor *actor,
                               ClutterActorBox *box)
 {
@@ -107,12 +91,10 @@ tweet_spinner_request_coords (ClutterActor *actor,
   width = CLUTTER_UNITS_TO_DEVICE (box->x2 - box->x1);
   height = CLUTTER_UNITS_TO_DEVICE (box->y2 - box->y1);
 
-  if (priv->background)
+  if (priv->base)
     {
-      clutter_actor_set_size (priv->background, width, height);
-      clutter_cairo_surface_resize (CLUTTER_CAIRO (priv->background),
-                                    width, height);
-      create_background (TWEET_SPINNER (actor), width, height);
+      clutter_cairo_surface_resize (CLUTTER_CAIRO (priv->base), width, height);
+      draw_background (TWEET_SPINNER (actor));
     }
 
   if (priv->image)
@@ -137,16 +119,16 @@ tweet_spinner_dispose (GObject *gobject)
       priv->rotate_b = NULL;
     }
 
+  if (priv->base)
+    {
+      clutter_actor_destroy (priv->base);
+      priv->base = NULL;
+    }
+
   if (priv->image)
     {
       clutter_actor_destroy (priv->image);
       priv->image = NULL;
-    }
-
-  if (priv->background)
-    {
-      clutter_actor_destroy (priv->background);
-      priv->background = NULL;
     }
 
   G_OBJECT_CLASS (tweet_spinner_parent_class)->dispose (gobject);
@@ -204,35 +186,13 @@ static void
 tweet_spinner_constructed (GObject *gobject)
 {
   TweetSpinnerPrivate *priv = TWEET_SPINNER (gobject)->priv;
-  ClutterActor *actor = CLUTTER_ACTOR (gobject);
 
-  priv->background = clutter_cairo_new (64, 64);
-  clutter_actor_set_opacity (priv->background, 196);
-  clutter_actor_set_size (priv->background, 128, 128);
-  clutter_actor_set_position (priv->background, 0, 0);
-  clutter_actor_set_parent (priv->background, actor);
-  create_background (TWEET_SPINNER (gobject), 128, 128);
-  clutter_actor_show (priv->background);
-
-  if (!priv->image)
-    {
-      ClutterColor white = { 255, 255, 255, 255 };
-
-      priv->image = clutter_rectangle_new ();
-      clutter_rectangle_set_color (CLUTTER_RECTANGLE (priv->image), &white);
-
-      clutter_actor_set_parent (priv->image, actor);
-    }
-
-  clutter_actor_set_opacity (priv->image, 196);
-  clutter_actor_set_size (priv->image, 48, 48);
-  clutter_actor_set_anchor_point (priv->image, 24, 24);
-  clutter_actor_set_position (priv->image, 80, 80);
-  clutter_actor_show (priv->image);
-
-  clutter_behaviour_apply (priv->rotate_b, priv->image);
-
-  clutter_actor_set_size (actor, 128, 128);
+  priv->base = clutter_cairo_new (128, 128);
+  draw_background (TWEET_SPINNER (gobject));
+  clutter_actor_set_size (priv->base, 128, 128);
+  clutter_actor_set_position (priv->base, 0, 0);
+  clutter_container_add_actor (CLUTTER_CONTAINER (gobject), priv->base);
+  clutter_actor_show (priv->base);
 }
 
 static void
@@ -248,9 +208,7 @@ tweet_spinner_class_init (TweetSpinnerClass *klass)
   gobject_class->get_property = tweet_spinner_get_property;
   gobject_class->dispose = tweet_spinner_dispose;
 
-  actor_class->paint = tweet_spinner_paint;
   actor_class->request_coords = tweet_spinner_request_coords;
-  actor_class->query_coords = tweet_spinner_query_coords;
 
   g_object_class_install_property (gobject_class,
                                    PROP_IMAGE,
@@ -275,12 +233,12 @@ tweet_spinner_init (TweetSpinner *spinner)
 
   spinner->priv = priv = TWEET_SPINNER_GET_PRIVATE (spinner);
 
-  priv->bg_color.red   = 0xcc;
-  priv->bg_color.green = 0xcc;
-  priv->bg_color.blue  = 0xcc;
+  priv->bg_color.red   = 0x44;
+  priv->bg_color.green = 0x44;
+  priv->bg_color.blue  = 0x44;
   priv->bg_color.alpha = 0xff;
 
-  priv->timeline = clutter_timeline_new_for_duration (750);
+  priv->timeline = clutter_timeline_new_for_duration (1000);
   clutter_timeline_set_loop (priv->timeline, TRUE);
 
   priv->rotate_b = clutter_behaviour_rotate_new (clutter_alpha_new_full (priv->timeline,
@@ -303,6 +261,7 @@ tweet_spinner_set_image (TweetSpinner *spinner,
                          ClutterActor *image)
 {
   TweetSpinnerPrivate *priv;
+  guint img_width, img_height;
 
   g_return_if_fail (TWEET_IS_SPINNER (spinner));
   g_return_if_fail (image == NULL || CLUTTER_IS_ACTOR (image));
@@ -312,7 +271,7 @@ tweet_spinner_set_image (TweetSpinner *spinner,
   if (priv->image)
     {
       clutter_behaviour_remove (priv->rotate_b, priv->image);
-      clutter_actor_unparent (priv->image);
+      clutter_actor_destroy (priv->image);
       priv->image = NULL;
     }
 
@@ -322,13 +281,16 @@ tweet_spinner_set_image (TweetSpinner *spinner,
 
       priv->image = clutter_rectangle_new ();
       clutter_rectangle_set_color (CLUTTER_RECTANGLE (priv->image), &white);
+      clutter_actor_set_size (priv->image, 48, 48);
     }
   else
     priv->image = image;
 
-  clutter_actor_set_parent (priv->image, CLUTTER_ACTOR (spinner));
-  clutter_actor_set_size (priv->image, 48, 48);
-  clutter_actor_set_anchor_point (priv->image, 24, 24);
+  img_width = clutter_actor_get_width (priv->image);
+  img_height = clutter_actor_get_height (priv->image);
+
+  clutter_container_add_actor (CLUTTER_CONTAINER (spinner), priv->image);
+  clutter_actor_set_anchor_point (priv->image, img_width / 2, img_height / 2);
   clutter_actor_show (priv->image);
 
   clutter_behaviour_apply (priv->rotate_b, priv->image);

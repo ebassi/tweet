@@ -2,6 +2,7 @@
 #define __TWEET_SPINNER_H__
 
 #include <clutter/clutter-actor.h>
+#include <clutter-cairo/clutter-cairo.h>
 
 G_BEGIN_DECLS
 
@@ -18,14 +19,14 @@ typedef struct _TweetSpinnerClass       TweetSpinnerClass;
 
 struct _TweetSpinner
 {
-  ClutterActor parent_instance;
+  ClutterGroup parent_instance;
 
   TweetSpinnerPrivate *priv;
 };
 
 struct _TweetSpinnerClass
 {
-  ClutterActorClass parent_class;
+  ClutterGroupClass parent_class;
 };
 
 GType         tweet_spinner_get_type  (void) G_GNUC_CONST;
