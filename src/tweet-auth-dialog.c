@@ -210,7 +210,7 @@ tweet_auth_dialog_constructed (GObject *gobject)
 
   priv->size_group = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
 
-  label = gtk_label_new ("Please, insert the email address and password\n"
+  label = gtk_label_new ("Please insert the email address and password\n"
                          "used when registering the account on Twitter.");
   gtk_misc_set_alignment (GTK_MISC (label), 0.0, 1.0);
   gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
