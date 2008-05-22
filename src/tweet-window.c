@@ -38,6 +38,7 @@
 #include "tweet-animation.h"
 #include "tweet-config.h"
 #include "tweet-spinner.h"
+#include "tweet-status-info.h"
 #include "tweet-status-model.h"
 #include "tweet-status-view.h"
 #include "tweet-utils.h"
@@ -273,7 +274,7 @@ on_status_view_button_release (ClutterActor       *actor,
 
       stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
 
-      info = clutter_rectangle_new ();
+      info = tweet_status_info_new (status);
       g_signal_connect (info,
                         "button-press-event", G_CALLBACK (on_info_button_press),
                         window);
