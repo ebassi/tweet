@@ -68,6 +68,11 @@ struct _TweetWindowPrivate
   TweetConfig *config;
   TweetStatusModel *status_model;
 
+  gint press_x;
+  gint press_y;
+  gint press_row;
+  guint in_press : 1;
+
   guint refresh_id;
 };
 
@@ -188,6 +193,120 @@ on_entry_activate (GtkEntry *entry,
 }
 
 static gboolean
+on_info_button_press (ClutterActor       *actor,
+                      ClutterButtonEvent *event,
+                      TweetWindow        *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+
+  tweet_actor_animate (priv->status_view, TWEET_LINEAR, 250,
+                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 196, 255),
+                       NULL);
+
+  clutter_actor_destroy (actor);
+
+  return TRUE;
+}
+
+static gboolean
+on_status_view_button_press (ClutterActor *actor,
+                             ClutterButtonEvent *event,
+                             TweetWindow        *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+  gint row;
+
+  row = tidy_list_view_get_row_at_pos (TIDY_LIST_VIEW (actor),
+                                       event->x,
+                                       event->y);
+
+  if (row >= 0)
+    {
+      priv->in_press = TRUE;
+
+      priv->press_x = event->x;
+      priv->press_y = event->y;
+      priv->press_row = row;
+    }
+
+  return FALSE;
+}
+
+static gboolean
+on_status_view_button_release (ClutterActor       *actor,
+                               ClutterButtonEvent *event,
+                               TweetWindow        *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+
+#define JITTER  5
+
+  if (priv->in_press)
+    {
+      TwitterStatus *status;
+      ClutterModelIter *iter;
+      ClutterGeometry geometry = { 0, };
+      ClutterActor *stage, *info;
+      ClutterColor white = { 255, 255, 255, 255 };
+
+      priv->in_press = FALSE;
+
+      if (abs (priv->press_y - event->y) > JITTER)
+        return FALSE;
+
+      iter = clutter_model_get_iter_at_row (CLUTTER_MODEL (priv->status_model),
+                                            priv->press_row);
+      if (!iter)
+        return FALSE;
+
+      status = tweet_status_model_get_status (priv->status_model, iter);
+      if (!status)
+        {
+          g_object_unref (iter);
+          return FALSE;
+        }
+
+      tidy_list_view_get_cell_geometry (TIDY_LIST_VIEW (priv->status_view),
+                                        priv->press_row, 0,
+                                        TRUE,
+                                        &geometry);
+
+      stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
+
+      info = clutter_rectangle_new ();
+      g_signal_connect (info,
+                        "button-press-event", G_CALLBACK (on_info_button_press),
+                        window);
+                                
+      clutter_container_add_actor (CLUTTER_CONTAINER (stage), info);
+      clutter_actor_set_position (info,
+                                  geometry.x + CANVAS_PADDING,
+                                  geometry.y + CANVAS_PADDING);
+      clutter_actor_set_size (info, geometry.width, 10);
+      clutter_actor_set_opacity (info, 0);
+      clutter_actor_set_reactive (info, TRUE);
+      clutter_actor_show (info);
+
+      tweet_actor_animate (info, TWEET_LINEAR, 250,
+                           "y", tweet_interval_new (G_TYPE_INT, geometry.y + CANVAS_PADDING, 100 + CANVAS_PADDING),
+                           "height", tweet_interval_new (G_TYPE_INT, 10, (CANVAS_HEIGHT - 200)),
+                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 196),
+                           NULL);
+
+      tweet_actor_animate (priv->status_view, TWEET_LINEAR, 250,
+                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 255, 196),
+                           NULL);
+
+      g_object_unref (status);
+      g_object_unref (iter);
+    }
+
+#undef JITTER
+
+  return FALSE;
+}
+
+static gboolean
 refresh_timeout (gpointer data)
 {
   TweetWindow *window = data;
@@ -225,6 +344,12 @@ tweet_window_constructed (GObject *gobject)
   clutter_stage_set_color (CLUTTER_STAGE (stage), &stage_color);
 
   view = tweet_status_view_new (priv->status_model);
+  g_signal_connect (view,
+                    "button-press-event", G_CALLBACK (on_status_view_button_press),
+                    window);
+  g_signal_connect (view,
+                    "button-release-event", G_CALLBACK (on_status_view_button_release),
+                    window);
   priv->scroll = tidy_finger_scroll_new (TIDY_FINGER_SCROLL_MODE_KINETIC);
   clutter_container_add_actor (CLUTTER_CONTAINER (priv->scroll), view);
   clutter_actor_show (view);
