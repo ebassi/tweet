@@ -199,8 +199,9 @@ on_info_button_press (ClutterActor       *actor,
 {
   TweetWindowPrivate *priv = window->priv;
 
+  clutter_actor_set_reactive (priv->status_view, TRUE);
   tweet_actor_animate (priv->status_view, TWEET_LINEAR, 250,
-                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 196, 255),
+                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 128, 255),
                        NULL);
 
   clutter_actor_destroy (actor);
@@ -247,7 +248,6 @@ on_status_view_button_release (ClutterActor       *actor,
       ClutterModelIter *iter;
       ClutterGeometry geometry = { 0, };
       ClutterActor *stage, *info;
-      ClutterColor white = { 255, 255, 255, 255 };
 
       priv->in_press = FALSE;
 
@@ -293,8 +293,9 @@ on_status_view_button_release (ClutterActor       *actor,
                            "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 196),
                            NULL);
 
+      clutter_actor_set_reactive (priv->status_view, FALSE);
       tweet_actor_animate (priv->status_view, TWEET_LINEAR, 250,
-                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 255, 196),
+                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 255, 128),
                            NULL);
 
       g_object_unref (status);
