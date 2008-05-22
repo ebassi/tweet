@@ -681,6 +681,12 @@ tweet_animation_start (TweetAnimation *animation)
                               NULL, NULL);
       break;
 
+    case TWEET_SINE:
+      clutter_alpha_set_func (priv->alpha,
+                              CLUTTER_ALPHA_SINE_INC,
+                              NULL, NULL);
+      break;
+
     default:
       g_assert_not_reached ();
       break;

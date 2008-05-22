@@ -38,8 +38,7 @@ typedef struct _TweetAnimationClass      TweetAnimationClass;
 
 typedef enum {
   TWEET_LINEAR,
-  TWEET_EASE_IN,
-  TWEET_EASE_OUT
+  TWEET_SINE
 } TweetAnimationMode;
 
 struct _TweetAnimation
