@@ -223,7 +223,7 @@ twitter_api_update (const gchar *text)
   SoupMessage *msg;
   gchar *post_data;
 
-  post_data = g_strconcat ("status=", text, NULL);
+  post_data = soup_form_encode ("status", text, NULL);
 
   msg = soup_message_new (SOUP_METHOD_POST, TWITTER_API_UPDATE);
   soup_message_set_request (msg, "application/x-www-form-urlencoded",
