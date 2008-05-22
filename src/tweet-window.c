@@ -120,6 +120,7 @@ on_status_received (TwitterClient *client,
       tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
                            "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
                            NULL);
+
       g_warning ("Unable to retrieve status from Twitter: %s", error->message);
     }
   else
@@ -267,6 +268,7 @@ on_status_view_button_release (ClutterActor       *actor,
           return FALSE;
         }
 
+      /* FIXME - abstract this call into a TweetStatusModel method */
       tidy_list_view_get_cell_geometry (TIDY_LIST_VIEW (priv->status_view),
                                         priv->press_row, 0,
                                         TRUE,
@@ -290,7 +292,7 @@ on_status_view_button_release (ClutterActor       *actor,
 
       tweet_actor_animate (info, TWEET_LINEAR, 250,
                            "y", tweet_interval_new (G_TYPE_INT, geometry.y + CANVAS_PADDING, 100 + CANVAS_PADDING),
-                           "height", tweet_interval_new (G_TYPE_INT, 10, (CANVAS_HEIGHT - 200)),
+                           "height", tweet_interval_new (G_TYPE_INT, 10, (CANVAS_HEIGHT - (100 * 2))),
                            "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 196),
                            NULL);
 
