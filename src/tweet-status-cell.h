@@ -44,6 +44,8 @@ struct _TweetStatusCell
 
   gchar *font_name;
 
+  GRegex *escape_re;
+
   TwitterStatus *status;
 };
 

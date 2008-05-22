@@ -69,6 +69,12 @@ tweet_status_cell_dispose (GObject *gobject)
 {
   TweetStatusCell *cell = TWEET_STATUS_CELL (gobject);
 
+  if (cell->escape_re)
+    {
+      g_regex_unref (cell->escape_re);
+      cell->escape_re = NULL;
+    }
+
   if (cell->status)
     {
       g_object_unref (cell->status);
@@ -187,7 +193,16 @@ tweet_status_cell_constructed (GObject *gobject)
   clutter_actor_show (cell->icon);
   clutter_actor_set_reactive (cell->icon, TRUE);
 
-  escaped = g_markup_escape_text (twitter_status_get_text (cell->status), -1);
+  /* some twitter client doesn't escape bare '&' properly, so we get
+   * failures from the pango markup parser. we need to replace the
+   * '&\s' with corresponding '&amp; '.
+   */
+  escaped = g_regex_replace (cell->escape_re,
+                             twitter_status_get_text (cell->status), -1,
+                             0,
+                             "&amp; ",
+                             0,
+                             NULL);
 
   twitter_date_to_time_val (twitter_status_get_created_at (cell->status), &timeval);
 
@@ -253,6 +268,7 @@ tweet_status_cell_class_init (TweetStatusCellClass *klass)
 static void
 tweet_status_cell_init (TweetStatusCell *cell)
 {
+  cell->escape_re = g_regex_new ("&\\s", 0, 0, NULL);
 }
 
 ClutterActor *
