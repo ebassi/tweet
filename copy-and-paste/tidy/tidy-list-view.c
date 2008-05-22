@@ -1526,3 +1526,63 @@ tidy_list_view_get_row_at_pos (TidyListView *view,
 
   return -1;
 }
+
+void
+tidy_list_view_get_cell_geometry (TidyListView    *view,
+                                  guint            row_index,
+                                  guint            column_index,
+                                  gboolean         adjust,
+                                  ClutterGeometry *geometry)
+{
+  TidyListViewPrivate *priv;
+  ClutterUnit x, y, width, height;
+  ClutterUnit column_width;
+  TidyListColumn *column;
+  ListRow *row;
+  gint i;
+  GList *l;
+
+  g_return_if_fail (TIDY_IS_LIST_VIEW (view));
+
+  priv = view->priv;
+
+  if (!priv->model)
+    return;
+
+  if (!priv->rows)
+    return;
+
+  row = g_list_nth_data (priv->rows, row_index);
+  if (!row)
+    return;
+
+  x = 0;
+  y = row->y_offset;
+  width = 0;
+  height = row->height;
+
+  for (i = 0, l = priv->columns; i < column_index; i++, l = l->next)
+    {
+      column = l->data;
+
+      column_width = tidy_list_column_get_widthu (column);
+
+      x += column_width; 
+    }
+
+  column = g_list_nth_data (priv->columns, column_index);
+  width = tidy_list_column_get_widthu (column);
+
+  if (adjust)
+    {
+      x -= CLUTTER_UNITS_FROM_FIXED (tidy_adjustment_get_valuex (priv->hadjustment));
+      y -= CLUTTER_UNITS_FROM_FIXED (tidy_adjustment_get_valuex (priv->vadjustment));
+    }
+
+  geometry->x = CLUTTER_UNITS_TO_DEVICE (x);
+  geometry->y = CLUTTER_UNITS_TO_DEVICE (y);
+  geometry->width = CLUTTER_UNITS_TO_DEVICE (width);
+  geometry->height = CLUTTER_UNITS_TO_DEVICE (height);
+
+  return;
+}

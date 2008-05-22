@@ -65,27 +65,32 @@ struct _TidyListViewClass
 
 GType tidy_list_view_get_type (void) G_GNUC_CONST;
 
-ClutterActor *  tidy_list_view_new              (ClutterModel   *model);
+ClutterActor *  tidy_list_view_new               (ClutterModel    *model);
 
-void            tidy_list_view_set_model        (TidyListView   *view,
-                                                 ClutterModel   *model);
-ClutterModel *  tidy_list_view_get_model        (TidyListView   *view);
+void            tidy_list_view_set_model         (TidyListView    *view,
+                                                  ClutterModel    *model);
+ClutterModel *  tidy_list_view_get_model         (TidyListView    *view);
 
-gint            tidy_list_view_add_column       (TidyListView   *view,
-                                                 TidyListColumn *column);
-TidyListColumn *tidy_list_view_get_column       (TidyListView   *view,
-                                                 gint            column_id);
+gint            tidy_list_view_add_column        (TidyListView    *view,
+                                                  TidyListColumn  *column);
+TidyListColumn *tidy_list_view_get_column        (TidyListView    *view,
+                                                  gint             column_id);
 
-void            tidy_list_view_set_show_headers (TidyListView   *view,
-                                                 gboolean        show_headers);
-gboolean        tidy_list_view_get_show_headers (TidyListView   *view);
-void            tidy_list_view_set_rules_hint   (TidyListView   *view,
-                                                 gboolean        rules_hint);
-gboolean        tidy_list_view_get_rules_hint   (TidyListView   *view);
+void            tidy_list_view_set_show_headers  (TidyListView    *view,
+                                                  gboolean         show_headers);
+gboolean        tidy_list_view_get_show_headers  (TidyListView    *view);
+void            tidy_list_view_set_rules_hint    (TidyListView    *view,
+                                                  gboolean         rules_hint);
+gboolean        tidy_list_view_get_rules_hint    (TidyListView    *view);
 
-gint            tidy_list_view_get_row_at_pos   (TidyListView   *view,
-                                                 gint            x_coord,
-                                                 gint            y_coord);
+gint            tidy_list_view_get_row_at_pos    (TidyListView    *view,
+                                                  gint             x_coord,
+                                                  gint             y_coord);
+void            tidy_list_view_get_cell_geometry (TidyListView    *view,
+                                                  guint            row_index,
+                                                  guint            column_index,
+                                                  gboolean         adjust,
+                                                  ClutterGeometry *geometry);
 
 G_END_DECLS
 
