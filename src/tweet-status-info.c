@@ -42,8 +42,8 @@
 
 #define MAX_WIDTH       350
 
-#define ICON_WIDTH      128
-#define ICON_HEIGHT     128
+#define ICON_WIDTH      64
+#define ICON_HEIGHT     64
 
 #define V_PADDING       6
 #define H_PADDING       12
