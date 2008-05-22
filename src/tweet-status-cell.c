@@ -69,6 +69,8 @@ tweet_status_cell_dispose (GObject *gobject)
 {
   TweetStatusCell *cell = TWEET_STATUS_CELL (gobject);
 
+  g_free (cell->font_name);
+
   if (cell->escape_re)
     {
       g_regex_unref (cell->escape_re);
