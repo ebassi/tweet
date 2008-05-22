@@ -282,7 +282,7 @@ tweet_status_info_request_coords (ClutterActor    *actor,
   else
     clutter_actor_hide (info->icon);
 
-  if (height > (TEXT_Y + clutter_actor_get_height (info->label)))
+  if (height > TEXT_Y)
     {
       clutter_actor_set_width (info->label, (width - (2 * H_PADDING)));
       clutter_actor_show (info->label);
