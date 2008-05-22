@@ -739,6 +739,21 @@ tweet_status_model_prepend_status (TweetStatusModel *model,
                     model);
 }
 
+TwitterStatus *
+tweet_status_model_get_status (TweetStatusModel *model,
+                               ClutterModelIter *iter)
+{
+  TwitterStatus *status;
+
+  g_return_val_if_fail (TWEET_IS_STATUS_MODEL (model), NULL);
+  g_return_val_if_fail (TWEET_IS_STATUS_MODEL_ITER (iter), NULL);
+
+  status = NULL;
+  clutter_model_iter_get (iter, 0, &status, -1);
+
+  return status;
+}
+
 void
 tweet_status_model_set_max_size (TweetStatusModel *model,
                                  gint              max_size)
