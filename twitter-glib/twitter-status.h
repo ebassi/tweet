@@ -28,18 +28,20 @@ G_BEGIN_DECLS
 
 GType                 twitter_status_get_type       (void) G_GNUC_CONST;
 
-TwitterStatus *       twitter_status_new            (void);
-TwitterStatus *       twitter_status_new_from_data  (const gchar   *buffer);
+TwitterStatus *       twitter_status_new                 (void);
+TwitterStatus *       twitter_status_new_from_data       (const gchar   *buffer);
 
-void                  twitter_status_load_from_data (TwitterStatus *status,
-                                                     const gchar   *buffer);
+void                  twitter_status_load_from_data      (TwitterStatus *status,
+                                                          const gchar   *buffer);
 
-TwitterUser *         twitter_status_get_user       (TwitterStatus *status);
-G_CONST_RETURN gchar *twitter_status_get_source     (TwitterStatus *status);
-G_CONST_RETURN gchar *twitter_status_get_created_at (TwitterStatus *status);
-guint                 twitter_status_get_id         (TwitterStatus *status);
-gboolean              twitter_status_get_truncated  (TwitterStatus *status);
-G_CONST_RETURN gchar *twitter_status_get_text       (TwitterStatus *status);
+TwitterUser *         twitter_status_get_user            (TwitterStatus *status);
+G_CONST_RETURN gchar *twitter_status_get_source          (TwitterStatus *status);
+G_CONST_RETURN gchar *twitter_status_get_created_at      (TwitterStatus *status);
+guint                 twitter_status_get_id              (TwitterStatus *status);
+gboolean              twitter_status_get_truncated       (TwitterStatus *status);
+G_CONST_RETURN gchar *twitter_status_get_text            (TwitterStatus *status);
+guint                 twitter_status_get_reply_to_user   (TwitterStatus *status);
+guint                 twitter_status_get_reply_to_status (TwitterStatus *status);
 
 G_END_DECLS
 

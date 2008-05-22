@@ -41,6 +41,9 @@ struct _TwitterStatusPrivate
 
   guint id;
 
+  guint in_reply_to_user_id;
+  guint in_reply_to_status_id;
+
   guint truncated : 1;
 };
 
@@ -53,7 +56,9 @@ enum
   PROP_CREATED_AT,
   PROP_TEXT,
   PROP_ID,
-  PROP_TRUNCATED
+  PROP_TRUNCATED,
+  PROP_REPLY_TO_USER,
+  PROP_REPLY_TO_STATUS
 };
 
 enum
@@ -119,6 +124,14 @@ twitter_status_get_property (GObject    *gobject,
       g_value_set_boolean (value, priv->truncated);
       break;
 
+    case PROP_REPLY_TO_USER:
+      g_value_set_uint (value, priv->in_reply_to_user_id);
+      break;
+
+    case PROP_REPLY_TO_STATUS:
+      g_value_set_uint (value, priv->in_reply_to_status_id);
+      break;
+
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (gobject, prop_id, pspec);
       break;
@@ -177,6 +190,20 @@ twitter_status_class_init (TwitterStatusClass *klass)
                                                          "Whether this status was truncated",
                                                          FALSE,
                                                          G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_REPLY_TO_USER,
+                                   g_param_spec_uint ("reply-to-user",
+                                                      "Reply To User",
+                                                      "The unique id of the user whom the status replies to",
+                                                      0, G_MAXUINT, 0,
+                                                      G_PARAM_READABLE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_REPLY_TO_STATUS,
+                                   g_param_spec_uint ("reply-to-status",
+                                                      "Reply To Status",
+                                                      "The unique id of the status which the status replies to",
+                                                      0, G_MAXUINT, 0,
+                                                      G_PARAM_READABLE));
 
   status_signals[CHANGED] =
     g_signal_new ("changed",
@@ -260,6 +287,14 @@ twitter_status_build (TwitterStatus *status,
   member = json_object_get_member (obj, "text");
   if (member)
     priv->text = json_node_dup_string (member);
+
+  member = json_object_get_member (obj, "in_reply_to_user_id");
+  if (member)
+    priv->in_reply_to_user_id = json_node_get_int (member);
+
+  member = json_object_get_member (obj, "in_reply_to_status_id");
+  if (member)
+    priv->in_reply_to_status_id = json_node_get_int (member);
 }
 
 TwitterStatus *
@@ -382,4 +417,20 @@ twitter_status_get_text (TwitterStatus *status)
   g_return_val_if_fail (TWITTER_IS_STATUS (status), NULL);
 
   return status->priv->text;
+}
+
+guint
+twitter_status_get_reply_to_user (TwitterStatus *status)
+{
+  g_return_val_if_fail (TWITTER_IS_STATUS (status), 0);
+
+  return status->priv->in_reply_to_user_id;
+}
+
+guint
+twitter_status_get_reply_to_status (TwitterStatus *status)
+{
+  g_return_val_if_fail (TWITTER_IS_STATUS (status), 0);
+
+  return status->priv->in_reply_to_status_id;
 }
