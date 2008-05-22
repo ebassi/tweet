@@ -225,7 +225,11 @@ tweet_status_info_constructed (GObject *gobject)
   twitter_date_to_time_val (twitter_status_get_created_at (info->status), &timeval);
 
   created_at = tweet_format_time_for_display (&timeval);
-  text = g_strdup_printf ("<b>%s</b> %s <small>%s</small>",
+  text = g_strdup_printf ("<b>%s (%s)</b> wrote:\n"
+                          "%s\n"
+                          "\n"
+                          "<small>%s</small>",
+                          twitter_user_get_name (user),
                           twitter_user_get_screen_name (user),
                           escaped,
                           created_at);
