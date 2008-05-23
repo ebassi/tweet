@@ -285,14 +285,14 @@ on_status_view_button_release (ClutterActor       *actor,
       clutter_actor_set_position (info,
                                   geometry.x + CANVAS_PADDING,
                                   geometry.y + CANVAS_PADDING);
-      clutter_actor_set_size (info, geometry.width, 10);
+      clutter_actor_set_size (info, geometry.width, 16);
       clutter_actor_set_opacity (info, 0);
       clutter_actor_set_reactive (info, TRUE);
       clutter_actor_show (info);
 
       tweet_actor_animate (info, TWEET_LINEAR, 250,
                            "y", tweet_interval_new (G_TYPE_INT, geometry.y + CANVAS_PADDING, 100 + CANVAS_PADDING),
-                           "height", tweet_interval_new (G_TYPE_INT, 10, (CANVAS_HEIGHT - (100 * 2))),
+                           "height", tweet_interval_new (G_TYPE_INT, 16, (CANVAS_HEIGHT - (100 * 2))),
                            "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 196),
                            NULL);
 
