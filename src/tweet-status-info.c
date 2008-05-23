@@ -65,6 +65,16 @@ enum
   PROP_STATUS
 };
 
+enum
+{
+  STAR_CLICKED,
+  REPLY_CLICKED,
+
+  LAST_SIGNAL
+};
+
+static guint info_signals[LAST_SIGNAL] = { 0, };
+
 G_DEFINE_TYPE (TweetStatusInfo, tweet_status_info, TIDY_TYPE_ACTOR);
 
 static void
@@ -176,8 +186,27 @@ on_button_enter (ClutterActor         *actor,
                  TweetStatusInfo      *info)
 {
   ClutterColor white = { 255, 255, 255, 255 };
+  gint x_pos;
 
   clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &white);
+
+  clutter_label_set_text (CLUTTER_LABEL (info->button_tip),
+                          g_object_get_data (G_OBJECT (actor), "button-tip"));
+
+  x_pos = clutter_actor_get_x (actor);
+  if (x_pos > (MAX_WIDTH / 2))
+    x_pos = clutter_actor_get_x (actor)
+          - clutter_actor_get_width (info->button_tip)
+          - H_PADDING;
+  else
+    x_pos = clutter_actor_get_x (actor)
+          + BUTTON_SIZE
+          + H_PADDING;
+
+  clutter_actor_set_x (info->button_tip, x_pos);
+  tweet_actor_animate (info->button_tip, TWEET_LINEAR, 150,
+                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 255),
+                       NULL);
 
   return FALSE;
 }
@@ -190,6 +219,9 @@ on_button_leave (ClutterActor         *actor,
   ClutterColor black = { 0, 0, 0, 255 };
 
   clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &black);
+  tweet_actor_animate (info->button_tip, TWEET_LINEAR, 150,
+                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 255, 0),
+                       NULL);
 
   return FALSE;
 }
@@ -199,6 +231,13 @@ on_button_press (ClutterActor       *actor,
                  ClutterButtonEvent *event,
                  TweetStatusInfo    *info)
 {
+  if (actor == info->star_button)
+    g_signal_emit (info, info_signals[STAR_CLICKED], 0);
+  else if (actor == info->reply_button)
+    g_signal_emit (info, info_signals[REPLY_CLICKED], 0);
+  else
+    return FALSE;
+
   return TRUE;
 }
 
@@ -280,10 +319,12 @@ tweet_status_info_constructed (GObject *gobject)
   clutter_actor_set_position (info->label, TEXT_X, TEXT_Y);
   clutter_actor_set_width (info->label, TEXT_WIDTH);
 
-  g_free (font_name);
   g_free (text);
 
   info->star_button = clutter_rectangle_new ();
+  g_object_set_data_full (G_OBJECT (info->star_button), "button-tip",
+                          g_strdup ("Favorite this update"),
+                          g_free);
   g_signal_connect (info->star_button,
                     "enter-event", G_CALLBACK (on_button_enter),
                     info);
@@ -303,6 +344,9 @@ tweet_status_info_constructed (GObject *gobject)
   clutter_actor_show (info->star_button);
 
   info->reply_button = clutter_rectangle_new ();
+  g_object_set_data_full (G_OBJECT (info->reply_button), "button-tip",
+                          g_strdup_printf ("Reply to %s", twitter_user_get_name (user)),
+                          g_free);
   g_signal_connect (info->reply_button,
                     "enter-event", G_CALLBACK (on_button_enter),
                     info);
@@ -320,6 +364,20 @@ tweet_status_info_constructed (GObject *gobject)
                               0);
   clutter_actor_set_reactive (info->reply_button, TRUE);
   clutter_actor_show (info->reply_button);
+
+  info->button_tip = clutter_label_new ();
+  clutter_label_set_color (CLUTTER_LABEL (info->button_tip), &text_color);
+  clutter_label_set_font_name (CLUTTER_LABEL (info->button_tip), font_name);
+  clutter_label_set_line_wrap (CLUTTER_LABEL (info->button_tip), TRUE);
+  clutter_label_set_text (CLUTTER_LABEL (info->button_tip), "");
+  clutter_label_set_use_markup (CLUTTER_LABEL (info->button_tip), TRUE);
+  clutter_actor_set_parent (info->button_tip, CLUTTER_ACTOR (info));
+  clutter_actor_set_position (info->button_tip, TEXT_WIDTH / 2, 0);
+  clutter_actor_set_width (info->button_tip, TEXT_WIDTH - (2 * BUTTON_SIZE));
+  clutter_actor_set_opacity (info->button_tip, 0);
+  clutter_actor_show (info->button_tip);
+
+  g_free (font_name);
 }
 
 static void
@@ -367,6 +425,7 @@ tweet_status_info_request_coords (ClutterActor    *actor,
   clutter_actor_set_position (info->star_button,
                               TEXT_WIDTH - BUTTON_SIZE - H_PADDING,
                               height - BUTTON_SIZE - V_PADDING);
+  clutter_actor_set_y (info->button_tip, height - BUTTON_SIZE - V_PADDING);
 
   info->allocation = *box;
 }
@@ -390,6 +449,9 @@ tweet_status_info_paint (ClutterActor *actor)
 
   if (CLUTTER_ACTOR_IS_VISIBLE (info->star_button))
     clutter_actor_paint (info->star_button);
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (info->button_tip))
+    clutter_actor_paint (info->button_tip);
 }
 
 static void
@@ -435,6 +497,23 @@ tweet_status_info_class_init (TweetStatusInfoClass *klass)
                                                         "Twitter status",
                                                         TWITTER_TYPE_STATUS,
                                                         G_PARAM_CONSTRUCT | G_PARAM_READWRITE));
+
+  info_signals[STAR_CLICKED] =
+    g_signal_new ("star-clicked",
+                  G_TYPE_FROM_CLASS (klass),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (TweetStatusInfoClass, star_clicked),
+                  NULL, NULL,
+                  g_cclosure_marshal_VOID__VOID,
+                  G_TYPE_NONE, 0);
+  info_signals[REPLY_CLICKED] =
+    g_signal_new ("reply-clicked",
+                  G_TYPE_FROM_CLASS (klass),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (TweetStatusInfoClass, reply_clicked),
+                  NULL, NULL,
+                  g_cclosure_marshal_VOID__VOID,
+                  G_TYPE_NONE, 0);
 }
 
 static void
@@ -450,3 +529,30 @@ tweet_status_info_new (TwitterStatus *status)
 
   return g_object_new (TWEET_TYPE_STATUS_INFO, "status", status, NULL);
 }
+
+void
+tweet_status_info_set_status (TweetStatusInfo *info,
+                              TwitterStatus   *status)
+{
+  g_return_if_fail (TWEET_IS_STATUS_INFO (info));
+  g_return_if_fail (TWITTER_IS_STATUS (status));
+
+  if (info->status)
+    g_object_unref (info->status);
+
+  info->status = g_object_ref (status);
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (info))
+    clutter_actor_queue_redraw (CLUTTER_ACTOR (info));
+
+  g_object_notify (G_OBJECT (info), "status");
+}
+
+TwitterStatus *
+tweet_status_info_get_status (TweetStatusInfo *info)
+{
+  g_return_val_if_fail (TWEET_IS_STATUS_INFO (info), NULL);
+
+  return info->status;
+}
+
