@@ -33,3 +33,12 @@ copy-and-paste/tidy/tidy-enum-types.[ch]
 copy-and-paste/tidy/tidy-marshal.[ch]
 src/tweet-enum-types.[ch]
 .*.swp
+intltool-*.in
+intltool-*
+po/.*
+po/Makefile.in.in
+po/POTFILES
+po/stamp-it
+gnome-doc-utils.make
+data/tweet.desktop
+mkinstalldirs
