@@ -54,7 +54,7 @@
 #define TEXT_Y          (ICON_Y + ICON_HEIGHT + (2 * V_PADDING))
 #define TEXT_WIDTH      (MAX_WIDTH - (2 * H_PADDING))
 
-#define BUTTON_SIZE     24
+#define BUTTON_SIZE     32
 
 #define BG_ROUND_RADIUS 24
 
@@ -188,7 +188,11 @@ on_button_enter (ClutterActor         *actor,
   ClutterColor white = { 255, 255, 255, 255 };
   gint x_pos;
 
-  clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &white);
+  if (CLUTTER_IS_RECTANGLE (actor))
+    clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &white);
+  else
+    {
+    }
 
   clutter_label_set_text (CLUTTER_LABEL (info->button_tip),
                           g_object_get_data (G_OBJECT (actor), "button-tip"));
@@ -218,7 +222,9 @@ on_button_leave (ClutterActor         *actor,
 {
   ClutterColor black = { 0, 0, 0, 255 };
 
-  clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &black);
+  if (CLUTTER_IS_RECTANGLE (actor))
+    clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &black);
+
   tweet_actor_animate (info->button_tip, TWEET_LINEAR, 150,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 255, 0),
                        NULL);
@@ -321,7 +327,15 @@ tweet_status_info_constructed (GObject *gobject)
 
   g_free (text);
 
-  info->star_button = clutter_rectangle_new ();
+  info->star_button =
+    tweet_texture_new_from_icon_name (NULL, "favorite-status", -1);
+  if (!info->star_button)
+    {
+      info->star_button = clutter_rectangle_new ();
+      clutter_rectangle_set_color (CLUTTER_RECTANGLE (info->star_button),
+                                   &text_color);
+    }
+
   g_object_set_data_full (G_OBJECT (info->star_button), "button-tip",
                           g_strdup ("Favorite this update"),
                           g_free);
@@ -334,7 +348,6 @@ tweet_status_info_constructed (GObject *gobject)
   g_signal_connect (info->star_button,
                     "button-press-event", G_CALLBACK (on_button_press),
                     info);
-  clutter_rectangle_set_color (CLUTTER_RECTANGLE (info->star_button), &text_color);
   clutter_actor_set_size (info->star_button, BUTTON_SIZE, BUTTON_SIZE);
   clutter_actor_set_parent (info->star_button, CLUTTER_ACTOR (info));
   clutter_actor_set_position (info->star_button,
