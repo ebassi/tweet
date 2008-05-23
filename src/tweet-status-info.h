@@ -44,6 +44,7 @@ struct _TweetStatusInfo
   ClutterActor *label;
   ClutterActor *reply_button;
   ClutterActor *star_button;
+  ClutterActor *button_tip;
 
   GRegex *escape_re;
 

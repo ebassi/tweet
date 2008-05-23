@@ -52,7 +52,9 @@
 
 #define TEXT_X          (H_PADDING)
 #define TEXT_Y          (ICON_Y + ICON_HEIGHT + (2 * V_PADDING))
-#define TEXT_WIDTH      (MAX_WIDTH * (2 * H_PADDING))
+#define TEXT_WIDTH      (MAX_WIDTH - (2 * H_PADDING))
+
+#define BUTTON_SIZE     24
 
 #define BG_ROUND_RADIUS 24
 
@@ -168,6 +170,38 @@ draw_background (ClutterCairo *background)
   cairo_destroy (cr);
 }
 
+static gboolean
+on_button_enter (ClutterActor         *actor,
+                 ClutterCrossingEvent *event,
+                 TweetStatusInfo      *info)
+{
+  ClutterColor white = { 255, 255, 255, 255 };
+
+  clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &white);
+
+  return FALSE;
+}
+
+static gboolean
+on_button_leave (ClutterActor         *actor,
+                 ClutterCrossingEvent *event,
+                 TweetStatusInfo      *info)
+{
+  ClutterColor black = { 0, 0, 0, 255 };
+
+  clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &black);
+
+  return FALSE;
+}
+
+static gboolean
+on_button_press (ClutterActor       *actor,
+                 ClutterButtonEvent *event,
+                 TweetStatusInfo    *info)
+{
+  return TRUE;
+}
+
 static void
 tweet_status_info_constructed (GObject *gobject)
 {
@@ -184,9 +218,9 @@ tweet_status_info_constructed (GObject *gobject)
     font_name = g_strdup ("Sans 8");
 
   /* background texture */
-  info->bg = clutter_cairo_new (MAX_WIDTH, 10);
+  info->bg = clutter_cairo_new (MAX_WIDTH, BUTTON_SIZE);
   clutter_actor_set_parent (info->bg, CLUTTER_ACTOR (info));
-  clutter_actor_set_size (info->bg, MAX_WIDTH, 10);
+  clutter_actor_set_size (info->bg, MAX_WIDTH, BUTTON_SIZE);
   clutter_actor_set_position (info->bg, 0, 0);
   clutter_actor_show (info->bg);
 
@@ -245,10 +279,47 @@ tweet_status_info_constructed (GObject *gobject)
   clutter_actor_set_parent (info->label, CLUTTER_ACTOR (info));
   clutter_actor_set_position (info->label, TEXT_X, TEXT_Y);
   clutter_actor_set_width (info->label, TEXT_WIDTH);
-  clutter_actor_show (info->label);
 
   g_free (font_name);
   g_free (text);
+
+  info->star_button = clutter_rectangle_new ();
+  g_signal_connect (info->star_button,
+                    "enter-event", G_CALLBACK (on_button_enter),
+                    info);
+  g_signal_connect (info->star_button,
+                    "leave-event", G_CALLBACK (on_button_leave),
+                    info);
+  g_signal_connect (info->star_button,
+                    "button-press-event", G_CALLBACK (on_button_press),
+                    info);
+  clutter_rectangle_set_color (CLUTTER_RECTANGLE (info->star_button), &text_color);
+  clutter_actor_set_size (info->star_button, BUTTON_SIZE, BUTTON_SIZE);
+  clutter_actor_set_parent (info->star_button, CLUTTER_ACTOR (info));
+  clutter_actor_set_position (info->star_button,
+                              TEXT_X,
+                              0);
+  clutter_actor_set_reactive (info->star_button, TRUE);
+  clutter_actor_show (info->star_button);
+
+  info->reply_button = clutter_rectangle_new ();
+  g_signal_connect (info->reply_button,
+                    "enter-event", G_CALLBACK (on_button_enter),
+                    info);
+  g_signal_connect (info->reply_button,
+                    "leave-event", G_CALLBACK (on_button_leave),
+                    info);
+  g_signal_connect (info->reply_button,
+                    "button-press-event", G_CALLBACK (on_button_press),
+                    info);
+  clutter_rectangle_set_color (CLUTTER_RECTANGLE (info->reply_button), &text_color);
+  clutter_actor_set_size (info->reply_button, BUTTON_SIZE, BUTTON_SIZE);
+  clutter_actor_set_parent (info->reply_button, CLUTTER_ACTOR (info));
+  clutter_actor_set_position (info->reply_button,
+                              TEXT_WIDTH - BUTTON_SIZE,
+                              0);
+  clutter_actor_set_reactive (info->reply_button, TRUE);
+  clutter_actor_show (info->reply_button);
 }
 
 static void
@@ -277,31 +348,25 @@ tweet_status_info_request_coords (ClutterActor    *actor,
   clutter_actor_set_size (info->bg, width, height);
   draw_background (CLUTTER_CAIRO (info->bg));
 
+  clutter_actor_set_width (info->label, (width - (2 * H_PADDING)));
+  clutter_actor_set_height (info->label, -1);
+
   if (height > (ICON_Y + ICON_HEIGHT))
     clutter_actor_show (info->icon);
   else
     clutter_actor_hide (info->icon);
 
-  if (height > TEXT_Y)
-    {
-      clutter_actor_set_width (info->label, (width - (2 * H_PADDING)));
-      clutter_actor_show (info->label);
-    }
+  if (height > (TEXT_Y + clutter_actor_get_height (info->label)))
+    clutter_actor_show (info->label);
   else
     clutter_actor_hide (info->label);
 
-#if 0
-  if (height > (BUTTONS_Y + BUTTONS_HEIGHT))
-    {
-      clutter_actor_show (info->reply_button);
-      clutter_actor_show (info->star_button);
-    }
-  else
-    {
-      clutter_actor_hide (info->reply_button);
-      clutter_actor_hide (info->star_button);
-    }
-#endif
+  clutter_actor_set_position (info->reply_button,
+                              TEXT_X + H_PADDING,
+                              height - BUTTON_SIZE - V_PADDING);
+  clutter_actor_set_position (info->star_button,
+                              TEXT_WIDTH - BUTTON_SIZE - H_PADDING,
+                              height - BUTTON_SIZE - V_PADDING);
 
   info->allocation = *box;
 }
@@ -319,16 +384,32 @@ tweet_status_info_paint (ClutterActor *actor)
 
   if (CLUTTER_ACTOR_IS_VISIBLE (info->label))
     clutter_actor_paint (info->label);
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (info->reply_button))
+    clutter_actor_paint (info->reply_button);
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (info->star_button))
+    clutter_actor_paint (info->star_button);
 }
 
 static void
-tweet_status_info_pick (ClutterActor *actor,
+tweet_status_info_pick (ClutterActor       *actor,
                         const ClutterColor *pick_color)
 {
+  TweetStatusInfo *info = TWEET_STATUS_INFO (actor);
+
   if (!clutter_actor_should_pick_paint (actor))
     return;
 
+  /* this will paint ourselves as a rectangle */
   CLUTTER_ACTOR_CLASS (tweet_status_info_parent_class)->pick (actor, pick_color);
+
+  /* the buttons are reactive areas as well */
+  if (CLUTTER_ACTOR_IS_VISIBLE (info->reply_button))
+    clutter_actor_paint (info->reply_button);
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (info->star_button))
+    clutter_actor_paint (info->star_button);
 }
 
 static void
