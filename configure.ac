@@ -34,6 +34,8 @@ GNOME_COMMON_INIT
 GNOME_COMPILE_WARNINGS
 GNOME_DEBUG_CHECK
 
+IT_PROG_INTLTOOL([0.35.0])
+
 AM_DISABLE_STATIC
 AM_PATH_GLIB_2_0
 AM_PROG_CC_C_O
@@ -126,6 +128,15 @@ else
   CPPFLAGS="$CPPFLAGS -g -Wall"
 fi
 
+dnl Internationalization
+GETTEXT_PACKAGE=tweet
+AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], "$GETTEXT_PACKAGE", [Define the gettext package to use])
+AC_SUBST(GETTEXT_PACKAGE)
+AM_GLIB_GNU_GETTEXT
+
+dnl gnome-doc-utils stuff
+GNOME_DOC_INIT
+
 AC_CONFIG_FILES([
         Makefile
         twitter-glib/Makefile
@@ -135,6 +146,7 @@ AC_CONFIG_FILES([
         copy-and-paste/tidy/Makefile
         src/Makefile
         tests/Makefile
+        po/Makefile.in
 ])
 
 AC_OUTPUT
