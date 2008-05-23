@@ -1,0 +1,11 @@
+[Desktop Entry]
+_Name=Tweet
+_GenericName=Twitter Client
+_Comment=Desktop client for the Twitter messaging service
+Exec=tweet
+Terminal=false
+Type=Application
+Icon=tweet.png
+StartupNotify=true
+Categories=GNOME;GTK;Network;InstantMessaging;
+NotShowIn=KDE;
