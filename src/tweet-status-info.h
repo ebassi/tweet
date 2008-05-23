@@ -44,6 +44,7 @@ struct _TweetStatusInfo
   ClutterActor *label;
   ClutterActor *reply_button;
   ClutterActor *star_button;
+  ClutterActor *button_tip;
 
   GRegex *escape_re;
 
@@ -53,6 +54,9 @@ struct _TweetStatusInfo
 struct _TweetStatusInfoClass
 {
   TidyActorClass parent_class;
+
+  void (* star_clicked)  (TweetStatusInfo *info);
+  void (* reply_clicked) (TweetStatusInfo *info);
 };
 
 GType          tweet_status_info_get_type   (void) G_GNUC_CONST;

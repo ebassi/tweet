@@ -148,6 +148,31 @@ tweet_texture_new_from_pixbuf (GdkPixbuf *pixbuf)
   return retval; 
 }
 
+void
+tweet_texture_set_from_pixbuf (ClutterTexture *texture,
+                               GdkPixbuf      *pixbuf)
+{
+  GError *error;
+
+  g_return_if_fail (CLUTTER_IS_TEXTURE (texture));
+  g_return_if_fail (GDK_IS_PIXBUF (pixbuf));
+
+  error = NULL;
+  clutter_texture_set_from_rgb_data (texture,
+                                     gdk_pixbuf_get_pixels (pixbuf),
+                                     gdk_pixbuf_get_has_alpha (pixbuf),
+                                     gdk_pixbuf_get_width (pixbuf),
+                                     gdk_pixbuf_get_height (pixbuf),
+                                     gdk_pixbuf_get_rowstride (pixbuf),
+                                     4, 0,
+                                     &error);
+  if (error)
+    {
+      g_warning ("Unable to set the pixbuf: %s", error->message);
+      g_error_free (error);
+    }
+}
+
 ClutterActor *
 tweet_texture_new_from_stock (GtkWidget   *widget,
                               const gchar *stock_id,
@@ -172,6 +197,29 @@ tweet_texture_new_from_stock (GtkWidget   *widget,
   return retval;
 }
 
+void
+tweet_texture_set_from_stock (ClutterTexture *texture,
+                              GtkWidget      *widget,
+                              const gchar    *stock_id,
+                              GtkIconSize     size)
+{
+  GdkPixbuf *pixbuf;
+
+  g_return_if_fail (CLUTTER_IS_TEXTURE (texture));
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+  g_return_if_fail (stock_id != NULL);
+  g_return_if_fail (size > GTK_ICON_SIZE_INVALID || size == -1);
+
+  pixbuf = gtk_widget_render_icon (widget, stock_id, size, NULL);
+  if (!pixbuf)
+    pixbuf = gtk_widget_render_icon (widget,
+                                     GTK_STOCK_MISSING_IMAGE, size,
+                                     NULL);
+
+  tweet_texture_set_from_pixbuf (texture, pixbuf);
+  g_object_unref (pixbuf);
+}
+
 ClutterActor *
 tweet_texture_new_from_icon_name (GtkWidget   *widget,
                                   const gchar *icon_name,
@@ -184,11 +232,11 @@ tweet_texture_new_from_icon_name (GtkWidget   *widget,
   GError *error;
   ClutterActor *retval;
 
-  g_return_val_if_fail (GTK_IS_WIDGET (widget), NULL);
+  g_return_val_if_fail (widget == NULL || GTK_IS_WIDGET (widget), NULL);
   g_return_val_if_fail (icon_name != NULL, NULL);
   g_return_val_if_fail (size > GTK_ICON_SIZE_INVALID || size == -1, NULL);
 
-  if (gtk_widget_has_screen (widget))
+  if (widget && gtk_widget_has_screen (widget))
     {
       GdkScreen *screen;
 
@@ -202,9 +250,9 @@ tweet_texture_new_from_icon_name (GtkWidget   *widget,
       icon_theme = gtk_icon_theme_get_default ();
     }
 
-  if (!gtk_icon_size_lookup_for_settings (settings, size, &width, &height))
+  if (size == -1 ||
+      !gtk_icon_size_lookup_for_settings (settings, size, &width, &height))
     {
-      g_warning ("Invalid icon size");
       width = height = 48;
     }
 
@@ -216,15 +264,78 @@ tweet_texture_new_from_icon_name (GtkWidget   *widget,
   if (error)
     {
       g_error_free (error);
-      return tweet_texture_new_from_stock (widget,
-                                           GTK_STOCK_MISSING_IMAGE,
-                                           size);
+
+      if (widget)
+        return tweet_texture_new_from_stock (widget,
+                                             GTK_STOCK_MISSING_IMAGE,
+                                             size);
+      else
+        return NULL;
     }
 
   retval = tweet_texture_new_from_pixbuf (pixbuf);
   g_object_unref (pixbuf);
 
   return retval; 
+}
+
+void
+tweet_texture_set_from_icon_name (ClutterTexture *texture,
+                                  GtkWidget      *widget,
+                                  const gchar    *icon_name,
+                                  GtkIconSize     size)
+{
+  GtkSettings *settings;
+  GtkIconTheme *icon_theme;
+  gint width, height;
+  GdkPixbuf *pixbuf;
+  GError *error;
+
+  g_return_if_fail (CLUTTER_IS_TEXTURE (texture));
+  g_return_if_fail (widget == NULL || GTK_IS_WIDGET (widget));
+  g_return_if_fail (icon_name != NULL);
+  g_return_if_fail (size > GTK_ICON_SIZE_INVALID || size == -1);
+
+  if (widget && gtk_widget_has_screen (widget))
+    {
+      GdkScreen *screen;
+
+      screen = gtk_widget_get_screen (widget);
+      settings = gtk_settings_get_for_screen (screen);
+      icon_theme = gtk_icon_theme_get_for_screen (screen);
+    }
+  else
+    {
+      settings = gtk_settings_get_default ();
+      icon_theme = gtk_icon_theme_get_default ();
+    }
+
+  if (size == -1 ||
+      !gtk_icon_size_lookup_for_settings (settings, size, &width, &height))
+    {
+      width = height = 48;
+    }
+
+  error = NULL;
+  pixbuf = gtk_icon_theme_load_icon (icon_theme,
+                                     icon_name,
+                                     MIN (width, height), 0,
+                                     &error);
+  if (error)
+    {
+      g_error_free (error);
+
+      if (widget)
+        return tweet_texture_set_from_stock (texture,
+                                             widget,
+                                             GTK_STOCK_MISSING_IMAGE,
+                                             size);
+      else
+        return;
+    }
+
+  tweet_texture_set_from_pixbuf (texture, pixbuf);
+  g_object_unref (pixbuf);
 }
 
 gchar *
