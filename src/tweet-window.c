@@ -211,8 +211,46 @@ on_info_button_press (ClutterActor       *actor,
   return TRUE;
 }
 
+static void
+on_star_clicked (TweetStatusInfo *info,
+                 TweetWindow     *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+  TwitterStatus *status;
+
+  status = tweet_status_info_get_status (info);
+  if (!status)
+    return;
+
+  twitter_client_add_favorite (priv->client, twitter_status_get_id (status));
+  g_print ("Status %d marked as favorite\n", twitter_status_get_id (status));
+}
+
+static void
+on_reply_clicked (TweetStatusInfo *info,
+                  TweetWindow     *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+  TwitterStatus *status;
+  TwitterUser *user;
+  gchar *reply_to;
+
+  status = tweet_status_info_get_status (info);
+  if (!status)
+    return;
+
+  user = twitter_status_get_user (status);
+  if (!user)
+    return;
+
+  reply_to = g_strdup_printf ("@%s ", twitter_user_get_screen_name (user));
+
+  gtk_entry_set_text (GTK_ENTRY (priv->entry), reply_to);
+  g_free (reply_to);
+}
+
 static gboolean
-on_status_view_button_press (ClutterActor *actor,
+on_status_view_button_press (ClutterActor       *actor,
                              ClutterButtonEvent *event,
                              TweetWindow        *window)
 {
@@ -279,6 +317,12 @@ on_status_view_button_release (ClutterActor       *actor,
       info = tweet_status_info_new (status);
       g_signal_connect (info,
                         "button-press-event", G_CALLBACK (on_info_button_press),
+                        window);
+      g_signal_connect (info,
+                        "star-clicked", G_CALLBACK (on_star_clicked),
+                        window);
+      g_signal_connect (info,
+                        "reply-clicked", G_CALLBACK (on_reply_clicked),
                         window);
                                 
       clutter_container_add_actor (CLUTTER_CONTAINER (stage), info);
