@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include <glib.h>
+#include <glib/gi18n.h>
 
 #include <gtk/gtk.h>
 
@@ -70,21 +71,25 @@ on_user_verified (TwitterClient   *client,
 
   if (error)
     {
-      text = g_strdup_printf ("<i>Unable to verify user: %s</i>", error->message);
+      text = g_strconcat ("<i>", _("Unable to verify user: "),
+                          error->message,
+                          "</i>",
+                          NULL);
       gtk_label_set_text (GTK_LABEL (dialog->priv->verify_label), text);
       gtk_label_set_use_markup (GTK_LABEL (dialog->priv->verify_label), TRUE);
-      g_free (text);
     }
   else
     {
       if (is_verified)
-        text = "<i>User verified</i>";
+        text = g_strconcat ("<i>", _("User verified"), "</i>", NULL);
       else
-        text = "<i>Invalid user</i>";
+        text = g_strconcat ("<i>", _("Invalid user"), "</i>", NULL);
 
       gtk_label_set_text (GTK_LABEL (dialog->priv->verify_label), text);
       gtk_label_set_use_markup (GTK_LABEL (dialog->priv->verify_label), TRUE);
     }
+
+  g_free (text);
 
   gtk_dialog_set_response_sensitive (GTK_DIALOG (dialog), GTK_RESPONSE_OK, TRUE);
 }
@@ -98,16 +103,18 @@ on_response (GtkDialog *dialog,
   if (response_id == 1)
     {
       const gchar *email, *password;
+      gchar *text;
 
       g_signal_stop_emission_by_name (dialog, "response");
 
       gtk_dialog_set_response_sensitive (dialog, 1, FALSE);
       gtk_dialog_set_response_sensitive (dialog, GTK_RESPONSE_OK, FALSE);
 
-      gtk_label_set_text (GTK_LABEL (priv->verify_label),
-                          "<i>Verifying credentials...</i>");
+      text = g_strconcat ("<i>", _("Verifying credentials..."), "</i>", NULL);
+      gtk_label_set_text (GTK_LABEL (priv->verify_label), text);
       gtk_label_set_use_markup (GTK_LABEL (priv->verify_label), TRUE);
       gtk_widget_show (priv->verify_label);
+      g_free (text);
 
       email = gtk_entry_get_text (GTK_ENTRY (priv->email_entry));
       password = gtk_entry_get_text (GTK_ENTRY (priv->password_entry));
@@ -210,8 +217,8 @@ tweet_auth_dialog_constructed (GObject *gobject)
 
   priv->size_group = gtk_size_group_new (GTK_SIZE_GROUP_HORIZONTAL);
 
-  label = gtk_label_new ("Please insert the email address and password\n"
-                         "used when registering the account on Twitter.");
+  label = gtk_label_new (_("Please insert the email address and password\n"
+                           "used when registering the account on Twitter."));
   gtk_misc_set_alignment (GTK_MISC (label), 0.0, 1.0);
   gtk_box_pack_start (GTK_BOX (vbox), label, FALSE, FALSE, 0);
   gtk_widget_show (label);
@@ -221,7 +228,7 @@ tweet_auth_dialog_constructed (GObject *gobject)
   gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
   gtk_widget_show (hbox);
 
-  label = gtk_label_new ("Email address:");
+  label = gtk_label_new (_("Email address:"));
   gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
   gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
   gtk_size_group_add_widget (priv->size_group, label);
@@ -239,7 +246,7 @@ tweet_auth_dialog_constructed (GObject *gobject)
   gtk_box_pack_start (GTK_BOX (vbox), hbox, FALSE, FALSE, 0);
   gtk_widget_show (hbox);
 
-  label = gtk_label_new ("Password:");
+  label = gtk_label_new (_("Password:"));
   gtk_misc_set_alignment (GTK_MISC (label), 1.0, 0.5);
   gtk_box_pack_start (GTK_BOX (hbox), label, FALSE, FALSE, 0);
   gtk_size_group_add_widget (priv->size_group, label);
@@ -264,7 +271,7 @@ tweet_auth_dialog_constructed (GObject *gobject)
                                            GTK_RESPONSE_OK);
   gtk_widget_set_sensitive (priv->ok_button, FALSE);
   priv->verify_button = gtk_dialog_add_button (GTK_DIALOG (dialog),
-                                               "Verify credentials",
+                                               _("Verify credentials"),
                                                1);
   gtk_widget_set_sensitive (priv->verify_button, FALSE);
   gtk_dialog_add_button (GTK_DIALOG (dialog),
