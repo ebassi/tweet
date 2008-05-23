@@ -192,6 +192,10 @@ on_button_enter (ClutterActor         *actor,
     clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &white);
   else
     {
+      if (actor == info->star_button)
+        tweet_texture_set_from_icon_name (CLUTTER_TEXTURE (actor), NULL,
+                                          "status-favorite-set",
+                                          -1);
     }
 
   clutter_label_set_text (CLUTTER_LABEL (info->button_tip),
@@ -224,6 +228,13 @@ on_button_leave (ClutterActor         *actor,
 
   if (CLUTTER_IS_RECTANGLE (actor))
     clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &black);
+  else
+    {
+      if (actor == info->star_button)
+        tweet_texture_set_from_icon_name (CLUTTER_TEXTURE (actor), NULL,
+                                          "favorite-status",
+                                          -1);
+    }
 
   tweet_actor_animate (info->button_tip, TWEET_LINEAR, 150,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 255, 0),
