@@ -185,18 +185,12 @@ on_button_enter (ClutterActor         *actor,
                  ClutterCrossingEvent *event,
                  TweetStatusInfo      *info)
 {
-  ClutterColor white = { 255, 255, 255, 255 };
   gint x_pos;
 
-  if (CLUTTER_IS_RECTANGLE (actor))
-    clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &white);
-  else
-    {
-      if (actor == info->star_button)
-        tweet_texture_set_from_icon_name (CLUTTER_TEXTURE (actor), NULL,
-                                          "status-favorite-set",
-                                          -1);
-    }
+  if (actor == info->star_button)
+    tweet_texture_set_from_icon_name (CLUTTER_TEXTURE (actor), NULL,
+                                      "status-favorite-set",
+                                      -1);
 
   clutter_label_set_text (CLUTTER_LABEL (info->button_tip),
                           g_object_get_data (G_OBJECT (actor), "button-tip"));
@@ -224,17 +218,10 @@ on_button_leave (ClutterActor         *actor,
                  ClutterCrossingEvent *event,
                  TweetStatusInfo      *info)
 {
-  ClutterColor black = { 0, 0, 0, 255 };
-
-  if (CLUTTER_IS_RECTANGLE (actor))
-    clutter_rectangle_set_color (CLUTTER_RECTANGLE (actor), &black);
-  else
-    {
-      if (actor == info->star_button)
-        tweet_texture_set_from_icon_name (CLUTTER_TEXTURE (actor), NULL,
-                                          "favorite-status",
-                                          -1);
-    }
+  if (actor == info->star_button)
+    tweet_texture_set_from_icon_name (CLUTTER_TEXTURE (actor), NULL,
+                                      "favorite-status",
+                                      -1);
 
   tweet_actor_animate (info->button_tip, TWEET_LINEAR, 150,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 255, 0),
@@ -367,7 +354,15 @@ tweet_status_info_constructed (GObject *gobject)
   clutter_actor_set_reactive (info->star_button, TRUE);
   clutter_actor_show (info->star_button);
 
-  info->reply_button = clutter_rectangle_new ();
+  info->reply_button =
+    tweet_texture_new_from_icon_name (NULL, "reply-to-status", -1);
+  if (!info->reply_button)
+    {
+      info->reply_button = clutter_rectangle_new ();
+      clutter_rectangle_set_color (CLUTTER_RECTANGLE (info->reply_button),
+                                   &text_color);
+    }
+
   g_object_set_data_full (G_OBJECT (info->reply_button), "button-tip",
                           g_strdup_printf ("Reply to %s", twitter_user_get_name (user)),
                           g_free);
@@ -380,7 +375,6 @@ tweet_status_info_constructed (GObject *gobject)
   g_signal_connect (info->reply_button,
                     "button-press-event", G_CALLBACK (on_button_press),
                     info);
-  clutter_rectangle_set_color (CLUTTER_RECTANGLE (info->reply_button), &text_color);
   clutter_actor_set_size (info->reply_button, BUTTON_SIZE, BUTTON_SIZE);
   clutter_actor_set_parent (info->reply_button, CLUTTER_ACTOR (info));
   clutter_actor_set_position (info->reply_button,
