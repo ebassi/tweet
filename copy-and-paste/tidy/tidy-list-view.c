@@ -1316,6 +1316,12 @@ tidy_list_view_set_model (TidyListView *view,
       priv->model = NULL;
     }
 
+  if (priv->hadjustment)
+    tidy_adjustment_set_value (priv->hadjustment, 0.0);
+
+  if (priv->vadjustment)
+    tidy_adjustment_set_value (priv->vadjustment, 0.0);
+
   if (model)
     {
       TidyListViewClass *klass = TIDY_LIST_VIEW_GET_CLASS (view);
