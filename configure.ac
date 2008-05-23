@@ -151,8 +151,10 @@ AC_CONFIG_FILES([
         data/icons/Makefile
         data/icons/32x32/Makefile
         data/icons/32x32/actions/Makefile
+        data/icons/32x32/status/Makefile
         data/icons/scalable/Makefile
         data/icons/scalable/actions/Makefile
+        data/icons/scalable/status/Makefile
 ])
 
 AC_OUTPUT
