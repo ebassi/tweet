@@ -1299,8 +1299,31 @@ twitter_client_get_followers (TwitterClient *client,
 }
 
 void
-twitter_client_show_user (TwitterClient *client,
-                          const gchar   *user)
+twitter_client_show_user_from_email (TwitterClient *client,
+                                     const gchar   *email)
+{
+  GetUserClosure *clos;
+  SoupMessage *msg;
+
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+  g_return_if_fail (email != NULL);
+
+  msg = twitter_api_user_show (NULL, email);
+
+  clos = g_new0 (GetUserClosure, 1);
+  closure_set_action (clos, USER_SHOW);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, FALSE);
+  clos->user = twitter_user_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_user_cb,
+                                clos);
+}
+
+void
+twitter_client_show_user_from_id (TwitterClient *client,
+                                  const gchar   *user)
 {
   GetUserClosure *clos;
   SoupMessage *msg;
@@ -1308,7 +1331,7 @@ twitter_client_show_user (TwitterClient *client,
   g_return_if_fail (TWITTER_IS_CLIENT (client));
   g_return_if_fail (user != NULL);
 
-  msg = twitter_api_user_show (user);
+  msg = twitter_api_user_show (user, NULL);
 
   clos = g_new0 (GetUserClosure, 1);
   closure_set_action (clos, USER_SHOW);

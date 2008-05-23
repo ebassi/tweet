@@ -82,9 +82,13 @@
 #define TWITTER_API_FEATURED                    \
         "http://twitter.com/statuses/featured.json"
 
-/* @param (required): id=user id */
-#define TWITTER_API_USER_SHOW                   \
+/* @param (required): id=user id or screen name */
+#define TWITTER_API_USER_SHOW_ID                \
         "http://twitter.com/users/show/%s.json"
+
+/* @param: email=email address */
+#define TWITTER_API_USER_SHOW_EMAIL             \
+        "http://twitter.com/users/show.json&email=%s"
 
 #define TWITTER_API_DIRECT_MESSAGES             \
         "http://twitter.com/direct_messages.json"
@@ -298,12 +302,17 @@ twitter_api_featured (void)
 }
 
 SoupMessage *
-twitter_api_user_show (const gchar *user)
+twitter_api_user_show (const gchar *user,
+                       const gchar *email)
 {
   gchar *url;
   SoupMessage *msg;
 
-  url = g_strdup_printf (TWITTER_API_USER_SHOW, user);
+  if (user)
+    url = g_strdup_printf (TWITTER_API_USER_SHOW_ID, user);
+  else
+    url = g_strdup_printf (TWITTER_API_USER_SHOW_EMAIL, email);
+
   msg = soup_message_new (SOUP_METHOD_GET, url);
   g_free (url);
 
