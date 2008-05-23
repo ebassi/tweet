@@ -24,6 +24,7 @@
 #include <gtk/gtkstyle.h>
 #include <clutter/clutter-actor.h>
 #include <clutter/clutter-color.h>
+#include <clutter/clutter-texture.h>
 
 G_BEGIN_DECLS
 
@@ -40,13 +41,23 @@ void tweet_widget_get_base_color (GtkWidget    *widget,
                                   GtkStateType  state,
                                   ClutterColor *color);
 
-ClutterActor *tweet_texture_new_from_pixbuf    (GdkPixbuf   *pixbuf);
-ClutterActor *tweet_texture_new_from_stock     (GtkWidget   *widget,
-                                                const gchar *stock_id,
-                                                GtkIconSize  size);
-ClutterActor *tweet_texture_new_from_icon_name (GtkWidget   *widget,
-                                                const gchar *icon_name,
-                                                GtkIconSize  size);
+ClutterActor *tweet_texture_new_from_pixbuf    (GdkPixbuf      *pixbuf);
+ClutterActor *tweet_texture_new_from_stock     (GtkWidget      *widget,
+                                                const gchar    *stock_id,
+                                                GtkIconSize     size);
+ClutterActor *tweet_texture_new_from_icon_name (GtkWidget      *widget,
+                                                const gchar    *icon_name,
+                                                GtkIconSize     size);
+void          tweet_texture_set_from_pixbuf    (ClutterTexture *texture,
+                                                GdkPixbuf      *pixbuf);
+void          tweet_texture_set_from_stock     (ClutterTexture *texture,
+                                                GtkWidget      *widget,
+                                                const gchar    *stock_id,
+                                                GtkIconSize     size);
+void          tweet_texture_set_from_icon_name (ClutterTexture *texture,
+                                                GtkWidget      *widget,
+                                                const gchar    *icon_name,
+                                                GtkIconSize     size);
 
 gchar *tweet_format_time_for_display (GTimeVal *time_);
 
