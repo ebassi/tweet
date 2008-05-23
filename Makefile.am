@@ -1,4 +1,4 @@
-SUBDIRS = twitter-glib tests copy-and-paste src po
+SUBDIRS = twitter-glib tests copy-and-paste src po data
 
 dist-hook:
 	git-log --stat > ChangeLog.in && \

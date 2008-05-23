@@ -147,6 +147,12 @@ AC_CONFIG_FILES([
         src/Makefile
         tests/Makefile
         po/Makefile.in
+        data/Makefile
+        data/icons/Makefile
+        data/icons/32x32/Makefile
+        data/icons/32x32/actions/Makefile
+        data/icons/scalable/Makefile
+        data/icons/scalable/actions/Makefile
 ])
 
 AC_OUTPUT
