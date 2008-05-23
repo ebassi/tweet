@@ -250,9 +250,9 @@ tweet_texture_new_from_icon_name (GtkWidget   *widget,
       icon_theme = gtk_icon_theme_get_default ();
     }
 
-  if (!gtk_icon_size_lookup_for_settings (settings, size, &width, &height))
+  if (size == -1 ||
+      !gtk_icon_size_lookup_for_settings (settings, size, &width, &height))
     {
-      g_warning ("Invalid icon size");
       width = height = 48;
     }
 
@@ -310,9 +310,9 @@ tweet_texture_set_from_icon_name (ClutterTexture *texture,
       icon_theme = gtk_icon_theme_get_default ();
     }
 
-  if (!gtk_icon_size_lookup_for_settings (settings, size, &width, &height))
+  if (size == -1 ||
+      !gtk_icon_size_lookup_for_settings (settings, size, &width, &height))
     {
-      g_warning ("Invalid icon size");
       width = height = 48;
     }
 
