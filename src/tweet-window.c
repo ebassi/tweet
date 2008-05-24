@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <glib/gi18n.h>
+
 #include <glib-object.h>
 
 #include <gtk/gtk.h>
@@ -50,11 +52,20 @@
 
 #define WINDOW_WIDTH    (CANVAS_WIDTH + (2 * CANVAS_PADDING))
 
+typedef enum {
+  TWEET_WINDOW_RECENT,
+  TWEET_WINDOW_REPLIES,
+  TWEET_WINDOW_ARCHIVE,
+  TWEET_WINDOW_FAVORITES
+} TweetWindowMode;
+
 #define TWEET_WINDOW_GET_PRIVATE(obj)   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWEET_TYPE_WINDOW, TweetWindowPrivate))
 
 struct _TweetWindowPrivate
 {
   GtkWidget *vbox;
+  GtkWidget *menubar;
+  GtkWidget *toolbar;
   GtkWidget *entry;
   GtkWidget *canvas;
   GtkWidget *send_button;
@@ -63,6 +74,9 @@ struct _TweetWindowPrivate
   ClutterActor *spinner;
   ClutterActor *status_view;
   ClutterActor *scroll;
+
+  GtkUIManager *manager;
+  GtkActionGroup *action_group;
 
   TwitterClient *client;
 
@@ -75,6 +89,8 @@ struct _TweetWindowPrivate
   guint in_press : 1;
 
   guint refresh_id;
+
+  TweetWindowMode mode;
 };
 
 G_DEFINE_TYPE (TweetWindow, tweet_window, GTK_TYPE_WINDOW);
@@ -101,6 +117,18 @@ tweet_window_dispose (GObject *gobject)
     {
       g_object_unref (priv->status_model);
       priv->status_model = NULL;
+    }
+
+  if (priv->manager)
+    {
+      g_object_unref (priv->manager);
+      priv->manager = NULL;
+    }
+
+  if (priv->action_group)
+    {
+      g_object_unref (priv->action_group);
+      priv->action_group = NULL;
     }
 
   G_OBJECT_CLASS (tweet_window_parent_class)->dispose (gobject);
@@ -357,10 +385,9 @@ on_status_view_button_release (ClutterActor       *actor,
   return FALSE;
 }
 
-static gboolean
-refresh_timeout (gpointer data)
+static inline void
+tweet_window_refresh (TweetWindow *window)
 {
-  TweetWindow *window = data;
   TweetWindowPrivate *priv = window->priv;
 
   tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view), NULL);
@@ -370,13 +397,38 @@ refresh_timeout (gpointer data)
   tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view),
                             CLUTTER_MODEL (priv->status_model));
 
-  clutter_actor_show (window->priv->spinner);
-  tweet_spinner_start (TWEET_SPINNER (window->priv->spinner));
+  clutter_actor_show (priv->spinner);
+  tweet_spinner_start (TWEET_SPINNER (priv->spinner));
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 127),
                        NULL);
 
-  twitter_client_get_user_timeline (window->priv->client, NULL, 0, NULL);
+  switch (priv->mode)
+    {
+    case TWEET_WINDOW_RECENT:
+      twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+      break;
+
+    case TWEET_WINDOW_REPLIES:
+      twitter_client_get_replies (priv->client);
+      break;
+
+    case TWEET_WINDOW_ARCHIVE:
+      break;
+
+    case TWEET_WINDOW_FAVORITES:
+      twitter_client_get_favorites (priv->client, NULL, 0);
+      break;
+    }
+
+}
+
+static gboolean
+refresh_timeout (gpointer data)
+{
+  TweetWindow *window = data;
+
+  tweet_window_refresh (window);
 
   return TRUE;
 }
@@ -475,6 +527,72 @@ tweet_window_style_set (GtkWidget *widget,
 }
 
 static void
+tweet_window_cmd_quit (GtkAction   *action,
+                       TweetWindow *window)
+{
+  gtk_widget_destroy (GTK_WIDGET (window));
+}
+
+static void
+tweet_window_cmd_view_recent (GtkAction   *action,
+                              TweetWindow *window)
+{
+  window->priv->mode = TWEET_WINDOW_RECENT;
+
+  tweet_window_refresh (window);
+}
+
+static void
+tweet_window_cmd_view_replies (GtkAction   *action,
+                               TweetWindow *window)
+{
+  window->priv->mode = TWEET_WINDOW_REPLIES;
+
+  tweet_window_refresh (window);
+}
+
+static void
+tweet_window_cmd_view_archive (GtkAction   *action,
+                               TweetWindow *window)
+{
+}
+
+static void
+tweet_window_cmd_view_favorites (GtkAction   *action,
+                                 TweetWindow *window)
+{
+  window->priv->mode = TWEET_WINDOW_FAVORITES;
+
+  tweet_window_refresh (window);
+}
+
+static void
+tweet_window_cmd_view_reload (GtkAction   *action,
+                              TweetWindow *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+
+  if (priv->refresh_id)
+    {
+      g_source_remove (priv->refresh_id);
+      priv->refresh_id = 0;
+    }
+
+  tweet_window_refresh (window);
+
+  priv->refresh_id =
+    g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
+                           refresh_timeout,
+                           window);
+}
+
+static void
+tweet_window_cmd_help_about (GtkAction   *action,
+                             TweetWindow *window)
+{
+}
+
+static void
 tweet_window_class_init (TweetWindowClass *klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
@@ -488,11 +606,51 @@ tweet_window_class_init (TweetWindowClass *klass)
   widget_class->style_set = tweet_window_style_set;
 }
 
+static const GtkActionEntry action_entries[] = {
+  { "TweetFileAction", NULL, N_("_File") },
+    {
+      "TweetQuit", GTK_STOCK_QUIT, NULL, "<control>Q",
+      N_("Quit Tweet"),
+      G_CALLBACK (tweet_window_cmd_quit)
+    },
+
+  { "TweetViewAction", NULL, N_("_View") },
+    {
+      "TweetRecent", NULL, N_("_Recent statuses"), NULL, NULL,
+      G_CALLBACK (tweet_window_cmd_view_recent)
+    },
+    {
+      "TweetReplies", NULL, N_("R_eplies"), NULL, NULL,
+      G_CALLBACK (tweet_window_cmd_view_replies)
+    },
+    {
+      "TweetFavorites", NULL, N_("_Favorites"), NULL, NULL,
+      G_CALLBACK (tweet_window_cmd_view_favorites)
+    },
+    {
+      "TweetArchive", NULL, N_("_Archive"), NULL, NULL,
+      G_CALLBACK (tweet_window_cmd_view_archive)
+    },
+    {
+      "TweetReload", GTK_STOCK_REFRESH, N_("_Reload"), "<control>R",
+      N_("Display the latest statuses"),
+      G_CALLBACK (tweet_window_cmd_view_reload)
+    },
+
+  { "TweetHelpAction", NULL, N_("_Help") },
+    {
+      "TweetAbout", GTK_STOCK_ABOUT, N_("_About"), NULL, NULL,
+      G_CALLBACK (tweet_window_cmd_help_about)
+    }
+};
+
 static void
 tweet_window_init (TweetWindow *window)
 {
   TweetWindowPrivate *priv;
-  GtkWidget *hbox, *button;
+  GtkWidget *frame, *hbox, *button;
+  GtkAccelGroup *accel_group;
+  GError *error;
 
   GTK_WINDOW (window)->type = GTK_WINDOW_TOPLEVEL;
   gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
@@ -501,13 +659,55 @@ tweet_window_init (TweetWindow *window)
 
   window->priv = priv = TWEET_WINDOW_GET_PRIVATE (window);
 
-  priv->vbox = gtk_vbox_new (FALSE, 6);
+  priv->mode = TWEET_WINDOW_RECENT;
+
+  priv->vbox = gtk_vbox_new (FALSE, 0);
   gtk_container_add (GTK_CONTAINER (window), priv->vbox);
   gtk_widget_show (priv->vbox);
 
+  priv->action_group = gtk_action_group_new ("TweetActions");
+  gtk_action_group_set_translation_domain (priv->action_group, NULL);
+  gtk_action_group_add_actions (priv->action_group,
+                                action_entries,
+                                G_N_ELEMENTS (action_entries),
+                                window);
+
+  priv->manager = gtk_ui_manager_new ();
+  gtk_ui_manager_insert_action_group (priv->manager,
+                                      priv->action_group,
+                                      0);
+
+  accel_group = gtk_ui_manager_get_accel_group (priv->manager);
+  gtk_window_add_accel_group (GTK_WINDOW (window), accel_group);
+
+  error = NULL;
+  if (!gtk_ui_manager_add_ui_from_file (priv->manager,
+                                        PKGDATADIR G_DIR_SEPARATOR_S "tweet.ui",
+                                        &error))
+    {
+     g_critical ("Building menus and toolbar failed: %s",
+                 error->message);
+     g_error_free (error);
+    }
+  else
+    {
+      priv->menubar = gtk_ui_manager_get_widget (priv->manager, "/TweetMenubar");
+      gtk_box_pack_start (GTK_BOX (priv->vbox), priv->menubar, FALSE, FALSE, 0);
+      gtk_widget_show (priv->menubar);
+
+      priv->toolbar = gtk_ui_manager_get_widget (priv->manager, "/TweetToolbar");
+      gtk_box_pack_start (GTK_BOX (priv->vbox), priv->toolbar, FALSE, FALSE, 0);
+      gtk_widget_show (priv->toolbar);
+    }
+
+  frame = gtk_frame_new (NULL);
+  gtk_frame_set_shadow_type (GTK_FRAME (frame), GTK_SHADOW_IN);
+  gtk_container_add (GTK_CONTAINER (priv->vbox), frame);
+  gtk_widget_show (frame);
+
   priv->canvas = gtk_clutter_embed_new ();
   gtk_widget_set_size_request (priv->canvas, CANVAS_WIDTH, CANVAS_HEIGHT);
-  gtk_container_add (GTK_CONTAINER (priv->vbox), priv->canvas);
+  gtk_container_add (GTK_CONTAINER (frame), priv->canvas);
   gtk_widget_show (priv->canvas);
 
   hbox = gtk_hbox_new (FALSE, 12);
