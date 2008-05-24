@@ -44,10 +44,10 @@
 #define H_PADDING       12
 
 #define DEFAULT_WIDTH   (96 + (2 * H_PADDING) + 230)
-#define DEFAULT_HEIGHT  (96 + (2 * V_PADDING))
+#define DEFAULT_HEIGHT  (72 + (2 * V_PADDING))
 
 #define ICON_X          (H_PADDING)
-#define ICON_Y          (V_PADDING + 24)
+#define ICON_Y          (V_PADDING + 12)
 
 #define TEXT_X          (ICON_WIDTH + (2 * H_PADDING))
 #define TEXT_Y          (V_PADDING)
