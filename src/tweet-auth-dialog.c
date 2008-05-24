@@ -266,17 +266,19 @@ tweet_auth_dialog_constructed (GObject *gobject)
   gtk_widget_show (priv->verify_label);
 
   /* buttons */
-  priv->ok_button = gtk_dialog_add_button (GTK_DIALOG (dialog),
-                                           GTK_STOCK_OK,
-                                           GTK_RESPONSE_OK);
-  gtk_widget_set_sensitive (priv->ok_button, FALSE);
-  priv->verify_button = gtk_dialog_add_button (GTK_DIALOG (dialog),
-                                               _("Verify credentials"),
-                                               1);
-  gtk_widget_set_sensitive (priv->verify_button, FALSE);
   gtk_dialog_add_button (GTK_DIALOG (dialog),
                          GTK_STOCK_CANCEL,
                          GTK_RESPONSE_CANCEL);
+  priv->verify_button = gtk_dialog_add_button (GTK_DIALOG (dialog),
+                                               _("_Verify credentials"),
+                                               1);
+  gtk_widget_set_sensitive (priv->verify_button, FALSE);
+  priv->ok_button = gtk_dialog_add_button (GTK_DIALOG (dialog),
+                                           _("_Log in"),
+                                           GTK_RESPONSE_OK);
+  gtk_widget_set_sensitive (priv->ok_button, FALSE);
+
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_OK);
 }
 
 static void
