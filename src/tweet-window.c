@@ -185,13 +185,9 @@ on_entry_activate (GtkEntry *entry,
   if (!text || *text == '\0')
     return;
 
-  status_text = g_markup_escape_text (gtk_entry_get_text (entry), -1);
-
-  twitter_client_add_status (priv->client, status_text);
+  twitter_client_add_status (priv->client, text);
 
   gtk_entry_set_text (entry, "");
-
-  g_free (status_text);
 }
 
 static gboolean
