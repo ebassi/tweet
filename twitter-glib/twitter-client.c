@@ -1310,7 +1310,7 @@ twitter_client_show_user_from_email (TwitterClient *client,
   clos = g_new0 (GetUserClosure, 1);
   closure_set_action (clos, USER_SHOW);
   closure_set_client (clos, g_object_ref (client));
-  closure_set_requires_auth (clos, FALSE);
+  closure_set_requires_auth (clos, TRUE);
   clos->user = twitter_user_new ();
 
   twitter_client_queue_message (client, msg, TRUE,
