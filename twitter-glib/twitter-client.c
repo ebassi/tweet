@@ -290,6 +290,7 @@ typedef enum {
   N_CLIENT_ACTIONS
 } ClientAction;
 
+#if 0
 static const gchar *action_names[N_CLIENT_ACTIONS] = {
   "statuses/public_timeline",
   "statuses/friends_timeline",
@@ -312,6 +313,7 @@ static const gchar *action_names[N_CLIENT_ACTIONS] = {
   "notifications/follow",
   "notifications/leave"
 };
+#endif
 
 typedef struct {
   ClientAction action;
