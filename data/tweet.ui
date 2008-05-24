@@ -6,6 +6,7 @@
     <menu name="TweetViewMenu" action="TweetViewAction">
       <menuitem name="TweetRecentMenuItem" action="TweetRecent"/>
       <menuitem name="TweetRepliesMenuItem" action="TweetReplies"/>
+      <menuitem name="TweetFavoritesMenuItem" action="TweetFavorites"/>
       <menuitem name="TweetArchiveMenuItem" action="TweetArchive"/>
       <separator/>
       <menuitem name="TweetReloadMenuItem" action="TweetReload"/>
