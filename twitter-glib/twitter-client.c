@@ -883,7 +883,7 @@ twitter_client_get_replies (TwitterClient *client)
   clos = g_new0 (GetTimelineClosure, 1);
   closure_set_action (clos, STATUS_REPLIES);
   closure_set_client (clos, g_object_ref (client));
-  closure_set_requires_auth (close, TRUE);
+  closure_set_requires_auth (clos, TRUE);
   clos->timeline = twitter_timeline_new ();
 
   twitter_client_queue_message (client, msg, TRUE,
