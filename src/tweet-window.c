@@ -207,7 +207,6 @@ on_entry_activate (GtkEntry *entry,
 {
   TweetWindowPrivate *priv = window->priv;
   const gchar *text;
-  gchar *status_text;
 
   text = gtk_entry_get_text (entry);
   if (!text || *text == '\0')
