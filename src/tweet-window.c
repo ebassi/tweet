@@ -52,6 +52,13 @@
 
 #define WINDOW_WIDTH    (CANVAS_WIDTH + (2 * CANVAS_PADDING))
 
+typedef enum {
+  TWEET_WINDOW_RECENT,
+  TWEET_WINDOW_REPLIES,
+  TWEET_WINDOW_ARCHIVE,
+  TWEET_WINDOW_FAVORITES
+} TweetWindowMode;
+
 #define TWEET_WINDOW_GET_PRIVATE(obj)   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWEET_TYPE_WINDOW, TweetWindowPrivate))
 
 struct _TweetWindowPrivate
@@ -82,6 +89,8 @@ struct _TweetWindowPrivate
   guint in_press : 1;
 
   guint refresh_id;
+
+  TweetWindowMode mode;
 };
 
 G_DEFINE_TYPE (TweetWindow, tweet_window, GTK_TYPE_WINDOW);
@@ -380,10 +389,9 @@ on_status_view_button_release (ClutterActor       *actor,
   return FALSE;
 }
 
-static gboolean
-refresh_timeout (gpointer data)
+static inline void
+tweet_window_refresh (TweetWindow *window)
 {
-  TweetWindow *window = data;
   TweetWindowPrivate *priv = window->priv;
 
   tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view), NULL);
@@ -393,13 +401,38 @@ refresh_timeout (gpointer data)
   tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view),
                             CLUTTER_MODEL (priv->status_model));
 
-  clutter_actor_show (window->priv->spinner);
-  tweet_spinner_start (TWEET_SPINNER (window->priv->spinner));
+  clutter_actor_show (priv->spinner);
+  tweet_spinner_start (TWEET_SPINNER (priv->spinner));
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 127),
                        NULL);
 
-  twitter_client_get_user_timeline (window->priv->client, NULL, 0, NULL);
+  switch (priv->mode)
+    {
+    case TWEET_WINDOW_RECENT:
+      twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+      break;
+
+    case TWEET_WINDOW_REPLIES:
+      twitter_client_get_replies (priv->client);
+      break;
+
+    case TWEET_WINDOW_ARCHIVE:
+      break;
+
+    case TWEET_WINDOW_FAVORITES:
+      twitter_client_get_favorites (priv->client, NULL, 0);
+      break;
+    }
+
+}
+
+static gboolean
+refresh_timeout (gpointer data)
+{
+  TweetWindow *window = data;
+
+  tweet_window_refresh (window);
 
   return TRUE;
 }
@@ -508,18 +541,33 @@ static void
 tweet_window_cmd_view_recent (GtkAction   *action,
                               TweetWindow *window)
 {
+  window->priv->mode = TWEET_WINDOW_RECENT;
+
+  tweet_window_refresh (window);
 }
 
 static void
 tweet_window_cmd_view_replies (GtkAction   *action,
                                TweetWindow *window)
 {
+  window->priv->mode = TWEET_WINDOW_REPLIES;
+
+  tweet_window_refresh (window);
 }
 
 static void
 tweet_window_cmd_view_archive (GtkAction   *action,
                                TweetWindow *window)
 {
+}
+
+static void
+tweet_window_cmd_view_favorites (GtkAction   *action,
+                                 TweetWindow *window)
+{
+  window->priv->mode = TWEET_WINDOW_FAVORITES;
+
+  tweet_window_refresh (window);
 }
 
 static void
@@ -534,20 +582,7 @@ tweet_window_cmd_view_reload (GtkAction   *action,
       priv->refresh_id = 0;
     }
 
-  tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view), NULL);
-  g_object_unref (priv->status_model);
-
-  priv->status_model = TWEET_STATUS_MODEL (tweet_status_model_new ());
-  tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view),
-                            CLUTTER_MODEL (priv->status_model));
-
-  clutter_actor_show (window->priv->spinner);
-  tweet_spinner_start (TWEET_SPINNER (window->priv->spinner));
-  tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
-                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 127),
-                       NULL);
-
-  twitter_client_get_user_timeline (window->priv->client, NULL, 0, NULL);
+  tweet_window_refresh (window);
 
   priv->refresh_id =
     g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
@@ -593,6 +628,10 @@ static const GtkActionEntry action_entries[] = {
       G_CALLBACK (tweet_window_cmd_view_replies)
     },
     {
+      "TweetFavorites", NULL, N_("_Favorites"), NULL, NULL,
+      G_CALLBACK (tweet_window_cmd_view_favorites)
+    },
+    {
       "TweetArchive", NULL, N_("_Archive"), NULL, NULL,
       G_CALLBACK (tweet_window_cmd_view_archive)
     },
@@ -623,6 +662,8 @@ tweet_window_init (TweetWindow *window)
   gtk_widget_set_size_request (GTK_WIDGET (window), WINDOW_WIDTH, -1);
 
   window->priv = priv = TWEET_WINDOW_GET_PRIVATE (window);
+
+  priv->mode = TWEET_WINDOW_RECENT;
 
   priv->vbox = gtk_vbox_new (FALSE, 0);
   gtk_container_add (GTK_CONTAINER (window), priv->vbox);
