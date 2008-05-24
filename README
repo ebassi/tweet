@@ -14,6 +14,9 @@ In short, is a web-based SMS-like service.
 Tweet is a client written to read your friends' status and update your
 own without using a web browser.
 
+REQUIREMENTS
+------------
+
 Tweet depends on:
 
   - GLib >= 2.16
@@ -32,10 +35,13 @@ INSTALLATION
 ------------
 Se the INSTALL file.
 
+COPYRIGHT AND LICENSING
+-----------------------
+
 Tweet is released under the terms of the GNU General Public License,
 version 3 or, at your option, any later version.
 
 Twitter-GLib is released under the terms of the GNU Lesser General
 Public License version 2.1 or, at your option, any later version.
 
-Tweet and Twitter-GLib are copyright (C) 2008  Emmanuele Bassi.
+Tweet and Twitter-GLib are Copyright (C) 2008  Emmanuele Bassi.
