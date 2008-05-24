@@ -193,9 +193,9 @@ on_button_enter (ClutterActor         *actor,
                                       -1);
 
   if (actor == info->reply_button)
-	tweet_texture_set_from_icon_name (CLUTTER_TEXTURE (actor), NULL,
-									  "reply-to-status-set",
-									  -1);
+    tweet_texture_set_from_icon_name (CLUTTER_TEXTURE (actor), NULL,
+                                      "reply-to-status-set",
+                                      -1);
 
   clutter_label_set_text (CLUTTER_LABEL (info->button_tip),
                           g_object_get_data (G_OBJECT (actor), "button-tip"));
@@ -229,9 +229,9 @@ on_button_leave (ClutterActor         *actor,
                                       -1);
 
   if (actor == info->reply_button)
-	tweet_texture_set_from_icon_name (CLUTTER_TEXTURE (actor), NULL,
-			                          "reply-to-status",
-									  -1);
+    tweet_texture_set_from_icon_name (CLUTTER_TEXTURE (actor), NULL,
+                                      "reply-to-status",
+                                      -1);
 
   tweet_actor_animate (info->button_tip, TWEET_LINEAR, 150,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 255, 0),
