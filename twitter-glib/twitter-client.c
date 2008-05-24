@@ -79,7 +79,6 @@
 
 struct _TwitterClientPrivate
 {
-  SoupSession *session_sync;
   SoupSession *session_async;
 
   gchar *email;
@@ -120,9 +119,6 @@ twitter_client_finalize (GObject *gobject)
 
   soup_session_abort (priv->session_async);
   g_object_unref (priv->session_async);
-
-  soup_session_abort (priv->session_sync);
-  g_object_unref (priv->session_sync);
 
   g_free (priv->email);
   g_free (priv->password);
@@ -262,9 +258,8 @@ twitter_client_init (TwitterClient *client)
 
   client->priv = priv = TWITTER_CLIENT_GET_PRIVATE (client);
 
-  priv->session_sync =
-    soup_session_sync_new_with_options ("user-agent", "Twitter-GLib/" VERSION,
-                                        NULL);
+  priv->auth_id = 0;
+
   priv->session_async =
     soup_session_async_new_with_options ("user-agent", "Twitter-GLib/" VERSION,
                                          NULL);
