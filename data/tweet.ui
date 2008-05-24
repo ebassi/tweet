@@ -1,0 +1,22 @@
+<ui>
+  <menubar name="TweetMenubar">
+    <menu name="TweetFileMenu" action="TweetFileAction">
+      <menuitem name="TweetQuitMenuItem" action="TweetQuit"/>
+    </menu>
+    <menu name="TweetViewMenu" action="TweetViewAction">
+      <menuitem name="TweetRecentMenuItem" action="TweetRecent"/>
+      <menuitem name="TweetRepliesMenuItem" action="TweetReplies"/>
+      <menuitem name="TweetArchiveMenuItem" action="TweetArchive"/>
+      <separator/>
+      <menuitem name="TweetReloadMenuItem" action="TweetReload"/>
+    </menu>
+    <menu name="TweetHelpMenu" action="TweetHelpAction">
+      <menuitem name="TweetAboutMenuItem" action="TweetAbout"/>
+    </menu>
+  </menubar>
+
+  <toolbar name="TweetToolbar">
+    <toolitem name="QuitToolButton" action="TweetQuit"/>
+    <toolitem name="ReloadToolButton" action="TweetReload"/>
+  </toolbar>
+</ui>
