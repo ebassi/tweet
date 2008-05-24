@@ -200,13 +200,20 @@ on_info_button_press (ClutterActor       *actor,
                       TweetWindow        *window)
 {
   TweetWindowPrivate *priv = window->priv;
+  TweetAnimation *animation;
+
+  animation =
+    tweet_actor_animate (actor, TWEET_LINEAR, 250,
+                         "opacity", tweet_interval_new (G_TYPE_UCHAR, 196, 0),
+                         NULL);
+  g_signal_connect_swapped (animation,
+                            "completed", G_CALLBACK (clutter_actor_destroy),
+                            actor);
 
   clutter_actor_set_reactive (priv->status_view, TRUE);
   tweet_actor_animate (priv->status_view, TWEET_LINEAR, 250,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 128, 255),
                        NULL);
-
-  clutter_actor_destroy (actor);
 
   return TRUE;
 }
