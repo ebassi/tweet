@@ -276,6 +276,8 @@ on_reply_clicked (TweetStatusInfo *info,
   reply_to = g_strdup_printf ("@%s ", twitter_user_get_screen_name (user));
 
   gtk_entry_set_text (GTK_ENTRY (priv->entry), reply_to);
+  gtk_editable_set_position (GTK_EDITABLE (priv->entry), -1);
+
   g_free (reply_to);
 }
 
