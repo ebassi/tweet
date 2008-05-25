@@ -47,8 +47,12 @@ struct _TweetStatusViewClass
   TidyListViewClass parent_class;
 };
 
-GType         tweet_status_view_get_type (void) G_GNUC_CONST;
-ClutterActor *tweet_status_view_new      (TweetStatusModel *model);
+GType         tweet_status_view_get_type          (void) G_GNUC_CONST;
+ClutterActor *tweet_status_view_new               (TweetStatusModel *model);
+void          tweet_status_view_get_cell_geometry (TweetStatusView  *view,
+                                                   gint              row_index,
+                                                   gboolean          adjust,
+                                                   ClutterGeometry  *geometry);
 
 G_END_DECLS
 

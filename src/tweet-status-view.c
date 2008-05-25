@@ -94,3 +94,17 @@ tweet_status_view_new (TweetStatusModel *model)
                        "model", CLUTTER_MODEL (model),
                        NULL);
 }
+
+void
+tweet_status_view_get_cell_geometry (TweetStatusView *view,
+                                     gint             row_index,
+                                     gboolean         adjust,
+                                     ClutterGeometry *geometry)
+{
+  g_return_if_fail (TWEET_IS_STATUS_VIEW (view));
+
+  tidy_list_view_get_cell_geometry (TIDY_LIST_VIEW (view),
+                                    row_index, 0,
+                                    adjust,
+                                    geometry);
+}
