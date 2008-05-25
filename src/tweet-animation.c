@@ -353,8 +353,8 @@ tweet_animation_get_duration (TweetAnimation *animation)
 
 static void
 tweet_interval_compute_value (TweetInterval *interval,
-                             guint32       factor,
-                             GValue       *value)
+                              guint32        factor,
+                              GValue        *value)
 {
   GValue *initial, *final;
   GType value_type;
@@ -640,8 +640,8 @@ on_alpha_notify (GObject       *gobject,
 
       g_value_init (&value, tweet_interval_get_value_type (interval));
       tweet_interval_compute_value (interval,
-                                   alpha_value,
-                                   &value); 
+                                    alpha_value,
+                                    &value);
 
       g_object_set_property (G_OBJECT (priv->actor), p_name, &value);
 
@@ -726,6 +726,10 @@ on_animation_complete (TweetAnimation *animation,
                        ClutterActor   *actor)
 {
   GList *animations;
+
+  /* do not remove the animation if it is looping */
+  if (animation->priv->loop)
+    return;
 
   animations = g_object_get_qdata (G_OBJECT (actor), quark_actor_animations);
   if (animations)
