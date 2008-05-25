@@ -336,11 +336,10 @@ on_status_view_button_release (ClutterActor       *actor,
           return FALSE;
         }
 
-      /* FIXME - abstract this call into a TweetStatusModel method */
-      tidy_list_view_get_cell_geometry (TIDY_LIST_VIEW (priv->status_view),
-                                        priv->press_row, 0,
-                                        TRUE,
-                                        &geometry);
+      tweet_status_view_get_cell_geometry (TWEET_STATUS_VIEW (priv->status_view),
+                                           priv->press_row,
+                                           TRUE,
+                                           &geometry);
 
       stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
 
