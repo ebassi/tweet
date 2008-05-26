@@ -19,7 +19,7 @@
 #ifndef __TWEET_STATUS_INFO_H__
 #define __TWEET_STATUS_INFO_H__
 
-#include <tidy/tidy-actor.h>
+#include "tweet-overlay.h"
 
 G_BEGIN_DECLS
 
@@ -35,11 +35,10 @@ typedef struct _TweetStatusInfoClass    TweetStatusInfoClass;
 
 struct _TweetStatusInfo
 {
-  TidyActor parent_instance;
+  TweetOverlay parent_instance;
 
   ClutterActorBox allocation;
 
-  ClutterActor *bg;
   ClutterActor *icon;
   ClutterActor *label;
   ClutterActor *reply_button;
@@ -53,7 +52,7 @@ struct _TweetStatusInfo
 
 struct _TweetStatusInfoClass
 {
-  TidyActorClass parent_class;
+  TweetOverlayClass parent_class;
 
   void (* star_clicked)  (TweetStatusInfo *info);
   void (* reply_clicked) (TweetStatusInfo *info);

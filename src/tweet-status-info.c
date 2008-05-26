@@ -75,7 +75,7 @@ enum
 
 static guint info_signals[LAST_SIGNAL] = { 0, };
 
-G_DEFINE_TYPE (TweetStatusInfo, tweet_status_info, TIDY_TYPE_ACTOR);
+G_DEFINE_TYPE (TweetStatusInfo, tweet_status_info, TWEET_TYPE_OVERLAY);
 
 static void
 tweet_status_info_dispose (GObject *gobject)
@@ -92,15 +92,6 @@ tweet_status_info_dispose (GObject *gobject)
     {
       g_object_unref (info->status);
       info->status = NULL;
-    }
-
-  if (info->bg)
-    {
-      clutter_actor_destroy (info->bg);
-      clutter_actor_destroy (info->icon);
-      clutter_actor_destroy (info->label);
-
-      info->bg = info->icon = info->label = NULL;
     }
 
   G_OBJECT_CLASS (tweet_status_info_parent_class)->dispose (gobject);
@@ -144,40 +135,6 @@ tweet_status_info_get_property (GObject    *gobject,
       G_OBJECT_WARN_INVALID_PROPERTY_ID (gobject, prop_id, pspec);
       break;
     }
-}
-
-static void
-draw_background (ClutterCairo *background)
-{
-  ClutterColor bg_color = { 255, 255, 255, 196 };
-  cairo_t *cr;
-  gint width, height;
-
-  cr = clutter_cairo_create (background);
-  g_assert (cr != NULL);
-
-  width = height = 0;
-  g_object_get (G_OBJECT (background),
-                "surface-width", &width,
-                "surface-height", &height,
-                NULL);
-
-  cairo_move_to (cr, BG_ROUND_RADIUS, 0);
-  cairo_line_to (cr, width - BG_ROUND_RADIUS, 0);
-  cairo_curve_to (cr, width, 0, width, 0, width, BG_ROUND_RADIUS);
-  cairo_line_to (cr, width, height - BG_ROUND_RADIUS);
-  cairo_curve_to (cr, width, height, width, height, width - BG_ROUND_RADIUS, height);
-  cairo_line_to (cr, BG_ROUND_RADIUS, height);
-  cairo_curve_to (cr, 0, height, 0, height, 0, height - BG_ROUND_RADIUS);
-  cairo_line_to (cr, 0, BG_ROUND_RADIUS);
-  cairo_curve_to (cr, 0, 0, 0, 0, BG_ROUND_RADIUS, 0);
-
-  cairo_close_path (cr);
-
-  clutter_cairo_set_source_color (cr, &bg_color);
-  cairo_fill_preserve (cr);
-
-  cairo_destroy (cr);
 }
 
 static gboolean
@@ -265,17 +222,12 @@ tweet_status_info_constructed (GObject *gobject)
   GTimeVal timeval = { 0, };
   GdkPixbuf *pixbuf = NULL;
 
+  G_OBJECT_CLASS (tweet_status_info_parent_class)->constructed (gobject);
+
   font_name = NULL;
   tidy_stylable_get (TIDY_STYLABLE (gobject), "font-name", &font_name, NULL);
   if (!font_name)
     font_name = g_strdup ("Sans 8");
-
-  /* background texture */
-  info->bg = clutter_cairo_new (MAX_WIDTH, BUTTON_SIZE);
-  clutter_actor_set_parent (info->bg, CLUTTER_ACTOR (info));
-  clutter_actor_set_size (info->bg, MAX_WIDTH, BUTTON_SIZE);
-  clutter_actor_set_position (info->bg, 0, 0);
-  clutter_actor_show (info->bg);
 
   g_assert (TWITTER_IS_STATUS (info->status));
 
@@ -289,10 +241,11 @@ tweet_status_info_constructed (GObject *gobject)
   else
     {
       info->icon = clutter_rectangle_new ();
-      clutter_rectangle_set_color (CLUTTER_RECTANGLE (info->icon), &text_color);
+      clutter_rectangle_set_color (CLUTTER_RECTANGLE (info->icon),
+                                   &text_color);
     }
 
-  clutter_actor_set_parent (info->icon, CLUTTER_ACTOR (info));
+  clutter_container_add_actor (CLUTTER_CONTAINER (gobject), info->icon);
   clutter_actor_set_size (info->icon, ICON_WIDTH, ICON_HEIGHT);
   clutter_actor_set_position (info->icon,
                               (MAX_WIDTH - ICON_WIDTH) / 2,
@@ -329,7 +282,7 @@ tweet_status_info_constructed (GObject *gobject)
   clutter_label_set_line_wrap (CLUTTER_LABEL (info->label), TRUE);
   clutter_label_set_text (CLUTTER_LABEL (info->label), text);
   clutter_label_set_use_markup (CLUTTER_LABEL (info->label), TRUE);
-  clutter_actor_set_parent (info->label, CLUTTER_ACTOR (info));
+  clutter_container_add_actor (CLUTTER_CONTAINER (gobject), info->label);
   clutter_actor_set_position (info->label, TEXT_X, TEXT_Y);
   clutter_actor_set_width (info->label, TEXT_WIDTH);
 
@@ -356,8 +309,8 @@ tweet_status_info_constructed (GObject *gobject)
   g_signal_connect (info->star_button,
                     "button-press-event", G_CALLBACK (on_button_press),
                     info);
+  clutter_container_add_actor (CLUTTER_CONTAINER (gobject), info->star_button);
   clutter_actor_set_size (info->star_button, BUTTON_SIZE, BUTTON_SIZE);
-  clutter_actor_set_parent (info->star_button, CLUTTER_ACTOR (info));
   clutter_actor_set_position (info->star_button,
                               TEXT_X,
                               0);
@@ -385,8 +338,8 @@ tweet_status_info_constructed (GObject *gobject)
   g_signal_connect (info->reply_button,
                     "button-press-event", G_CALLBACK (on_button_press),
                     info);
+  clutter_container_add_actor (CLUTTER_CONTAINER (gobject), info->reply_button);
   clutter_actor_set_size (info->reply_button, BUTTON_SIZE, BUTTON_SIZE);
-  clutter_actor_set_parent (info->reply_button, CLUTTER_ACTOR (info));
   clutter_actor_set_position (info->reply_button,
                               TEXT_WIDTH - BUTTON_SIZE,
                               0);
@@ -399,23 +352,13 @@ tweet_status_info_constructed (GObject *gobject)
   clutter_label_set_line_wrap (CLUTTER_LABEL (info->button_tip), TRUE);
   clutter_label_set_text (CLUTTER_LABEL (info->button_tip), "");
   clutter_label_set_use_markup (CLUTTER_LABEL (info->button_tip), TRUE);
-  clutter_actor_set_parent (info->button_tip, CLUTTER_ACTOR (info));
+  clutter_container_add_actor (CLUTTER_CONTAINER (info), info->button_tip);
   clutter_actor_set_position (info->button_tip, TEXT_WIDTH / 2, 0);
   clutter_actor_set_width (info->button_tip, TEXT_WIDTH - (2 * BUTTON_SIZE));
   clutter_actor_set_opacity (info->button_tip, 0);
   clutter_actor_show (info->button_tip);
 
   g_free (font_name);
-}
-
-static void
-tweet_status_info_query_coords (ClutterActor    *actor,
-                                ClutterActorBox *box)
-{
-  TweetStatusInfo *info = TWEET_STATUS_INFO (actor);
-
-  box->x2 = box->x1 + (info->allocation.x2 - info->allocation.x1);
-  box->y2 = box->y1 + (info->allocation.y2 - info->allocation.y1);
 }
 
 static void
@@ -429,10 +372,6 @@ tweet_status_info_request_coords (ClutterActor    *actor,
 
   width = CLUTTER_UNITS_TO_DEVICE (box->x2 - box->x1);
   height = CLUTTER_UNITS_TO_DEVICE (box->y2 - box->y1);
-
-  clutter_cairo_surface_resize (CLUTTER_CAIRO (info->bg), width, height);
-  clutter_actor_set_size (info->bg, width, height);
-  draw_background (CLUTTER_CAIRO (info->bg));
 
   clutter_actor_set_width (info->label, (width - (2 * H_PADDING)));
   clutter_actor_set_height (info->label, -1);
@@ -459,50 +398,6 @@ tweet_status_info_request_coords (ClutterActor    *actor,
 }
 
 static void
-tweet_status_info_paint (ClutterActor *actor)
-{
-  TweetStatusInfo *info = TWEET_STATUS_INFO (actor);
-
-  if (CLUTTER_ACTOR_IS_VISIBLE (info->bg))
-    clutter_actor_paint (info->bg);
-
-  if (CLUTTER_ACTOR_IS_VISIBLE (info->icon))
-    clutter_actor_paint (info->icon);
-
-  if (CLUTTER_ACTOR_IS_VISIBLE (info->label))
-    clutter_actor_paint (info->label);
-
-  if (CLUTTER_ACTOR_IS_VISIBLE (info->reply_button))
-    clutter_actor_paint (info->reply_button);
-
-  if (CLUTTER_ACTOR_IS_VISIBLE (info->star_button))
-    clutter_actor_paint (info->star_button);
-
-  if (CLUTTER_ACTOR_IS_VISIBLE (info->button_tip))
-    clutter_actor_paint (info->button_tip);
-}
-
-static void
-tweet_status_info_pick (ClutterActor       *actor,
-                        const ClutterColor *pick_color)
-{
-  TweetStatusInfo *info = TWEET_STATUS_INFO (actor);
-
-  if (!clutter_actor_should_pick_paint (actor))
-    return;
-
-  /* this will paint ourselves as a rectangle */
-  CLUTTER_ACTOR_CLASS (tweet_status_info_parent_class)->pick (actor, pick_color);
-
-  /* the buttons are reactive areas as well */
-  if (CLUTTER_ACTOR_IS_VISIBLE (info->reply_button))
-    clutter_actor_paint (info->reply_button);
-
-  if (CLUTTER_ACTOR_IS_VISIBLE (info->star_button))
-    clutter_actor_paint (info->star_button);
-}
-
-static void
 tweet_status_info_class_init (TweetStatusInfoClass *klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
@@ -513,10 +408,7 @@ tweet_status_info_class_init (TweetStatusInfoClass *klass)
   gobject_class->get_property = tweet_status_info_get_property;
   gobject_class->dispose = tweet_status_info_dispose;
 
-  actor_class->query_coords = tweet_status_info_query_coords;
   actor_class->request_coords = tweet_status_info_request_coords;
-  actor_class->pick = tweet_status_info_pick;
-  actor_class->paint = tweet_status_info_paint;
 
   g_object_class_install_property (gobject_class,
                                    PROP_STATUS,
