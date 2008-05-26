@@ -343,6 +343,7 @@ on_status_view_button_release (ClutterActor       *actor,
       ClutterModelIter *iter;
       ClutterGeometry geometry = { 0, };
       ClutterActor *stage;
+      ClutterColor info_color = { 255, 255, 255, 196 };
 
       priv->in_press = FALSE;
 
@@ -376,6 +377,7 @@ on_status_view_button_release (ClutterActor       *actor,
       stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
 
       priv->info = tweet_status_info_new (status);
+      tweet_overlay_set_color (TWEET_OVERLAY (priv->info), &info_color);
       g_signal_connect (priv->info,
                         "button-press-event", G_CALLBACK (on_info_button_press),
                         window);
