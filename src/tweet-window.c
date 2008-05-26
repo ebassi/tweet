@@ -262,7 +262,6 @@ on_star_clicked (TweetStatusInfo *info,
     return;
 
   twitter_client_add_favorite (priv->client, twitter_status_get_id (status));
-  g_print ("Status %d marked as favorite\n", twitter_status_get_id (status));
 }
 
 static void
