@@ -510,7 +510,7 @@ tweet_window_constructed (GObject *gobject)
                                       GTK_STOCK_REFRESH,
                                       GTK_ICON_SIZE_DIALOG);
   if (!img)
-    g_warning ("Unable to load the `%s' stock icon", GTK_STOCK_REFRESH);
+    g_critical ("Unable to load the `%s' stock icon", GTK_STOCK_REFRESH);
 
   priv->spinner = tweet_spinner_new ();
   tweet_spinner_set_image (TWEET_SPINNER (priv->spinner), img);
