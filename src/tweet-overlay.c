@@ -42,6 +42,8 @@ struct _TweetOverlayPrivate
   ClutterActor *base;
 
   ClutterColor base_color;
+
+  GList *children;
 };
 
 enum
@@ -51,7 +53,11 @@ enum
   PROP_BASE_COLOR
 };
 
-G_DEFINE_TYPE (TweetOverlay, tweet_overlay, CLUTTER_TYPE_GROUP);
+static void clutter_container_iface_init (ClutterContainerIface *iface);
+
+G_DEFINE_TYPE_WITH_CODE (TweetOverlay, tweet_overlay, TIDY_TYPE_ACTOR,
+                         G_IMPLEMENT_INTERFACE (CLUTTER_TYPE_CONTAINER,
+                                                clutter_container_iface_init));
 
 static inline void
 draw_background (TweetOverlay *overlay)
@@ -59,6 +65,8 @@ draw_background (TweetOverlay *overlay)
   TweetOverlayPrivate *priv = overlay->priv;
   cairo_t *cr;
   gint width, height;
+
+  g_assert (CLUTTER_IS_CAIRO (priv->base));
 
   cr = clutter_cairo_create (CLUTTER_CAIRO (priv->base));
   g_assert (cr != NULL);
@@ -91,6 +99,7 @@ draw_background (TweetOverlay *overlay)
   cairo_destroy (cr);
 }
 
+/* ClutterActor methods */
 static void
 tweet_overlay_request_coords (ClutterActor    *actor,
                               ClutterActorBox *box)
@@ -100,11 +109,17 @@ tweet_overlay_request_coords (ClutterActor    *actor,
 
   CLUTTER_ACTOR_CLASS (tweet_overlay_parent_class)->request_coords (actor, box);
 
-  width = CLUTTER_UNITS_TO_DEVICE (box->x2 - box->x1);
-  height = CLUTTER_UNITS_TO_DEVICE (box->y2 - box->y1);
+  if (G_LIKELY (priv->base))
+    {
+      width = CLUTTER_UNITS_TO_DEVICE (box->x2 - box->x1);
+      height = CLUTTER_UNITS_TO_DEVICE (box->y2 - box->y1);
 
-  clutter_cairo_surface_resize (CLUTTER_CAIRO (priv->base), width, height);
-  draw_background (TWEET_OVERLAY (actor));
+      clutter_actor_set_size (priv->base, width, height);
+      clutter_cairo_surface_resize (CLUTTER_CAIRO (priv->base),
+                                    width, height);
+
+      draw_background (TWEET_OVERLAY (actor));
+   }
 }
 
 static void
@@ -113,6 +128,13 @@ tweet_overlay_query_coords (ClutterActor    *actor,
 {
   TweetOverlayPrivate *priv = TWEET_OVERLAY (actor)->priv;
   gint width, height;
+
+  if (!priv->base)
+    {
+      box->x2 = box->x1;
+      box->y2 = box->y1;
+      return;
+    }
 
   /* we are as big as the base actor */
   width = height = 0;
@@ -126,6 +148,217 @@ tweet_overlay_query_coords (ClutterActor    *actor,
 }
 
 static void
+tweet_overlay_paint (ClutterActor *actor)
+{
+  TweetOverlayPrivate *priv = TWEET_OVERLAY (actor)->priv;
+  GList *l;
+
+  if (G_LIKELY (priv->base))
+    clutter_actor_paint (priv->base);
+
+  for (l = priv->children; l != NULL; l = l->next)
+    {
+      ClutterActor *child = l->data;
+
+      if (CLUTTER_ACTOR_IS_VISIBLE (child))
+        clutter_actor_paint (child);
+    }
+}
+
+static void
+tweet_overlay_pick (ClutterActor       *actor,
+                    const ClutterColor *pick_color)
+{
+  TweetOverlayPrivate *priv = TWEET_OVERLAY (actor)->priv;
+  GList *l;
+
+  if (!clutter_actor_should_pick_paint (actor))
+    return;
+
+  CLUTTER_ACTOR_CLASS (tweet_overlay_parent_class)->pick (actor, pick_color);
+
+  for (l = priv->children; l != NULL; l = l->next)
+    {
+      ClutterActor *child = l->data;
+
+      if (CLUTTER_ACTOR_IS_VISIBLE (child))
+        clutter_actor_paint (child);
+    }
+}
+
+static void
+tweet_overlay_realize (ClutterActor *actor)
+{
+  TweetOverlayPrivate *priv = TWEET_OVERLAY (actor)->priv;
+
+  if (G_LIKELY (priv->base))
+    clutter_actor_realize (priv->base);
+
+  g_list_foreach (priv->children,
+                  (GFunc) clutter_actor_realize,
+                  NULL);
+}
+
+static void
+tweet_overlay_unrealize (ClutterActor *actor)
+{
+  TweetOverlayPrivate *priv = TWEET_OVERLAY (actor)->priv;
+
+  if (G_LIKELY (priv->base))
+    clutter_actor_unrealize (priv->base);
+
+  g_list_foreach (priv->children,
+                  (GFunc) clutter_actor_unrealize,
+                  NULL);
+}
+
+/* ClutterContainer methods */
+static void
+tweet_overlay_add (ClutterContainer *container,
+                   ClutterActor     *actor)
+{
+  TweetOverlayPrivate *priv = TWEET_OVERLAY (container)->priv;
+
+  priv->children = g_list_append (priv->children, actor);
+  clutter_actor_set_parent (actor, CLUTTER_ACTOR (container));
+
+  g_signal_emit_by_name (container, "actor-added", actor);
+
+  clutter_container_sort_depth_order (container);
+}
+
+static void
+tweet_overlay_remove (ClutterContainer *container,
+                      ClutterActor     *actor)
+{
+  TweetOverlayPrivate *priv = TWEET_OVERLAY (container)->priv;
+
+  g_object_ref (actor);
+
+  priv->children = g_list_remove (priv->children, actor);
+  clutter_actor_unparent (actor);
+
+  g_signal_emit_by_name (container, "actor-removed", actor);
+
+  clutter_container_sort_depth_order (container);
+
+  g_object_unref (actor);
+}
+
+static void
+tweet_overlay_foreach (ClutterContainer *container,
+                       ClutterCallback   callback,
+                       gpointer          callback_data)
+{
+  TweetOverlayPrivate *priv = TWEET_OVERLAY (container)->priv;
+  GList *l;
+
+  if (priv->base)
+    (* callback) (priv->base, callback_data);
+
+  for (l = priv->children; l != NULL; l = l->next)
+    (* callback) (l->data, callback_data);
+}
+
+static void
+tweet_overlay_raise (ClutterContainer *container,
+                     ClutterActor     *actor,
+                     ClutterActor     *sibling)
+{
+  TweetOverlayPrivate *priv = TWEET_OVERLAY (container)->priv;
+
+  priv->children = g_list_remove (priv->children, actor);
+
+  /* Raise at the top */
+  if (!sibling)
+    {
+      GList *last_item;
+
+      last_item = g_list_last (priv->children);
+
+      if (last_item)
+        sibling = last_item->data;
+
+      priv->children = g_list_append (priv->children, actor);
+    }
+  else
+    {
+      gint pos;
+
+      pos = g_list_index (priv->children, sibling) + 1;
+
+      priv->children = g_list_insert (priv->children, actor, pos);
+    }
+
+  if (sibling &&
+      clutter_actor_get_depth (sibling) != clutter_actor_get_depth (actor))
+    {
+      clutter_actor_set_depth (actor, clutter_actor_get_depth (sibling));
+    }
+}
+
+static void
+tweet_overlay_lower (ClutterContainer *container,
+                     ClutterActor     *actor,
+                     ClutterActor     *sibling)
+{
+  TweetOverlayPrivate *priv = TWEET_OVERLAY (container)->priv;
+
+  priv->children = g_list_remove (priv->children, actor);
+
+  /* Push to bottom */
+  if (!sibling)
+    {
+      GList *last_item;
+
+      last_item = g_list_first (priv->children);
+
+      if (last_item)
+        sibling = last_item->data;
+
+      priv->children = g_list_prepend (priv->children, actor);
+    }
+  else
+    {
+      gint pos;
+
+      pos = g_list_index (priv->children, sibling);
+
+      priv->children = g_list_insert (priv->children, actor, pos);
+    }
+
+  if (sibling &&
+      clutter_actor_get_depth (sibling) != clutter_actor_get_depth (actor))
+    {
+      clutter_actor_set_depth (actor, clutter_actor_get_depth (sibling));
+    }
+}
+
+static gint
+sort_z_order (gconstpointer a,
+              gconstpointer b)
+{
+  gint depth_a, depth_b;
+
+  depth_a = clutter_actor_get_depth ((ClutterActor *) a);
+  depth_b = clutter_actor_get_depth ((ClutterActor *) b);
+
+  return (depth_a - depth_b);
+}
+
+static void
+tweet_overlay_sort_depth_order (ClutterContainer *container)
+{
+  TweetOverlayPrivate *priv = TWEET_OVERLAY (container)->priv;
+
+  priv->children = g_list_sort (priv->children, sort_z_order);
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (container))
+    clutter_actor_queue_redraw (CLUTTER_ACTOR (container));
+}
+
+/* GObject methods */
+static void
 tweet_overlay_dispose (GObject *gobject)
 {
   TweetOverlayPrivate *priv = TWEET_OVERLAY (gobject)->priv;
@@ -135,6 +368,10 @@ tweet_overlay_dispose (GObject *gobject)
       clutter_actor_destroy (priv->base);
       priv->base = NULL;
     }
+
+  g_list_foreach (priv->children, (GFunc) clutter_actor_destroy, NULL);
+  g_list_free (priv->children);
+  priv->children = NULL;
 
   G_OBJECT_CLASS (tweet_overlay_parent_class)->dispose (gobject);
 }
@@ -185,11 +422,23 @@ tweet_overlay_constructed (GObject *gobject)
   TweetOverlayPrivate *priv = TWEET_OVERLAY (gobject)->priv;
 
   priv->base = clutter_cairo_new (128, 128);
+  clutter_actor_set_parent (priv->base, CLUTTER_ACTOR (gobject));
+
   draw_background (TWEET_OVERLAY (gobject));
   clutter_actor_set_size (priv->base, 128, 128);
   clutter_actor_set_position (priv->base, 0, 0);
-  clutter_container_add_actor (CLUTTER_CONTAINER (gobject), priv->base);
   clutter_actor_show (priv->base);
+}
+
+static void
+clutter_container_iface_init (ClutterContainerIface *iface)
+{
+  iface->add = tweet_overlay_add;
+  iface->remove = tweet_overlay_remove;
+  iface->foreach = tweet_overlay_foreach;
+  iface->raise = tweet_overlay_raise;
+  iface->lower = tweet_overlay_lower;
+  iface->sort_depth_order = tweet_overlay_sort_depth_order;
 }
 
 static void
@@ -205,6 +454,10 @@ tweet_overlay_class_init (TweetOverlayClass *klass)
   gobject_class->get_property = tweet_overlay_get_property;
   gobject_class->dispose = tweet_overlay_dispose;
 
+  actor_class->realize = tweet_overlay_realize;
+  actor_class->unrealize = tweet_overlay_unrealize;
+  actor_class->paint = tweet_overlay_paint;
+  actor_class->pick = tweet_overlay_pick;
   actor_class->request_coords = tweet_overlay_request_coords;
   actor_class->query_coords = tweet_overlay_query_coords;
 
@@ -248,8 +501,12 @@ tweet_overlay_set_color (TweetOverlay       *overlay,
   priv = overlay->priv;
 
   priv->base_color = *color;
+  draw_background (overlay);
 
-  g_object_notify (G_OBJECT (overlay), "bg-color");
+  if (CLUTTER_ACTOR_IS_VISIBLE (overlay))
+    clutter_actor_queue_redraw (CLUTTER_ACTOR (overlay));
+
+  g_object_notify (G_OBJECT (overlay), "base-color");
 }
 
 void

@@ -20,6 +20,7 @@
 #define __TWEET_OVERLAY_H__
 
 #include <clutter/clutter-actor.h>
+#include <tidy/tidy-actor.h>
 
 G_BEGIN_DECLS
 
@@ -36,14 +37,14 @@ typedef struct _TweetOverlayClass       TweetOverlayClass;
 
 struct _TweetOverlay
 {
-  ClutterGroup parent_instance;
+  TidyActor parent_instance;
 
   TweetOverlayPrivate *priv;
 };
 
 struct _TweetOverlayClass
 {
-  ClutterGroupClass parent_class;
+  TidyActorClass parent_class;
 };
 
 GType         tweet_overlay_get_type  (void) G_GNUC_CONST;
