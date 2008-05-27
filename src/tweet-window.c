@@ -333,6 +333,7 @@ on_status_view_button_release (ClutterActor       *actor,
 {
   TweetWindowPrivate *priv = window->priv;
 
+/* in case of a crappy touchscreen */
 #define JITTER  5
 
   if (priv->in_press)
@@ -394,8 +395,8 @@ on_status_view_button_release (ClutterActor       *actor,
       clutter_actor_set_reactive (priv->info, FALSE);
       clutter_actor_show (priv->info);
 
-      /* the status info is non-reactive until it's been
-       * full "unrolled"
+      /* the status info is non-reactive until it has
+       * been fully "unrolled" by the animation
        */
       animation =
         tweet_actor_animate (priv->info, TWEET_LINEAR, 250,
