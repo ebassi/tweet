@@ -1543,9 +1543,10 @@ tidy_list_view_get_cell_geometry (TidyListView    *view,
   TidyListViewPrivate *priv;
   ClutterUnit x, y, width, height;
   ClutterUnit column_width;
+  ClutterUnit h_paddingu;
   TidyListColumn *column;
   ListRow *row;
-  gint i;
+  gint i, h_padding;
   GList *l;
 
   g_return_if_fail (TIDY_IS_LIST_VIEW (view));
@@ -1567,13 +1568,17 @@ tidy_list_view_get_cell_geometry (TidyListView    *view,
   width = 0;
   height = row->height;
 
+  tidy_stylable_get (TIDY_STYLABLE (view), "h-padding", &h_padding, NULL);
+  h_paddingu = CLUTTER_UNITS_FROM_DEVICE (h_padding);
+
   for (i = 0, l = priv->columns; i < column_index; i++, l = l->next)
     {
       column = l->data;
 
       column_width = tidy_list_column_get_widthu (column);
 
-      x += column_width; 
+      x += column_width;
+      x += h_padding;
     }
 
   column = g_list_nth_data (priv->columns, column_index);
