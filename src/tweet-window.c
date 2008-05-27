@@ -236,7 +236,7 @@ on_info_button_press (ClutterActor       *actor,
 
   animation =
     tweet_actor_animate (actor, TWEET_LINEAR, 250,
-                         "opacity", tweet_interval_new (G_TYPE_UCHAR, 196, 0),
+                         "opacity", tweet_interval_new (G_TYPE_UCHAR, 224, 0),
                          NULL);
   g_signal_connect (animation,
                     "completed", G_CALLBACK (on_info_destroy),
@@ -342,7 +342,7 @@ on_status_view_button_release (ClutterActor       *actor,
       ClutterModelIter *iter;
       ClutterGeometry geometry = { 0, };
       ClutterActor *stage;
-      ClutterColor info_color = { 255, 255, 255, 196 };
+      ClutterColor info_color = { 255, 255, 255, 255 };
 
       priv->in_press = FALSE;
 
@@ -403,7 +403,7 @@ on_status_view_button_release (ClutterActor       *actor,
         tweet_actor_animate (priv->info, TWEET_LINEAR, 250,
                              "y", tweet_interval_new (G_TYPE_INT, geometry.y + CANVAS_PADDING, 100 + CANVAS_PADDING),
                              "height", tweet_interval_new (G_TYPE_INT, 16, (CANVAS_HEIGHT - (100 * 2))),
-                             "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 196),
+                             "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 224),
                              NULL);
       g_signal_connect (animation,
                         "completed", G_CALLBACK (on_status_info_visible),
