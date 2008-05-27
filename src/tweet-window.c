@@ -74,6 +74,7 @@ struct _TweetWindowPrivate
   ClutterActor *spinner;
   ClutterActor *status_view;
   ClutterActor *scroll;
+  ClutterActor *info;
 
   GtkUIManager *manager;
   GtkActionGroup *action_group;
@@ -217,6 +218,14 @@ on_entry_activate (GtkEntry *entry,
   gtk_entry_set_text (entry, "");
 }
 
+static void
+on_info_destroy (TweetAnimation *animation,
+                 TweetWindow    *window)
+{
+  clutter_actor_destroy (window->priv->info);
+  window->priv->info = NULL;
+}
+
 static gboolean
 on_info_button_press (ClutterActor       *actor,
                       ClutterButtonEvent *event,
@@ -229,9 +238,9 @@ on_info_button_press (ClutterActor       *actor,
     tweet_actor_animate (actor, TWEET_LINEAR, 250,
                          "opacity", tweet_interval_new (G_TYPE_UCHAR, 196, 0),
                          NULL);
-  g_signal_connect_swapped (animation,
-                            "completed", G_CALLBACK (clutter_actor_destroy),
-                            actor);
+  g_signal_connect (animation,
+                    "completed", G_CALLBACK (on_info_destroy),
+                    window);
 
   clutter_actor_set_reactive (priv->status_view, TRUE);
   tweet_actor_animate (priv->status_view, TWEET_LINEAR, 250,
@@ -281,6 +290,14 @@ on_reply_clicked (TweetStatusInfo *info,
   g_free (reply_to);
 }
 
+static void
+on_status_info_visible (TweetAnimation *animation,
+                        TweetWindow    *window)
+{
+  window->priv->in_press = FALSE;
+  clutter_actor_set_reactive (window->priv->info, TRUE);
+}
+
 static gboolean
 on_status_view_button_press (ClutterActor       *actor,
                              ClutterButtonEvent *event,
@@ -288,6 +305,10 @@ on_status_view_button_press (ClutterActor       *actor,
 {
   TweetWindowPrivate *priv = window->priv;
   gint row;
+
+  /* this should not happen, but just in case... */
+  if (priv->info)
+    return FALSE;
 
   row = tidy_list_view_get_row_at_pos (TIDY_LIST_VIEW (actor),
                                        event->x,
@@ -316,25 +337,33 @@ on_status_view_button_release (ClutterActor       *actor,
 
   if (priv->in_press)
     {
+      TweetAnimation *animation;
       TwitterStatus *status;
       ClutterModelIter *iter;
       ClutterGeometry geometry = { 0, };
-      ClutterActor *stage, *info;
+      ClutterActor *stage;
 
       priv->in_press = FALSE;
 
       if (abs (priv->press_y - event->y) > JITTER)
-        return FALSE;
+        {
+          priv->in_press = FALSE;
+          return FALSE;
+        }
 
       iter = clutter_model_get_iter_at_row (CLUTTER_MODEL (priv->status_model),
                                             priv->press_row);
       if (!iter)
-        return FALSE;
+        {
+          priv->in_press = FALSE;
+          return FALSE;
+        }
 
       status = tweet_status_model_get_status (priv->status_model, iter);
       if (!status)
         {
           g_object_unref (iter);
+          priv->in_press = FALSE;
           return FALSE;
         }
 
@@ -345,32 +374,42 @@ on_status_view_button_release (ClutterActor       *actor,
 
       stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
 
-      info = tweet_status_info_new (status);
-      g_signal_connect (info,
+      priv->info = tweet_status_info_new (status);
+      g_signal_connect (priv->info,
                         "button-press-event", G_CALLBACK (on_info_button_press),
                         window);
-      g_signal_connect (info,
+      g_signal_connect (priv->info,
                         "star-clicked", G_CALLBACK (on_star_clicked),
                         window);
-      g_signal_connect (info,
+      g_signal_connect (priv->info,
                         "reply-clicked", G_CALLBACK (on_reply_clicked),
                         window);
                                 
-      clutter_container_add_actor (CLUTTER_CONTAINER (stage), info);
-      clutter_actor_set_position (info,
+      clutter_container_add_actor (CLUTTER_CONTAINER (stage), priv->info);
+      clutter_actor_set_position (priv->info,
                                   geometry.x + CANVAS_PADDING,
                                   geometry.y + CANVAS_PADDING);
-      clutter_actor_set_size (info, geometry.width, 16);
-      clutter_actor_set_opacity (info, 0);
-      clutter_actor_set_reactive (info, TRUE);
-      clutter_actor_show (info);
+      clutter_actor_set_size (priv->info, geometry.width, 16);
+      clutter_actor_set_opacity (priv->info, 0);
+      clutter_actor_set_reactive (priv->info, FALSE);
+      clutter_actor_show (priv->info);
 
-      tweet_actor_animate (info, TWEET_LINEAR, 250,
-                           "y", tweet_interval_new (G_TYPE_INT, geometry.y + CANVAS_PADDING, 100 + CANVAS_PADDING),
-                           "height", tweet_interval_new (G_TYPE_INT, 16, (CANVAS_HEIGHT - (100 * 2))),
-                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 196),
-                           NULL);
+      /* the status info is non-reactive until it's been
+       * full "unrolled"
+       */
+      animation =
+        tweet_actor_animate (priv->info, TWEET_LINEAR, 250,
+                             "y", tweet_interval_new (G_TYPE_INT, geometry.y + CANVAS_PADDING, 100 + CANVAS_PADDING),
+                             "height", tweet_interval_new (G_TYPE_INT, 16, (CANVAS_HEIGHT - (100 * 2))),
+                             "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 196),
+                             NULL);
+      g_signal_connect (animation,
+                        "completed", G_CALLBACK (on_status_info_visible),
+                        window);
 
+      /* set the status view as not reactive to avoid opening
+       * the status info on double tap
+       */
       clutter_actor_set_reactive (priv->status_view, FALSE);
       tweet_actor_animate (priv->status_view, TWEET_LINEAR, 250,
                            "opacity", tweet_interval_new (G_TYPE_UCHAR, 255, 128),
