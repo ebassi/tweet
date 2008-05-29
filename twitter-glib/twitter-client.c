@@ -1215,8 +1215,8 @@ twitter_client_add_favorite (TwitterClient  *client,
 
   clos = g_new0 (GetStatusClosure, 1);
   closure_set_action (clos, FAVORITE_CREATE);
-  closure_set_client (close, g_object_ref (client));
-  closure_set_requires_auth (close, TRUE);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
   clos->status = twitter_status_new ();
 
   twitter_client_queue_message (client, msg, TRUE,
