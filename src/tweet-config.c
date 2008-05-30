@@ -180,7 +180,7 @@ tweet_config_class_init (TweetConfigClass *klass)
                                    g_param_spec_boolean ("use-gtk-bg",
                                                          "Use GTK BG",
                                                          "Use GTK Background color",
-                                                         FALSE,
+                                                         TRUE,
                                                          G_PARAM_READWRITE));
 
   config_signals[CHANGED] =
@@ -199,7 +199,7 @@ tweet_config_init (TweetConfig *config)
   config->priv = TWEET_CONFIG_GET_PRIVATE (config);
 
   config->priv->refresh_time = 300;
-  config->priv->use_gtk_bg = FALSE;
+  config->priv->use_gtk_bg = TRUE;
 }
 
 TweetConfig *

@@ -22,6 +22,8 @@
 #include <clutter/clutter-actor.h>
 #include <clutter-cairo/clutter-cairo.h>
 
+#include "tweet-overlay.h"
+
 G_BEGIN_DECLS
 
 #define TWEET_TYPE_SPINNER              (tweet_spinner_get_type ())
@@ -37,14 +39,14 @@ typedef struct _TweetSpinnerClass       TweetSpinnerClass;
 
 struct _TweetSpinner
 {
-  ClutterGroup parent_instance;
+  TweetOverlay parent_instance;
 
   TweetSpinnerPrivate *priv;
 };
 
 struct _TweetSpinnerClass
 {
-  ClutterGroupClass parent_class;
+  TweetOverlayClass parent_class;
 };
 
 GType         tweet_spinner_get_type  (void) G_GNUC_CONST;
@@ -52,10 +54,6 @@ ClutterActor *tweet_spinner_new       (void);
 void          tweet_spinner_set_image (TweetSpinner       *spinner,
                                        ClutterActor       *image);
 ClutterActor *tweet_spinner_get_image (TweetSpinner       *spinner);
-void          tweet_spinner_set_color (TweetSpinner       *spinner,
-                                       const ClutterColor *color);
-void          tweet_spinner_get_color (TweetSpinner       *spinner,
-                                       ClutterColor       *color);
 void          tweet_spinner_start     (TweetSpinner       *spinner);
 void          tweet_spinner_stop      (TweetSpinner       *spinner);
 
