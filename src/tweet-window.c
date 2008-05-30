@@ -480,31 +480,9 @@ tweet_window_constructed (GObject *gobject)
   TweetWindow *window = TWEET_WINDOW (gobject);
   TweetWindowPrivate *priv = window->priv;
   ClutterActor *stage;
-  ClutterActor *view;
   ClutterActor *img;
-  ClutterColor stage_color = { 0, 0, 0, 255 };
 
   stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
-  clutter_stage_set_color (CLUTTER_STAGE (stage), &stage_color);
-
-  view = tweet_status_view_new (priv->status_model);
-  g_signal_connect (view,
-                    "button-press-event", G_CALLBACK (on_status_view_button_press),
-                    window);
-  g_signal_connect (view,
-                    "button-release-event", G_CALLBACK (on_status_view_button_release),
-                    window);
-  priv->scroll = tidy_finger_scroll_new (TIDY_FINGER_SCROLL_MODE_KINETIC);
-  clutter_container_add_actor (CLUTTER_CONTAINER (priv->scroll), view);
-  clutter_actor_show (view);
-  clutter_actor_set_reactive (view, TRUE);
-  priv->status_view = view;
-
-  clutter_actor_set_size (priv->scroll, CANVAS_WIDTH, CANVAS_HEIGHT);
-  clutter_actor_set_position (priv->scroll, CANVAS_PADDING, CANVAS_PADDING);
-  clutter_container_add_actor (CLUTTER_CONTAINER (stage), priv->scroll);
-  clutter_actor_set_reactive (priv->scroll, TRUE);
-  clutter_actor_show (priv->scroll);
 
   img = tweet_texture_new_from_stock (GTK_WIDGET (window),
                                       GTK_STOCK_REFRESH,
@@ -526,8 +504,7 @@ tweet_window_constructed (GObject *gobject)
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 127),
                        NULL);
 
-  clutter_actor_show (stage);
-  gtk_widget_show (GTK_WIDGET (window));
+  gtk_widget_show_all (GTK_WIDGET (window));
 
   twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
 
@@ -700,15 +677,28 @@ tweet_window_init (TweetWindow *window)
   GtkWidget *frame, *hbox, *button;
   GtkAccelGroup *accel_group;
   GError *error;
+  ClutterActor *stage, *view;
+  ClutterColor stage_color = { 0, 0, 0, 255 };
 
   GTK_WINDOW (window)->type = GTK_WINDOW_TOPLEVEL;
-  gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
+  gtk_window_set_default_size (GTK_WINDOW (window), WINDOW_WIDTH, 600);
   gtk_window_set_title (GTK_WINDOW (window), "Tweet");
-  gtk_widget_set_size_request (GTK_WIDGET (window), WINDOW_WIDTH, -1);
 
   window->priv = priv = TWEET_WINDOW_GET_PRIVATE (window);
 
   priv->mode = TWEET_WINDOW_RECENT;
+
+  priv->status_model = TWEET_STATUS_MODEL (tweet_status_model_new ());
+
+  priv->config = tweet_config_get_default ();
+  priv->client = twitter_client_new_for_user (tweet_config_get_username (priv->config),
+                                              tweet_config_get_password (priv->config));
+  g_signal_connect (priv->client,
+                    "status-received", G_CALLBACK (on_status_received),
+                    window);
+  g_signal_connect (priv->client,
+                    "timeline-complete", G_CALLBACK (on_timeline_complete),
+                    window);
 
   priv->vbox = gtk_vbox_new (FALSE, 0);
   gtk_container_add (GTK_CONTAINER (window), priv->vbox);
@@ -755,9 +745,35 @@ tweet_window_init (TweetWindow *window)
   gtk_widget_show (frame);
 
   priv->canvas = gtk_clutter_embed_new ();
-  gtk_widget_set_size_request (priv->canvas, CANVAS_WIDTH, CANVAS_HEIGHT);
   gtk_container_add (GTK_CONTAINER (frame), priv->canvas);
-  gtk_widget_show (priv->canvas);
+
+  stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
+  gtk_widget_set_size_request (priv->canvas,
+                               CANVAS_WIDTH + CANVAS_PADDING,
+                               CANVAS_HEIGHT + CANVAS_PADDING);
+  clutter_stage_set_color (CLUTTER_STAGE (stage), &stage_color);
+  clutter_actor_set_size (stage,
+                          CANVAS_WIDTH + CANVAS_PADDING,
+                          CANVAS_HEIGHT + CANVAS_PADDING);
+
+  view = tweet_status_view_new (priv->status_model);
+  g_signal_connect (view,
+                    "button-press-event", G_CALLBACK (on_status_view_button_press),
+                    window);
+  g_signal_connect (view,
+                    "button-release-event", G_CALLBACK (on_status_view_button_release),
+                    window);
+  priv->scroll = tidy_finger_scroll_new (TIDY_FINGER_SCROLL_MODE_KINETIC);
+  clutter_container_add_actor (CLUTTER_CONTAINER (priv->scroll), view);
+  clutter_actor_show (view);
+  clutter_actor_set_reactive (view, TRUE);
+  priv->status_view = view;
+
+  clutter_actor_set_size (priv->scroll, CANVAS_WIDTH, CANVAS_HEIGHT);
+  clutter_actor_set_position (priv->scroll, CANVAS_PADDING, CANVAS_PADDING);
+  clutter_container_add_actor (CLUTTER_CONTAINER (stage), priv->scroll);
+  clutter_actor_set_reactive (priv->scroll, TRUE);
+  clutter_actor_show (priv->scroll);
 
   hbox = gtk_hbox_new (FALSE, 12);
   gtk_box_pack_end (GTK_BOX (priv->vbox), hbox, FALSE, FALSE, 0);
@@ -790,18 +806,6 @@ tweet_window_init (TweetWindow *window)
                             "clicked", G_CALLBACK (gtk_widget_activate),
                             priv->entry);
   priv->send_button = button;
-
-  priv->status_model = TWEET_STATUS_MODEL (tweet_status_model_new ());
-
-  priv->config = tweet_config_get_default ();
-  priv->client = twitter_client_new_for_user (tweet_config_get_username (priv->config),
-                                              tweet_config_get_password (priv->config));
-  g_signal_connect (priv->client,
-                    "status-received", G_CALLBACK (on_status_received),
-                    window);
-  g_signal_connect (priv->client,
-                    "timeline-complete", G_CALLBACK (on_timeline_complete),
-                    window);
 }
 
 GtkWidget *
