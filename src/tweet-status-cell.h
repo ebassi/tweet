@@ -40,6 +40,7 @@ struct _TweetStatusCell
 
   ClutterActor *bg;
   ClutterActor *icon;
+  ClutterActor *bubble;
   ClutterActor *label;
 
   gchar *font_name;
