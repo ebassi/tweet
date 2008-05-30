@@ -391,7 +391,7 @@ on_status_view_button_release (ClutterActor       *actor,
       clutter_actor_set_position (priv->info,
                                   geometry.x + CANVAS_PADDING,
                                   geometry.y + CANVAS_PADDING);
-      clutter_actor_set_size (priv->info, geometry.width, 16);
+      clutter_actor_set_size (priv->info, geometry.width - CANVAS_PADDING, 16);
       clutter_actor_set_opacity (priv->info, 0);
       clutter_actor_set_reactive (priv->info, FALSE);
       clutter_actor_show (priv->info);
@@ -681,6 +681,7 @@ tweet_window_init (TweetWindow *window)
   ClutterColor stage_color = { 0, 0, 0, 255 };
 
   GTK_WINDOW (window)->type = GTK_WINDOW_TOPLEVEL;
+  gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
   gtk_window_set_default_size (GTK_WINDOW (window), WINDOW_WIDTH, 600);
   gtk_window_set_title (GTK_WINDOW (window), "Tweet");
 
@@ -745,6 +746,9 @@ tweet_window_init (TweetWindow *window)
   gtk_widget_show (frame);
 
   priv->canvas = gtk_clutter_embed_new ();
+  gtk_widget_set_size_request (priv->canvas,
+                               CANVAS_WIDTH + CANVAS_PADDING,
+                               CANVAS_HEIGHT + CANVAS_PADDING);
   gtk_container_add (GTK_CONTAINER (frame), priv->canvas);
 
   stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
@@ -806,6 +810,8 @@ tweet_window_init (TweetWindow *window)
                             "clicked", G_CALLBACK (gtk_widget_activate),
                             priv->entry);
   priv->send_button = button;
+
+  gtk_widget_realize (priv->canvas);
 }
 
 GtkWidget *
