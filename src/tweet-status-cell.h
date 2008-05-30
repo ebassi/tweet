@@ -47,6 +47,8 @@ struct _TweetStatusCell
   GRegex *escape_re;
 
   TwitterStatus *status;
+
+  ClutterUnit cell_height;
 };
 
 struct _TweetStatusCellClass

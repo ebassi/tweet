@@ -148,32 +148,6 @@ tweet_status_cell_constructed (GObject *gobject)
   gint width = DEFAULT_WIDTH;
   gint height = DEFAULT_HEIGHT;
 
-  /* background texture */
-  cell->bg = clutter_cairo_new (DEFAULT_WIDTH, DEFAULT_HEIGHT);
-  clutter_container_add_actor (CLUTTER_CONTAINER (cell), cell->bg);
-  clutter_actor_set_reactive (cell->bg, TRUE);
-  clutter_actor_show (cell->bg);
-
-  cr = clutter_cairo_create (CLUTTER_CAIRO (cell->bg));
-  g_assert (cr != NULL);
-
-  cairo_move_to (cr, BG_ROUND_RADIUS, 0);
-  cairo_line_to (cr, width - BG_ROUND_RADIUS, 0);
-  cairo_curve_to (cr, width, 0, width, 0, width, BG_ROUND_RADIUS);
-  cairo_line_to (cr, width, height - BG_ROUND_RADIUS);
-  cairo_curve_to (cr, width, height, width, height, width - BG_ROUND_RADIUS, height);
-  cairo_line_to (cr, BG_ROUND_RADIUS, height);
-  cairo_curve_to (cr, 0, height, 0, height, 0, height - BG_ROUND_RADIUS);
-  cairo_line_to (cr, 0, BG_ROUND_RADIUS);
-  cairo_curve_to (cr, 0, 0, 0, 0, BG_ROUND_RADIUS, 0);
-
-  cairo_close_path (cr);
-
-  clutter_cairo_set_source_color (cr, &bg_color);
-  cairo_fill_preserve (cr);
-
-  cairo_destroy (cr);
-
   g_assert (TWITTER_IS_STATUS (cell->status));
 
   user = twitter_status_get_user (cell->status);
@@ -190,7 +164,6 @@ tweet_status_cell_constructed (GObject *gobject)
     }
 
   clutter_actor_set_size (cell->icon, ICON_WIDTH, ICON_HEIGHT);
-  clutter_container_add_actor (CLUTTER_CONTAINER (cell), cell->icon);
   clutter_actor_set_position (cell->icon, ICON_X, ICON_Y);
   clutter_actor_show (cell->icon);
   clutter_actor_set_reactive (cell->icon, TRUE);
@@ -222,20 +195,57 @@ tweet_status_cell_constructed (GObject *gobject)
   clutter_label_set_line_wrap (CLUTTER_LABEL (cell->label), TRUE);
   clutter_label_set_text (CLUTTER_LABEL (cell->label), text);
   clutter_label_set_use_markup (CLUTTER_LABEL (cell->label), TRUE);
-  clutter_container_add_actor (CLUTTER_CONTAINER (cell), cell->label);
   clutter_actor_set_position (cell->label, TEXT_X, TEXT_Y);
   clutter_actor_set_width (cell->label, 230);
   clutter_actor_show (cell->label);
 
   g_free (text);
+
+  height = MAX (DEFAULT_HEIGHT,
+                clutter_actor_get_height (cell->label) + 2 * V_PADDING);
+
+  cell->cell_height = CLUTTER_UNITS_FROM_DEVICE (height);
+
+  /* background texture */
+  cell->bg = clutter_cairo_new (width, height);
+  clutter_actor_set_reactive (cell->bg, TRUE);
+  clutter_actor_show (cell->bg);
+
+  cr = clutter_cairo_create (CLUTTER_CAIRO (cell->bg));
+  g_assert (cr != NULL);
+
+  cairo_move_to (cr, BG_ROUND_RADIUS, 0);
+  cairo_line_to (cr, width - BG_ROUND_RADIUS, 0);
+  cairo_curve_to (cr, width, 0, width, 0, width, BG_ROUND_RADIUS);
+  cairo_line_to (cr, width, height - BG_ROUND_RADIUS);
+  cairo_curve_to (cr, width, height, width, height, width - BG_ROUND_RADIUS, height);
+  cairo_line_to (cr, BG_ROUND_RADIUS, height);
+  cairo_curve_to (cr, 0, height, 0, height, 0, height - BG_ROUND_RADIUS);
+  cairo_line_to (cr, 0, BG_ROUND_RADIUS);
+  cairo_curve_to (cr, 0, 0, 0, 0, BG_ROUND_RADIUS, 0);
+
+  cairo_close_path (cr);
+
+  clutter_cairo_set_source_color (cr, &bg_color);
+  cairo_fill_preserve (cr);
+
+  cairo_destroy (cr);
+
+  clutter_container_add (CLUTTER_CONTAINER (cell),
+                         cell->bg,
+                         cell->icon,
+                         cell->label,
+                         NULL);
 }
 
 static void
 tweet_status_cell_query_coords (ClutterActor    *actor,
                                 ClutterActorBox *box)
 {
+  TweetStatusCell *cell = TWEET_STATUS_CELL (actor);
+
   box->x2 = box->x1 + CLUTTER_UNITS_FROM_DEVICE (DEFAULT_WIDTH);
-  box->y2 = box->y1 + CLUTTER_UNITS_FROM_DEVICE (DEFAULT_HEIGHT);
+  box->y2 = box->y1 + cell->cell_height;
 }
 
 static void
