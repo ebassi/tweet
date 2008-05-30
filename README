@@ -1,4 +1,5 @@
 Tweet - A simple Twitter desktop client
+===============================================================================
 
 Tweet is a desktop client for the Twitter web service. The Twitter
 web service is described as:
@@ -14,9 +15,10 @@ In short, is a web-based SMS-like service.
 Tweet is a client written to read your friends' status and update your
 own without using a web browser.
 
-REQUIREMENTS
-------------
+Tweet homepage is available at: http://live.gnome.org/Tweet
 
+REQUIREMENTS
+-------------------------------------------------------------------------------
 Tweet depends on:
 
   - GLib >= 2.16
@@ -32,12 +34,11 @@ for reading and updating the Twitter status; the library is installed and
 it is available so that other applications can integrate with it.
 
 INSTALLATION
-------------
+-------------------------------------------------------------------------------
 Se the INSTALL file.
 
 COPYRIGHT AND LICENSING
------------------------
-
+------------------------------------------------------------------------------
 Tweet is released under the terms of the GNU General Public License,
 version 3 or, at your option, any later version.
 
