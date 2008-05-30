@@ -40,13 +40,13 @@
 #include "tweet-status-info.h"
 #include "tweet-utils.h"
 
-#define MAX_WIDTH       350
-
 #define ICON_WIDTH      64
 #define ICON_HEIGHT     64
 
 #define V_PADDING       6
 #define H_PADDING       12
+
+#define MAX_WIDTH       344
 
 #define ICON_Y          (V_PADDING)
 
@@ -373,6 +373,10 @@ tweet_status_info_request_coords (ClutterActor    *actor,
   width = CLUTTER_UNITS_TO_DEVICE (box->x2 - box->x1);
   height = CLUTTER_UNITS_TO_DEVICE (box->y2 - box->y1);
 
+  clutter_actor_set_position (info->icon,
+                              (width - ICON_WIDTH - (2 * H_PADDING)) / 2,
+                              ICON_Y);
+
   clutter_actor_set_width (info->label, (width - (2 * H_PADDING)));
   clutter_actor_set_height (info->label, -1);
 
@@ -390,7 +394,7 @@ tweet_status_info_request_coords (ClutterActor    *actor,
                               TEXT_X + H_PADDING,
                               height - BUTTON_SIZE - V_PADDING);
   clutter_actor_set_position (info->star_button,
-                              TEXT_WIDTH - BUTTON_SIZE - H_PADDING,
+                              width - BUTTON_SIZE - H_PADDING,
                               height - BUTTON_SIZE - V_PADDING);
   clutter_actor_set_y (info->button_tip, height - BUTTON_SIZE - V_PADDING);
 
