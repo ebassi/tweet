@@ -40,6 +40,8 @@ struct _TweetConfigPrivate
   gchar *password;
 
   guint refresh_time;
+
+  guint use_gtk_bg : 1;
 };
 
 enum
@@ -48,7 +50,8 @@ enum
 
   PROP_USERNAME,
   PROP_PASSWORD,
-  PROP_REFRESH_TIME
+  PROP_REFRESH_TIME,
+  PROP_USE_GTK_BG
 };
 
 enum
@@ -97,6 +100,10 @@ tweet_config_set_property (GObject      *gobject,
       tweet_config_set_refresh_time (config, g_value_get_uint (value));
       break;
 
+    case PROP_USE_GTK_BG:
+      tweet_config_set_use_gtk_bg (config, g_value_get_boolean (value));
+      break;
+
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (gobject, prop_id, pspec);
       break;
@@ -123,6 +130,10 @@ tweet_config_get_property (GObject    *gobject,
 
     case PROP_REFRESH_TIME:
       g_value_set_uint (value, priv->refresh_time);
+      break;
+
+    case PROP_USE_GTK_BG:
+      g_value_set_boolean (value, priv->use_gtk_bg);
       break;
 
     default:
@@ -164,6 +175,13 @@ tweet_config_class_init (TweetConfigClass *klass)
                                                       0, G_MAXUINT,
                                                       300,
                                                       G_PARAM_READWRITE));
+  g_object_class_install_property (gobject_class,
+                                   PROP_USE_GTK_BG,
+                                   g_param_spec_boolean ("use-gtk-bg",
+                                                         "Use GTK BG",
+                                                         "Use GTK Background color",
+                                                         FALSE,
+                                                         G_PARAM_READWRITE));
 
   config_signals[CHANGED] =
     g_signal_new (g_intern_static_string ("changed"),
@@ -181,6 +199,7 @@ tweet_config_init (TweetConfig *config)
   config->priv = TWEET_CONFIG_GET_PRIVATE (config);
 
   config->priv->refresh_time = 300;
+  config->priv->use_gtk_bg = FALSE;
 }
 
 TweetConfig *
@@ -303,6 +322,32 @@ tweet_config_get_refresh_time (TweetConfig *config)
   g_return_val_if_fail (TWEET_IS_CONFIG (config), 0);
 
   return config->priv->refresh_time;
+}
+
+void
+tweet_config_set_use_gtk_bg (TweetConfig *config,
+                             gboolean     value)
+{
+  TweetConfigPrivate *priv;
+
+  g_return_if_fail (TWEET_IS_CONFIG (config));
+
+  priv = config->priv;
+
+  if (priv->use_gtk_bg != value)
+    {
+      priv->use_gtk_bg = value;
+
+      g_object_notify (G_OBJECT (config), "use-gtk-bg");
+    }
+}
+
+gboolean
+tweet_config_get_use_gtk_bg (TweetConfig *config)
+{
+  g_return_val_if_fail (TWEET_IS_CONFIG (config), FALSE);
+
+  return config->priv->use_gtk_bg;
 }
 
 void

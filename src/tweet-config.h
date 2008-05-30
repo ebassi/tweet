@@ -62,6 +62,10 @@ void                  tweet_config_set_refresh_time (TweetConfig *config,
                                                      guint        seconds);
 guint                 tweet_config_get_refresh_time (TweetConfig *config);
 
+gboolean              tweet_config_get_use_gtk_bg   (TweetConfig *config);
+void                  tweet_config_set_use_gtk_bg   (TweetConfig *config,
+                                                     gboolean     value);
+
 void                  tweet_config_save         (TweetConfig *config);
 
 G_END_DECLS
