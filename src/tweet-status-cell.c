@@ -46,7 +46,7 @@
 #define DEFAULT_WIDTH   (96 + (2 * H_PADDING) + 230)
 #define DEFAULT_HEIGHT  (72 + (2 * V_PADDING))
 
-#define ICON_X          (H_PADDING)
+#define ICON_X          (H_PADDING / 2)
 #define ICON_Y          (V_PADDING + 12)
 
 #define TEXT_X          (ICON_WIDTH + (2 * H_PADDING))
@@ -140,7 +140,8 @@ tweet_status_cell_constructed (GObject *gobject)
   TweetStatusCell *cell = TWEET_STATUS_CELL (gobject);
   cairo_t *cr;
   ClutterColor bg_color = { 162, 162, 162, 0xcc };
-  ClutterColor text_color = { 0xee, 0xee, 0xee, 255 };
+  ClutterColor bubble_color = { 255, 255, 255, 224 };
+  ClutterColor text_color = { 0, 0, 0, 255 };
   TwitterUser *user;
   gchar *text, *created_at, *escaped;
   GTimeVal timeval = { 0, };
@@ -152,21 +153,6 @@ tweet_status_cell_constructed (GObject *gobject)
 
   user = twitter_status_get_user (cell->status);
   g_assert (TWITTER_IS_USER (user));
-
-  /* icon */
-  pixbuf = twitter_user_get_profile_image (user);
-  if (pixbuf)
-    cell->icon = tweet_texture_new_from_pixbuf (pixbuf);
-  else
-    {
-      cell->icon = clutter_rectangle_new ();
-      clutter_rectangle_set_color (CLUTTER_RECTANGLE (cell->icon), &text_color);
-    }
-
-  clutter_actor_set_size (cell->icon, ICON_WIDTH, ICON_HEIGHT);
-  clutter_actor_set_position (cell->icon, ICON_X, ICON_Y);
-  clutter_actor_show (cell->icon);
-  clutter_actor_set_reactive (cell->icon, TRUE);
 
   /* some twitter client doesn't escape bare '&' properly, so we get
    * failures from the pango markup parser. we need to replace the
@@ -199,20 +185,38 @@ tweet_status_cell_constructed (GObject *gobject)
   clutter_actor_set_width (cell->label, 230);
   clutter_actor_show (cell->label);
 
+  height =
+    MAX (DEFAULT_HEIGHT, clutter_actor_get_height (cell->label) + 2 * V_PADDING);
+
   g_free (text);
 
-  height = MAX (DEFAULT_HEIGHT,
-                clutter_actor_get_height (cell->label) + 2 * V_PADDING);
+  /* icon */
+  pixbuf = twitter_user_get_profile_image (user);
+  if (pixbuf)
+    cell->icon = tweet_texture_new_from_pixbuf (pixbuf);
+  else
+    {
+      cell->icon = clutter_rectangle_new ();
+      clutter_rectangle_set_color (CLUTTER_RECTANGLE (cell->icon), &text_color);
+    }
+
+  clutter_actor_set_size (cell->icon, ICON_WIDTH, ICON_HEIGHT);
+  clutter_actor_set_position (cell->icon,
+                              ICON_X,
+                              (height - ICON_HEIGHT) / 2);
+  clutter_actor_show (cell->icon);
+  clutter_actor_set_reactive (cell->icon, TRUE);
 
   cell->cell_height = CLUTTER_UNITS_FROM_DEVICE (height);
 
   /* background texture */
   cell->bg = clutter_cairo_new (width, height);
-  clutter_actor_set_reactive (cell->bg, TRUE);
   clutter_actor_show (cell->bg);
 
   cr = clutter_cairo_create (CLUTTER_CAIRO (cell->bg));
   g_assert (cr != NULL);
+
+  width = DEFAULT_WIDTH - (H_PADDING / 2);
 
   cairo_move_to (cr, BG_ROUND_RADIUS, 0);
   cairo_line_to (cr, width - BG_ROUND_RADIUS, 0);
@@ -231,9 +235,59 @@ tweet_status_cell_constructed (GObject *gobject)
 
   cairo_destroy (cr);
 
+  /* bubble texture */
+  cell->bubble = clutter_cairo_new (width, height);
+  clutter_actor_set_position (cell->bubble, TEXT_X - H_PADDING, 0);
+  clutter_actor_show (cell->bubble);
+
+  cr = clutter_cairo_create (CLUTTER_CAIRO (cell->bubble));
+  g_assert (cr != NULL);
+
+  {
+    gint x = H_PADDING / 2;
+    gint y = 0;
+
+    width = DEFAULT_WIDTH - (ICON_WIDTH + (2 * H_PADDING));
+
+    /*
+    context.move_to(x+r,y)                      # Move to A
+    context.line_to(x+w-r,y)                    # Straight line to B
+    context.curve_to(x+w,y,x+w,y,x+w,y+r)       # Curve to C, Control points are both at Q
+    context.line_to(x+w,y+h-r)                  # Move to D
+    context.curve_to(x+w,y+h,x+w,y+h,x+w-r,y+h) # Curve to E
+    context.line_to(x+r,y+h)                    # Line to F
+    context.curve_to(x,y+h,x,y+h,x,y+h-r)       # Curve to G
+    context.line_to(x,y+r)                      # Line to H
+    context.curve_to(x,y,x,y,x+r,y)             # Curve to A
+    */
+    cairo_move_to (cr, x + BG_ROUND_RADIUS, y);
+    cairo_line_to (cr, x + width - BG_ROUND_RADIUS, y);
+    cairo_curve_to (cr, x + width, y, x + width, y, x + width, y + BG_ROUND_RADIUS);
+    cairo_line_to (cr, x + width, y + height - BG_ROUND_RADIUS);
+    cairo_curve_to (cr, x + width, y + height, x + width, y + height, x + width - BG_ROUND_RADIUS, y + height);
+    cairo_line_to (cr, x + BG_ROUND_RADIUS, y + height);
+    cairo_curve_to (cr, x, y + height, x, y + height, x, y + height - BG_ROUND_RADIUS);
+
+      cairo_line_to (cr, x, y + (((height - BG_ROUND_RADIUS * 2.0) / 3.0) * 2.0));
+      cairo_line_to (cr, 0, y + ((height - BG_ROUND_RADIUS * 2.0) / 2.0));
+      cairo_line_to (cr, x, y + (((height - BG_ROUND_RADIUS * 2.0) / 3.0)));
+
+    cairo_line_to (cr, x, y + BG_ROUND_RADIUS);
+    cairo_curve_to (cr, x, y, x, y, x + BG_ROUND_RADIUS, y);
+  }
+
+  cairo_close_path (cr);
+
+  clutter_cairo_set_source_color (cr, &bubble_color);
+  cairo_fill_preserve (cr);
+
+  cairo_destroy (cr);
+
+  /* we add them in the right order */
   clutter_container_add (CLUTTER_CONTAINER (cell),
                          cell->bg,
                          cell->icon,
+                         cell->bubble,
                          cell->label,
                          NULL);
 }
