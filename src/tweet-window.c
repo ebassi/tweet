@@ -564,6 +564,14 @@ tweet_window_style_set (GtkWidget *widget,
                      "font-name", font_name,
                      NULL);
 
+  if (tweet_config_get_use_gtk_bg (priv->config))
+    {
+      ClutterActor *stage;
+
+      stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
+      clutter_stage_set_color (CLUTTER_STAGE (stage), &bg_color);
+    }
+
   g_free (font_name);
 }
 
