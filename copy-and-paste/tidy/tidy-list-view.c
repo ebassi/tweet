@@ -870,32 +870,40 @@ on_row_removed (ClutterModel     *model,
 static void
 on_row_changed (ClutterModel     *model,
                 ClutterModelIter *iter,
-                TidyListView     *list_view)
+                TidyListView     *view)
 {
   gint nv_columns, i, row;
   ClutterUnit width;
   ListRow *row_info;
   GList *l;
-
-  TidyListViewPrivate *priv = list_view->priv;
-  ClutterActor *actor = CLUTTER_ACTOR (list_view);
+  TidyListViewPrivate *priv = view->priv;
+  ClutterActor *actor = CLUTTER_ACTOR (view);
   ClutterUnit cell_height = 0;
-  
+  gint h_padding;
+
+  h_padding = default_h_padding;
+
+  tidy_stylable_get (TIDY_STYLABLE (view), "h-padding", &h_padding, NULL);
+
   /* Check if the new row will occupy the space of the old row - if so,
    * don't relayout the entire list
    */
-  
+
   row = clutter_model_iter_get_row (iter);
   row_info = g_list_nth_data (priv->rows, row);
   
   if (row_info)
     {
+      ClutterUnit x_offset;
+
       width = priv->allocation.x2 - priv->allocation.x1;
       if (width <= 0)
         width = clutter_actor_get_widthu (actor);
 
-      nv_columns = tidy_list_view_visible_columns (list_view);
-      
+      x_offset = 0;
+
+      nv_columns = tidy_list_view_visible_columns (view);
+
       for (l = priv->columns, i = 0; l != NULL; l = l->next, i++)
         {
           TidyListColumn *column = l->data;
@@ -939,20 +947,21 @@ on_row_changed (ClutterModel     *model,
           g_value_unset (&value);
           
           /* Replace cell */
-          old_cell = (ClutterActor *)g_ptr_array_index (row_info->cells, i);
+          old_cell = (ClutterActor *) g_ptr_array_index (row_info->cells, i);
           
           g_ptr_array_index (row_info->cells, i) = cell;
           clutter_actor_set_parent (cell, actor);
-          clutter_actor_set_positionu (cell,
-                                       clutter_actor_get_xu (old_cell),
-                                       clutter_actor_get_yu (old_cell));
+          clutter_actor_set_positionu (cell, x_offset, row_info->y_offset);
           clutter_actor_set_widthu (cell, column_width);
           clutter_actor_show (cell);
 
           cell_height = MAX (cell_height, clutter_actor_get_heightu (cell));
 
+          x_offset += column_width;
+          x_offset += CLUTTER_UNITS_FROM_DEVICE (h_padding);
+
           /* Remove old cell */
-          clutter_actor_unparent (old_cell);
+          clutter_actor_destroy (old_cell);
         }
 
       /* If row height is unchanged, new cells fit within the old cell space */
@@ -961,8 +970,8 @@ on_row_changed (ClutterModel     *model,
     }
 
   /* Relayout */
-  clear_layout (list_view, FALSE);
-  ensure_layout (list_view);
+  clear_layout (view, FALSE);
+  ensure_layout (view);
 }
 
 static void
