@@ -33,6 +33,7 @@ tweet_h = \
 	tweet-config.h \
 	tweet-interval.h \
 	tweet-overlay.h \
+	tweet-preferences.h \
 	tweet-spinner.h \
 	tweet-status-cell.h \
 	tweet-status-column.h \
@@ -80,6 +81,8 @@ libtweet_ui_la_SOURCES = \
 	tweet-interval.h \
 	tweet-overlay.c \
 	tweet-overlay.h \
+	tweet-preferences.c \
+	tweet-preferences.h \
 	tweet-spinner.c \
 	tweet-spinner.h \
 	tweet-status-cell.c \
