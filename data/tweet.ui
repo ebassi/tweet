@@ -3,6 +3,9 @@
     <menu name="TweetFileMenu" action="TweetFileAction">
       <menuitem name="TweetQuitMenuItem" action="TweetQuit"/>
     </menu>
+    <menu name="TweetEditMenu" action="TweetEditAction">
+      <menuitem name="TweetPreferencesMenuItem" action="TweetPreferences"/>
+    </menu>
     <menu name="TweetViewMenu" action="TweetViewAction">
       <menuitem name="TweetRecentMenuItem" action="TweetRecent"/>
       <menuitem name="TweetRepliesMenuItem" action="TweetReplies"/>
