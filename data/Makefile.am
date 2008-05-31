@@ -1,7 +1,7 @@
 SUBDIRS = icons
 
 tweetuidir = $(datadir)/tweet
-tweetui_DATA = tweet.ui
+tweetui_DATA = tweet.ui tweet-preferences.xml
 
 tweetappdir = $(datadir)/applications
 tweetapp_in_files = tweet.desktop.in
