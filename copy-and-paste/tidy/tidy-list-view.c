@@ -315,7 +315,7 @@ tidy_list_view_visible_columns (TidyListView *view)
   return visible;
 }
 
-static inline void
+static void
 append_row_layout (TidyListView     *view,
                    ClutterModelIter *iter)
 {
@@ -420,6 +420,161 @@ append_row_layout (TidyListView     *view,
   /* store the layout size */
   priv->allocation.x2 = priv->allocation.x1 + width;
   priv->allocation.y2 = priv->allocation.y1 + y_offset;
+
+  /* Adjust the adjustments */
+  if (priv->hadjustment)
+    tidy_list_view_refresh_hadjustment (view);
+
+  if (priv->vadjustment)
+    tidy_list_view_refresh_vadjustment (view);
+}
+
+static void
+prepend_row_layout (TidyListView     *view,
+                    ClutterModelIter *iter)
+{
+  TidyListViewPrivate *priv = view->priv;
+  ListRow *row_info;
+  guint n_columns, nv_columns;
+  ClutterUnit width;
+  ClutterUnit x_offset, y_offset, cell_height;
+  ClutterUnit next_row_offset;
+  gint h_padding, v_padding;
+  gint i;
+  GList *l;
+
+  h_padding = default_h_padding;
+  v_padding = default_v_padding;
+
+  tidy_stylable_get (TIDY_STYLABLE (view),
+                     "h-padding", &h_padding,
+                     "v-padding", &v_padding,
+                     NULL);
+
+  width = priv->allocation.x2 - priv->allocation.x1;
+  if (width <= 0)
+    width = clutter_actor_get_widthu (CLUTTER_ACTOR (view));
+
+  n_columns = g_list_length (priv->columns);
+
+  x_offset = y_offset = cell_height = 0;
+
+  if (priv->show_headers)
+    y_offset += priv->header->height;
+
+  y_offset += CLUTTER_UNITS_FROM_DEVICE (v_padding);
+
+  row_info = g_slice_new (ListRow);
+  row_info->cells = g_ptr_array_sized_new (n_columns);
+  row_info->index = clutter_model_iter_get_row (iter);
+  row_info->y_offset = y_offset;
+  row_info->width = 0;
+  row_info->height = 0;
+
+  nv_columns = tidy_list_view_visible_columns (view);
+
+  for (l = priv->columns, i = 0; l != NULL; l = l->next, i++)
+    {
+      TidyListColumn *column = l->data;
+      TidyCellRenderer *renderer;
+      ClutterGeometry size = { 0, };
+      GValue value = { 0, };
+      ClutterActor *cell;
+      ClutterUnit column_width;
+      guint model_id;
+      TidyCellState state;
+
+      if (!tidy_list_column_get_visible (column))
+        continue;
+
+      model_id = tidy_list_column_get_model_index (column);
+
+      if (model_id == clutter_model_get_sorting_column (priv->model))
+        state = TIDY_CELL_SORTING;
+      else
+        state = TIDY_CELL_NORMAL;
+
+      clutter_model_iter_get_value (iter, model_id, &value);
+
+      column_width = tidy_list_column_get_widthu (column);
+      column_width = MAX ((width / nv_columns), column_width);
+
+      /* provide a geometry for the cell */
+      size.x = CLUTTER_UNITS_TO_DEVICE (x_offset);
+      size.y = CLUTTER_UNITS_TO_DEVICE (y_offset);
+      size.width = CLUTTER_UNITS_TO_DEVICE (column_width);
+      size.height = (cell_height > 0
+                     ? CLUTTER_UNITS_TO_DEVICE (cell_height)
+                     : -1);
+
+      renderer = tidy_list_column_get_cell_renderer (column);
+      cell = tidy_cell_renderer_get_cell_actor (renderer,
+                                                TIDY_ACTOR (view),
+                                                &value,
+                                                state, &size,
+                                                row_info->index, i);
+
+      g_value_unset (&value);
+
+      g_ptr_array_add (row_info->cells, cell);
+      clutter_actor_set_parent (cell, CLUTTER_ACTOR (view));
+      clutter_actor_set_positionu (cell, x_offset, y_offset);
+      clutter_actor_set_widthu (cell, column_width);
+      clutter_actor_show (cell);
+
+      x_offset += column_width;
+      x_offset += CLUTTER_UNITS_FROM_DEVICE (h_padding);
+
+      cell_height = MAX (cell_height, clutter_actor_get_heightu (cell));
+    }
+
+  row_info->width = x_offset;
+  row_info->height = cell_height;
+
+  next_row_offset = row_info->y_offset
+                  + cell_height
+                  + CLUTTER_UNITS_FROM_DEVICE (v_padding);
+
+  for (l = priv->rows; l != NULL; l = l->next)
+    {
+      ListRow *r = l->data;
+      GList *c;
+
+      x_offset = 0;
+
+      r->y_offset = next_row_offset;
+
+      for (c = priv->columns, i = 0; c != NULL; c = c->next, i++)
+        {
+          TidyListColumn *column = c->data;
+          ClutterUnit column_width;
+          ClutterActor *cell;
+
+          if (!tidy_list_column_get_visible (column))
+            continue;
+
+          column_width = tidy_list_column_get_widthu (column);
+          column_width = MAX ((width / nv_columns), column_width);
+
+          cell = g_ptr_array_index (r->cells, i);
+
+          clutter_actor_set_positionu (cell, x_offset, next_row_offset);
+
+          x_offset += column_width;
+          x_offset += CLUTTER_UNITS_FROM_DEVICE (h_padding);
+        }
+
+      next_row_offset = r->y_offset
+                      + r->height
+                      + CLUTTER_UNITS_FROM_DEVICE (v_padding);
+    }
+
+  priv->last_row_y = next_row_offset;
+  priv->rows = g_list_prepend (priv->rows, row_info);
+
+  /* store the layout size */
+  priv->allocation.x2 = priv->allocation.x1 + width;
+  priv->allocation.y2 = priv->allocation.y2 + cell_height;
 
   /* Adjust the adjustments */
   if (priv->hadjustment)
@@ -663,6 +818,7 @@ on_row_added (ClutterModel     *model,
   /* the row is guaranteed to already be inside the model; we need to
    * check if it's the last one as well. XXX this is a hack based on
    * the fact that we know how the implementation of the model works.
+   *
    * we need a ClutterModelIter::copy() function so we can copy the
    * passed iterator, advance the copy and check if it's the last
    * row.
@@ -674,13 +830,27 @@ on_row_added (ClutterModel     *model,
    * entire layout of the list view
    */
   if (copy && clutter_model_iter_is_last (copy))
-    append_row_layout (list_view, iter);
+    {
+      append_row_layout (list_view, iter);
+      goto done;
+    }
   else
     {
+      if (copy)
+        {
+          copy = clutter_model_iter_prev (copy);
+          if (clutter_model_iter_is_first (copy))
+            {
+              prepend_row_layout (list_view, iter);
+              goto done;
+            }
+        }
+
       clear_layout (list_view, FALSE);
       ensure_layout (list_view);
     }
 
+done:
   if (copy)
     g_object_unref (copy);
 
