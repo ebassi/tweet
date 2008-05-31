@@ -39,6 +39,7 @@
 
 #include "tweet-animation.h"
 #include "tweet-config.h"
+#include "tweet-preferences.h"
 #include "tweet-spinner.h"
 #include "tweet-status-info.h"
 #include "tweet-status-model.h"
@@ -508,10 +509,11 @@ tweet_window_constructed (GObject *gobject)
 
   twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
 
-  priv->refresh_id =
-    g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
-                           refresh_timeout,
-                           window);
+  if (tweet_config_get_refresh_time (priv->config) > 0)
+    priv->refresh_id =
+      g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
+                             refresh_timeout,
+                             window);
 }
 
 static void
@@ -557,6 +559,15 @@ tweet_window_cmd_quit (GtkAction   *action,
                        TweetWindow *window)
 {
   gtk_widget_destroy (GTK_WIDGET (window));
+}
+
+static void
+tweet_window_cmd_preferences (GtkAction   *action,
+                              TweetWindow *window)
+{
+  tweet_show_preferences_dialog (GTK_WINDOW (window),
+                                 _("Preferences"),
+                                 window->priv->config);
 }
 
 static void
@@ -638,6 +649,13 @@ static const GtkActionEntry action_entries[] = {
       "TweetQuit", GTK_STOCK_QUIT, NULL, "<control>Q",
       N_("Quit Tweet"),
       G_CALLBACK (tweet_window_cmd_quit)
+    },
+
+  { "TweetEditAction", NULL, N_("_Edit") },
+    {
+      "TweetPreferences", GTK_STOCK_PREFERENCES, NULL, NULL,
+      N_("Edit Tweet Preferences"),
+      G_CALLBACK (tweet_window_cmd_preferences)
     },
 
   { "TweetViewAction", NULL, N_("_View") },
