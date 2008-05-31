@@ -97,7 +97,7 @@ tweet_config_set_property (GObject      *gobject,
       break;
 
     case PROP_REFRESH_TIME:
-      tweet_config_set_refresh_time (config, g_value_get_uint (value));
+      tweet_config_set_refresh_time (config, g_value_get_int (value));
       break;
 
     case PROP_USE_GTK_BG:
@@ -129,7 +129,7 @@ tweet_config_get_property (GObject    *gobject,
       break;
 
     case PROP_REFRESH_TIME:
-      g_value_set_uint (value, priv->refresh_time);
+      g_value_set_int (value, priv->refresh_time);
       break;
 
     case PROP_USE_GTK_BG:
@@ -169,12 +169,12 @@ tweet_config_class_init (TweetConfigClass *klass)
                                                         G_PARAM_READWRITE));
   g_object_class_install_property (gobject_class,
                                    PROP_REFRESH_TIME,
-                                   g_param_spec_uint ("refresh-time",
-                                                      "Refresh Time",
-                                                      "Refresh interval",
-                                                      0, G_MAXUINT,
-                                                      300,
-                                                      G_PARAM_READWRITE));
+                                   g_param_spec_int ("refresh-time",
+                                                     "Refresh Time",
+                                                     "Refresh interval",
+                                                     -1, G_MAXINT,
+                                                     300,
+                                                     G_PARAM_READWRITE));
   g_object_class_install_property (gobject_class,
                                    PROP_USE_GTK_BG,
                                    g_param_spec_boolean ("use-gtk-bg",
@@ -300,7 +300,7 @@ tweet_config_get_password (TweetConfig *config)
 
 void
 tweet_config_set_refresh_time (TweetConfig *config,
-                               guint        seconds)
+                               gint         seconds)
 {
   TweetConfigPrivate *priv;
 
@@ -316,7 +316,7 @@ tweet_config_set_refresh_time (TweetConfig *config,
     }
 }
 
-guint
+gint
 tweet_config_get_refresh_time (TweetConfig *config)
 {
   g_return_val_if_fail (TWEET_IS_CONFIG (config), 0);

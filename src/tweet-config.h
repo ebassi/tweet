@@ -59,8 +59,8 @@ void                  tweet_config_set_password     (TweetConfig *config,
                                                      const gchar *password);
 G_CONST_RETURN gchar *tweet_config_get_password     (TweetConfig *config);
 void                  tweet_config_set_refresh_time (TweetConfig *config,
-                                                     guint        seconds);
-guint                 tweet_config_get_refresh_time (TweetConfig *config);
+                                                     gint         seconds);
+gint                  tweet_config_get_refresh_time (TweetConfig *config);
 
 gboolean              tweet_config_get_use_gtk_bg   (TweetConfig *config);
 void                  tweet_config_set_use_gtk_bg   (TweetConfig *config,
