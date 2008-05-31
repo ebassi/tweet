@@ -968,8 +968,8 @@ on_row_changed (ClutterModel     *model,
       /* If row height is unchanged, new cells fit within the old cell space */
       if ((!l) && (cell_height == row_info->height))
         {
-          if (CLUTTER_ACTOR_IS_VISIBLE (list_view))
-            clutter_actor_queue_redraw (CLUTTER_ACTOR (list_view));
+          if (CLUTTER_ACTOR_IS_VISIBLE (view))
+            clutter_actor_queue_redraw (CLUTTER_ACTOR (view));
 
           return;
         }
