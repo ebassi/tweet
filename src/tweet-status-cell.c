@@ -161,7 +161,7 @@ tweet_status_cell_constructed (GObject *gobject)
   escaped = g_regex_replace (cell->escape_re,
                              twitter_status_get_text (cell->status), -1,
                              0,
-                             "&amp; ",
+                             "&amp;",
                              0,
                              NULL);
 
@@ -334,7 +334,7 @@ tweet_status_cell_class_init (TweetStatusCellClass *klass)
 static void
 tweet_status_cell_init (TweetStatusCell *cell)
 {
-  cell->escape_re = g_regex_new ("&\\s", 0, 0, NULL);
+  cell->escape_re = g_regex_new ("&(?!(amp|gt|lt|apos))", 0, 0, NULL);
 }
 
 ClutterActor *
