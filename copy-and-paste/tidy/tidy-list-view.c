@@ -948,6 +948,7 @@ on_row_changed (ClutterModel     *model,
           
           /* Replace cell */
           old_cell = (ClutterActor *) g_ptr_array_index (row_info->cells, i);
+          clutter_actor_hide (old_cell);
           
           g_ptr_array_index (row_info->cells, i) = cell;
           clutter_actor_set_parent (cell, actor);
@@ -961,12 +962,17 @@ on_row_changed (ClutterModel     *model,
           x_offset += CLUTTER_UNITS_FROM_DEVICE (h_padding);
 
           /* Remove old cell */
-          clutter_actor_destroy (old_cell);
+          clutter_actor_unparent (old_cell);
         }
 
       /* If row height is unchanged, new cells fit within the old cell space */
       if ((!l) && (cell_height == row_info->height))
-        return;
+        {
+          if (CLUTTER_ACTOR_IS_VISIBLE (list_view))
+            clutter_actor_queue_redraw (CLUTTER_ACTOR (list_view));
+
+          return;
+        }
     }
 
   /* Relayout */
