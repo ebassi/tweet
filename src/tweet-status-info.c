@@ -258,7 +258,7 @@ tweet_status_info_constructed (GObject *gobject)
   escaped = g_regex_replace (info->escape_re,
                              twitter_status_get_text (info->status), -1,
                              0,
-                             "&amp; ",
+                             "&amp;",
                              0,
                              NULL);
 
@@ -443,7 +443,7 @@ tweet_status_info_class_init (TweetStatusInfoClass *klass)
 static void
 tweet_status_info_init (TweetStatusInfo *info)
 {
-  info->escape_re = g_regex_new ("&\\s", 0, 0, NULL);
+  info->escape_re = g_regex_new ("&(?!(amp|gt|lt|apos))", 0, 0, NULL);
 }
 
 ClutterActor *
