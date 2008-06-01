@@ -522,10 +522,10 @@ prepend_row_layout (TidyListView     *view,
       clutter_actor_set_widthu (cell, column_width);
       clutter_actor_show (cell);
 
+      cell_height = MAX (cell_height, clutter_actor_get_heightu (cell));
+
       x_offset += column_width;
       x_offset += CLUTTER_UNITS_FROM_DEVICE (h_padding);
-
-      cell_height = MAX (cell_height, clutter_actor_get_heightu (cell));
     }
 
   row_info->width = x_offset;
@@ -900,7 +900,7 @@ on_row_changed (ClutterModel     *model,
 
   row = clutter_model_iter_get_row (iter);
   row_info = g_list_nth_data (priv->rows, row);
-  
+
   if (row_info)
     {
       ClutterUnit x_offset;
@@ -930,6 +930,10 @@ on_row_changed (ClutterModel     *model,
           if (row_info->cells->len <= i)
             break;
 
+          /* Replace cell */
+          old_cell = (ClutterActor *) g_ptr_array_index (row_info->cells, i);
+          clutter_actor_hide (old_cell);
+
           model_id = tidy_list_column_get_model_index (column);
 
           if (model_id == clutter_model_get_sorting_column (priv->model))
@@ -954,11 +958,7 @@ on_row_changed (ClutterModel     *model,
                                                     state, &size,
                                                     row, i);
           g_value_unset (&value);
-          
-          /* Replace cell */
-          old_cell = (ClutterActor *) g_ptr_array_index (row_info->cells, i);
-          clutter_actor_hide (old_cell);
-          
+
           g_ptr_array_index (row_info->cells, i) = cell;
           clutter_actor_set_parent (cell, actor);
           clutter_actor_set_positionu (cell, x_offset, row_info->y_offset);
