@@ -35,17 +35,22 @@ G_DEFINE_TYPE (TidyFingerScroll, tidy_finger_scroll, TIDY_TYPE_SCROLL_VIEW)
                                   TIDY_TYPE_FINGER_SCROLL, \
                                   TidyFingerScrollPrivate))
 
+typedef struct {
+  /* Units to store the origin of a click when scrolling */
+  ClutterUnit x;
+  ClutterUnit y;
+  GTimeVal    time;
+} TidyFingerScrollMotion;
+
 struct _TidyFingerScrollPrivate
 {
   /* Scroll mode */
   TidyFingerScrollMode mode;
   
-  /* Units to store the origin of a click when scrolling */
-  ClutterUnit            x_origin;
-  ClutterUnit            y_origin;
+  GArray                *motion_buffer;
+  guint                  last_motion;
   
   /* Variables for storing acceleration information for kinetic mode */
-  GTimeVal               last_motion_time;
   ClutterTimeline       *deceleration_timeline;
   ClutterUnit            dx;
   ClutterUnit            dy;
@@ -59,6 +64,7 @@ struct _TidyFingerScrollPrivate
 
 enum {
   PROP_MODE = 1,
+  PROP_BUFFER,
 };
 
 static void
@@ -71,6 +77,9 @@ tidy_finger_scroll_get_property (GObject *object, guint property_id,
     {
     case PROP_MODE :
       g_value_set_enum (value, priv->mode);
+      break;
+    case PROP_BUFFER :
+      g_value_set_uint (value, priv->motion_buffer->len);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -88,6 +97,10 @@ tidy_finger_scroll_set_property (GObject *object, guint property_id,
     case PROP_MODE :
       priv->mode = g_value_get_enum (value);
       g_object_notify (object, "mode");
+      break;
+    case PROP_BUFFER :
+      g_array_set_size (priv->motion_buffer, g_value_get_uint (value));
+      g_object_notify (object, "motion-buffer");
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -148,6 +161,15 @@ tidy_finger_scroll_class_init (TidyFingerScrollClass *klass)
                                                       TIDY_TYPE_FINGER_SCROLL_MODE,
                                                       TIDY_FINGER_SCROLL_MODE_PUSH,
                                                       G_PARAM_READWRITE));
+
+  g_object_class_install_property (object_class,
+                                   PROP_BUFFER,
+                                   g_param_spec_uint ("motion-buffer",
+                                                      "Motion buffer",
+                                                      "Amount of motion "
+                                                      "events to buffer",
+                                                      1, G_MAXUINT, 3,
+                                                      G_PARAM_READWRITE));
 }
 
 static gboolean
@@ -164,6 +186,7 @@ motion_event_cb (ClutterActor *actor,
                                            CLUTTER_UNITS_FROM_DEVICE(event->y),
                                            &x, &y))
     {
+      TidyFingerScrollMotion *motion;
       ClutterActor *child =
         tidy_scroll_view_get_child (TIDY_SCROLL_VIEW(scroll));
       
@@ -180,19 +203,30 @@ motion_event_cb (ClutterActor *actor,
                                            &hadjust,
                                            &vadjust);
 
-          dx = CLUTTER_UNITS_TO_FIXED(priv->x_origin - x) +
+          motion = &g_array_index (priv->motion_buffer,
+                                   TidyFingerScrollMotion, priv->last_motion);
+          dx = CLUTTER_UNITS_TO_FIXED(motion->x - x) +
                tidy_adjustment_get_valuex (hadjust);
-          dy = CLUTTER_UNITS_TO_FIXED(priv->y_origin - y) +
+          dy = CLUTTER_UNITS_TO_FIXED(motion->y - y) +
                tidy_adjustment_get_valuex (vadjust);
           
           tidy_adjustment_interpolatex (hadjust, dx, n_frames, fps);
           tidy_adjustment_interpolatex (vadjust, dy, n_frames, fps);
         }
-      
-      priv->x_origin = x;
-      priv->y_origin = y;
-      
-      g_get_current_time (&priv->last_motion_time);
+
+      priv->last_motion ++;
+      if (priv->last_motion == priv->motion_buffer->len)
+        {
+          priv->motion_buffer = g_array_remove_index (priv->motion_buffer, 0);
+          g_array_set_size (priv->motion_buffer, priv->last_motion);
+          priv->last_motion --;
+        }
+
+      motion = &g_array_index (priv->motion_buffer,
+                               TidyFingerScrollMotion, priv->last_motion);
+      motion->x = x;
+      motion->y = y;
+      g_get_current_time (&motion->time);
     }
 
   return TRUE;
@@ -341,29 +375,57 @@ button_release_event_cb (ClutterActor *actor,
                                                CLUTTER_UNITS_FROM_DEVICE(event->y),
                                                &x, &y))
         {
+          ClutterUnit frac, x_origin, y_origin;
+          GTimeVal release_time, motion_time;
           TidyAdjustment *hadjust, *vadjust;
-          ClutterUnit frac;
-          GTimeVal release_time;
           glong time_diff;
+          gint i;
           
           /* Get time delta */
           g_get_current_time (&release_time);
-          
-          if (priv->last_motion_time.tv_sec == release_time.tv_sec)
-            time_diff = release_time.tv_usec - priv->last_motion_time.tv_usec;
+
+          /* Get average position/time of last x mouse events */
+          priv->last_motion ++;
+          x_origin = y_origin = 0;
+          motion_time = (GTimeVal){ 0, 0 };
+          for (i = 0; i < priv->last_motion; i++)
+            {
+              TidyFingerScrollMotion *motion =
+                &g_array_index (priv->motion_buffer, TidyFingerScrollMotion, i);
+
+              /* FIXME: This doesn't guard against overflows - Should
+               *        either fix that, or calculate the correct maximum
+               *        value for the buffer size
+               */
+              x_origin += motion->x;
+              y_origin += motion->y;
+              motion_time.tv_sec += motion->time.tv_sec;
+              motion_time.tv_usec += motion->time.tv_usec;
+            }
+          x_origin = CLUTTER_UNITS_FROM_FIXED (
+            clutter_qdivx (CLUTTER_UNITS_TO_FIXED (x_origin),
+                           CLUTTER_INT_TO_FIXED (priv->last_motion)));
+          y_origin = CLUTTER_UNITS_FROM_FIXED (
+            clutter_qdivx (CLUTTER_UNITS_TO_FIXED (y_origin),
+                           CLUTTER_INT_TO_FIXED (priv->last_motion)));
+          motion_time.tv_sec /= priv->last_motion;
+          motion_time.tv_usec /= priv->last_motion;
+
+          if (motion_time.tv_sec == release_time.tv_sec)
+            time_diff = release_time.tv_usec - motion_time.tv_usec;
           else
             time_diff = release_time.tv_usec +
-                        (G_USEC_PER_SEC - priv->last_motion_time.tv_usec);
-          
+                        (G_USEC_PER_SEC - motion_time.tv_usec);
+
           /* Work out the fraction of 1/60th of a second that has elapsed */
           frac = clutter_qdivx (CLUTTER_FLOAT_TO_FIXED (time_diff/1000.0),
                                 CLUTTER_FLOAT_TO_FIXED (1000.0/60.0));
-          
+
           /* See how many units to move in 1/60th of a second */
           priv->dx = CLUTTER_UNITS_FROM_FIXED(clutter_qdivx (
-                     CLUTTER_UNITS_TO_FIXED(priv->x_origin - x), frac));
+                     CLUTTER_UNITS_TO_FIXED(x_origin - x), frac));
           priv->dy = CLUTTER_UNITS_FROM_FIXED(clutter_qdivx (
-                     CLUTTER_UNITS_TO_FIXED(priv->y_origin - y), frac));
+                     CLUTTER_UNITS_TO_FIXED(y_origin - y), frac));
           
           /* Get adjustments to do step-increment snapping */
           tidy_scrollable_get_adjustments (TIDY_SCROLLABLE (child),
@@ -467,6 +529,9 @@ button_release_event_cb (ClutterActor *actor,
         }
     }
 
+  /* Reset motion event buffer */
+  priv->last_motion = 0;
+
   if (!decelerating)
     show_scrollbars (scroll, FALSE);
   
@@ -506,14 +571,21 @@ captured_event_cb (ClutterActor     *actor,
   
   if (event->type == CLUTTER_BUTTON_PRESS)
     {
+      TidyFingerScrollMotion *motion;
       ClutterButtonEvent *bevent = (ClutterButtonEvent *)event;
       
+      /* Reset motion buffer */
+      priv->last_motion = 0;
+      motion = &g_array_index (priv->motion_buffer, TidyFingerScrollMotion, 0);
+
       if ((bevent->button == 1) &&
           (clutter_actor_transform_stage_point (actor,
                                            CLUTTER_UNITS_FROM_DEVICE(bevent->x),
                                            CLUTTER_UNITS_FROM_DEVICE(bevent->y),
-                                           &priv->x_origin, &priv->y_origin)))
+                                           &motion->x, &motion->y)))
         {
+          g_get_current_time (&motion->time);
+
           if (priv->deceleration_timeline)
             {
               clutter_timeline_stop (priv->deceleration_timeline);
@@ -595,6 +667,9 @@ tidy_finger_scroll_init (TidyFingerScroll *self)
   ClutterTimeline *effect_timeline;
   TidyFingerScrollPrivate *priv = self->priv = FINGER_SCROLL_PRIVATE (self);
   
+  priv->motion_buffer = g_array_sized_new (FALSE, TRUE,
+                                           sizeof (TidyFingerScrollMotion), 3);
+  g_array_set_size (priv->motion_buffer, 3);
   priv->decel_rate = CLUTTER_FLOAT_TO_FIXED(1.1f);
   
   clutter_actor_set_reactive (CLUTTER_ACTOR (self), TRUE);
