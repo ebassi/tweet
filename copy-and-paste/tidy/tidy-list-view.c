@@ -829,14 +829,23 @@ on_row_added (ClutterModel     *model,
   /* if the row was appended, then there's no need to rebuild the
    * entire layout of the list view
    */
-  if (copy && clutter_model_iter_is_last (copy))
+  if (copy)
     {
-      append_row_layout (list_view, iter);
-      goto done;
+      if (clutter_model_iter_is_last (copy))
+        {
+          append_row_layout (list_view, iter);
+          goto done;
+        }
     }
-  else
+
+  if (copy)
     {
-      if (copy)
+      if (clutter_model_iter_is_first (copy))
+        {
+          prepend_row_layout (list_view, iter);
+          goto done;
+        }
+      else
         {
           copy = clutter_model_iter_prev (copy);
           if (clutter_model_iter_is_first (copy))
@@ -845,10 +854,10 @@ on_row_added (ClutterModel     *model,
               goto done;
             }
         }
-
-      clear_layout (list_view, FALSE);
-      ensure_layout (list_view);
     }
+
+  clear_layout (list_view, FALSE);
+  ensure_layout (list_view);
 
 done:
   if (copy)
