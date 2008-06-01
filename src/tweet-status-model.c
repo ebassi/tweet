@@ -695,7 +695,7 @@ status_changed_cb (TwitterStatus    *status,
       clutter_model_iter_get (iter, 0, &iter_status, -1);
       if (!iter_status)
         {
-          iter = clutter_model_iter_next (iter);
+          clutter_model_iter_next (iter);
           continue;
         }
 
@@ -707,7 +707,7 @@ status_changed_cb (TwitterStatus    *status,
 
       g_object_unref (iter_status);
 
-      iter = clutter_model_iter_next (iter);
+      clutter_model_iter_next (iter);
     }
 
   g_object_unref (iter);
