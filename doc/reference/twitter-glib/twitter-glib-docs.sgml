@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+               "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd"
+[
+  <!ENTITY version SYSTEM "version.xml">
+]>
+<book id="index" xmlns:xi="http://www.w3.org/2003/XInclude">
+  <bookinfo>
+    <title>Twitter-GLib Reference Manual</title>
+    <releaseinfo>
+      for Twitter-GLib &version;
+    </releaseinfo>
+  </bookinfo>
+
+  <chapter>
+    <title>Twitter-GLib</title>
+    <xi:include href="xml/twitter-client.xml"/>
+    <xi:include href="xml/twitter-timeline.xml"/>
+    <xi:include href="xml/twitter-status.xml"/>
+    <xi:include href="xml/twitter-user-list.xml"/>
+    <xi:include href="xml/twitter-user.xml"/>
+    <xi:include href="xml/twitter-common.xml"/>
+    <xi:include href="xml/twitter-version.xml"/>
+  </chapter>
+</book>

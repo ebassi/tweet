@@ -1,0 +1,5 @@
+twitter_user_get_type
+twitter_status_get_type
+twitter_user_list_get_type
+twitter_timeline_get_type
+twitter_client_get_type

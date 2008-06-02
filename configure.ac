@@ -113,8 +113,8 @@ AC_SUBST(TWEET_DEBUG_CFLAGS)
 dnl = Enable strict compiler flags =========================================
 
 # use strict compiler flags only on development releases
-#m4_define([maintainer_flags_default],
-#          m4_if(m4_eval(tweet_minor_version % 2), [1], [yes], [no]))
+m4_define([maintainer_flags_default],
+          [m4_if(m4_eval(tweet_minor_version % 2), [1], [yes], [no])])
 m4_define([maintainer_flags_default], [no])
 AC_ARG_ENABLE([maintainer-flags],
               AC_HELP_STRING([--enable-maintainer-flags=@<:@no/yes@:>@],
@@ -132,6 +132,9 @@ GETTEXT_PACKAGE=tweet
 AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE], "$GETTEXT_PACKAGE", [Define the gettext package to use])
 AC_SUBST(GETTEXT_PACKAGE)
 AM_GLIB_GNU_GETTEXT
+
+dnl gtk-doc
+GTK_DOC_CHECK([1.9])
 
 dnl gnome-doc-utils stuff
 GNOME_DOC_INIT
@@ -154,14 +157,19 @@ AC_CONFIG_FILES([
         data/icons/scalable/Makefile
         data/icons/scalable/actions/Makefile
         data/icons/scalable/status/Makefile
+        doc/Makefile
+        doc/reference/Makefile
+        doc/reference/twitter-glib/Makefile
+        doc/reference/twitter-glib/version.xml
 ])
 
 AC_OUTPUT
 
 echo ""
-echo " Tweet $VERSION"
+echo " * Tweet $VERSION *"
 echo ""
-echo "         Prefix: ${prefix}"
-echo "    Debug level: ${enable_debug}"
-echo " Compiler flags: ${CPPFLAGS}"
+echo "                     Prefix: ${prefix}"
+echo "                Debug level: ${enable_debug}"
+echo "             Compiler flags: ${CPPFLAGS}"
+echo " Twitter-GLib documentation: ${enable_gtk_doc}"
 echo ""

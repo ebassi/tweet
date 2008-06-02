@@ -4,7 +4,7 @@
 srcdir=`dirname $0`
 test -z "$srcdir" && srcdir=.
 
-PKG_NAME="tweet"
+PKG_NAME="Tweet"
 
 which gnome-autogen.sh || {
         echo "Missing gnome-autogen.sh: you need to install gnome-common"
