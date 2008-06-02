@@ -1,2 +1,4 @@
 data/tweet-desktop.in
 src/tweet-auth-dialog.c
+src/tweet-status-info.c
+src/tweet-utils.c
