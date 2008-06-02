@@ -575,7 +575,9 @@ prepend_row_layout (TidyListView     *view,
 
   /* store the layout size */
   priv->allocation.x2 = priv->allocation.x1 + width;
-  priv->allocation.y2 = priv->allocation.y2 + cell_height;
+  priv->allocation.y2 = priv->allocation.y2
+                      + row_info->height
+                      + CLUTTER_UNITS_FROM_DEVICE (v_padding);
 
   /* Adjust the adjustments */
   if (priv->hadjustment)
