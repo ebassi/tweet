@@ -42,3 +42,15 @@ po/stamp-it
 gnome-doc-utils.make
 data/tweet.desktop
 mkinstalldirs
+*.stamp
+doc/reference/twitter-glib/html
+doc/reference/twitter-glib/xml
+doc/reference/twitter-glib/tmpl
+twitter-glib-*.txt
+twitter-glib.args
+twitter-glib.hierarchy
+twitter-glib.interfaces
+twitter-glib.prerequisites
+twitter-glib.signals
+version.xml
+gtk-doc.make
