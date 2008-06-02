@@ -460,9 +460,10 @@ prepend_row_layout (TidyListView     *view,
   x_offset = y_offset = cell_height = 0;
 
   if (priv->show_headers)
-    y_offset += priv->header->height;
-
-  y_offset += CLUTTER_UNITS_FROM_DEVICE (v_padding);
+    {
+      y_offset += priv->header->height;
+      y_offset += CLUTTER_UNITS_FROM_DEVICE (v_padding);
+    }
 
   row_info = g_slice_new (ListRow);
   row_info->cells = g_ptr_array_sized_new (n_columns);
