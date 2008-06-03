@@ -66,7 +66,6 @@ struct _TweetWindowPrivate
 {
   GtkWidget *vbox;
   GtkWidget *menubar;
-  GtkWidget *toolbar;
   GtkWidget *entry;
   GtkWidget *canvas;
   GtkWidget *send_button;
@@ -799,7 +798,7 @@ tweet_window_init (TweetWindow *window)
                                         PKGDATADIR G_DIR_SEPARATOR_S "tweet.ui",
                                         &error))
     {
-     g_critical ("Building menus and toolbar failed: %s",
+     g_critical ("Building menus failed: %s",
                  error->message);
      g_error_free (error);
     }
@@ -808,10 +807,6 @@ tweet_window_init (TweetWindow *window)
       priv->menubar = gtk_ui_manager_get_widget (priv->manager, "/TweetMenubar");
       gtk_box_pack_start (GTK_BOX (priv->vbox), priv->menubar, FALSE, FALSE, 0);
       gtk_widget_show (priv->menubar);
-
-      priv->toolbar = gtk_ui_manager_get_widget (priv->manager, "/TweetToolbar");
-      gtk_box_pack_start (GTK_BOX (priv->vbox), priv->toolbar, FALSE, FALSE, 0);
-      gtk_widget_show (priv->toolbar);
     }
 
   frame = gtk_frame_new (NULL);

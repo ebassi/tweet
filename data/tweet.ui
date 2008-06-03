@@ -18,9 +18,10 @@
       <menuitem name="TweetAboutMenuItem" action="TweetAbout"/>
     </menu>
   </menubar>
-
+<!--
   <toolbar name="TweetToolbar">
     <toolitem name="QuitToolButton" action="TweetQuit"/>
     <toolitem name="ReloadToolButton" action="TweetReload"/>
   </toolbar>
+-->
 </ui>
