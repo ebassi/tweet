@@ -27,6 +27,10 @@
 
 #include <glib-object.h>
 
+#ifdef HAVE_NM_GLIB
+#include <libnm_glib.h>
+#endif
+
 #include <gtk/gtk.h>
 
 #include <clutter/clutter.h>
@@ -92,6 +96,11 @@ struct _TweetWindowPrivate
   guint refresh_id;
 
   TweetWindowMode mode;
+
+#ifdef HAVE_NM_GLIB
+  libnm_glib_ctx *nm_context;
+  guint nm_id;
+#endif
 };
 
 G_DEFINE_TYPE (TweetWindow, tweet_window, GTK_TYPE_WINDOW);
@@ -130,6 +139,15 @@ tweet_window_dispose (GObject *gobject)
     {
       g_object_unref (priv->action_group);
       priv->action_group = NULL;
+    }
+
+  if (priv->nm_id)
+    {
+      libnm_glib_unregister_callback (priv->nm_context, priv->nm_id);
+      libnm_glib_shutdown (priv->nm_context);
+
+      priv->nm_id = 0;
+      priv->nm_context = NULL;
     }
 
   G_OBJECT_CLASS (tweet_window_parent_class)->dispose (gobject);
@@ -474,6 +492,45 @@ refresh_timeout (gpointer data)
   return TRUE;
 }
 
+#ifdef HAVE_NM_GLIB
+static void
+nm_context_callback (libnm_glib_ctx *libnm_ctx,
+                     gpointer        user_data)
+{
+  TweetWindow *window = user_data;
+  TweetWindowPrivate *priv = window->priv;
+  libnm_glib_state nm_state;
+
+  nm_state = libnm_glib_get_network_state (libnm_ctx);
+  switch (nm_state)
+    {
+    case LIBNM_ACTIVE_NETWORK_CONNECTION:
+      twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+
+      if (tweet_config_get_refresh_time (priv->config) > 0)
+        priv->refresh_id =
+          g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
+                                 refresh_timeout,
+                                 window);
+      break;
+
+    case LIBNM_NO_DBUS:
+    case LIBNM_NO_NETWORKMANAGER:
+      g_critical ("No NetworkManager running");
+      break;
+
+    case LIBNM_NO_NETWORK_CONNECTION:
+      g_source_remove (priv->refresh_id);
+      priv->refresh_id = 0;
+      break;
+
+    case LIBNM_INVALID_CONTEXT:
+      g_critical ("Invalid NetworkManager-GLib context");
+      break;
+    }
+}
+#endif /* HAVE_NM_GLIB */
+
 static void
 tweet_window_constructed (GObject *gobject)
 {
@@ -481,6 +538,7 @@ tweet_window_constructed (GObject *gobject)
   TweetWindowPrivate *priv = window->priv;
   ClutterActor *stage;
   ClutterActor *img;
+  libnm_glib_state nm_state;
 
   stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
 
@@ -506,6 +564,26 @@ tweet_window_constructed (GObject *gobject)
 
   gtk_widget_show_all (GTK_WIDGET (window));
 
+#ifdef HAVE_NM_GLIB
+  priv->nm_context = libnm_glib_init ();
+
+  nm_state = libnm_glib_get_network_state (priv->nm_context);
+  if (nm_state == LIBNM_ACTIVE_NETWORK_CONNECTION)
+    {
+      twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+
+      if (tweet_config_get_refresh_time (priv->config) > 0)
+        priv->refresh_id =
+          g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
+                                 refresh_timeout,
+                                 window);
+    }
+
+  priv->nm_id = libnm_glib_register_callback (priv->nm_context,
+                                              nm_context_callback,
+                                              window,
+                                              NULL);
+#else
   twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
 
   if (tweet_config_get_refresh_time (priv->config) > 0)
@@ -513,6 +591,7 @@ tweet_window_constructed (GObject *gobject)
       g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
                              refresh_timeout,
                              window);
+#endif /* HAVE_NM_GLIB */
 }
 
 static void
