@@ -875,8 +875,8 @@ tweet_window_init (TweetWindow *window)
 
   button = gtk_button_new ();
   gtk_button_set_image (GTK_BUTTON (button),
-                        gtk_image_new_from_stock (GTK_STOCK_JUMP_TO,
-                                                  GTK_ICON_SIZE_BUTTON));
+                        gtk_image_new_from_icon_name ("document-send",
+                                                      GTK_ICON_SIZE_BUTTON));
   gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
   gtk_widget_set_sensitive (button, FALSE);
   gtk_widget_show (button);
