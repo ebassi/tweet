@@ -86,6 +86,16 @@ PKG_CHECK_MODULES(TWEET,
 AC_SUBST(TWEET_CFLAGS)
 AC_SUBST(TWEET_LIBS)
 
+PKG_CHECK_MODULES(NMGLIB, libnm_glib,
+                  [has_nm_glib=yes],
+                  [han_nm_glib=no])
+AC_SUBST(NMGLIB_CFLAGS)
+AC_SUBST(NMGLIB_LIBS)
+
+if test "x$has_nm_glib" = "xyes"; then
+  AC_DEFINE([HAVE_NM_GLIB], [1], [Define to 1 if we have NM-GLib support])
+fi
+
 dnl = Enable debug level ===================================================
 
 m4_define([debug_default],
@@ -159,9 +169,10 @@ AC_CONFIG_FILES([
 AC_OUTPUT
 
 echo ""
-echo " Tweet $VERSION"
+echo "                  Tweet: $VERSION"
 echo ""
-echo "         Prefix: ${prefix}"
-echo "    Debug level: ${enable_debug}"
-echo " Compiler flags: ${CPPFLAGS}"
+echo "                 Prefix: ${prefix}"
+echo "            Debug level: ${enable_debug}"
+echo "         Compiler flags: ${CPPFLAGS}"
+echo " NetworkManager support: $has_nm_glib"
 echo ""
