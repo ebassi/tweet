@@ -100,6 +100,7 @@ struct _TweetWindowPrivate
 #ifdef HAVE_NM_GLIB
   libnm_glib_ctx *nm_context;
   guint nm_id;
+  libnm_glib_state nm_state;
 #endif
 };
 
@@ -500,18 +501,31 @@ nm_context_callback (libnm_glib_ctx *libnm_ctx,
   TweetWindow *window = user_data;
   TweetWindowPrivate *priv = window->priv;
   libnm_glib_state nm_state;
+  gint refresh_time;
 
   nm_state = libnm_glib_get_network_state (libnm_ctx);
+
+  if (nm_state == priv->nm_state)
+    return;
+
   switch (nm_state)
     {
     case LIBNM_ACTIVE_NETWORK_CONNECTION:
-      twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+      refresh_time = tweet_config_get_refresh_time (priv->config);
 
-      if (tweet_config_get_refresh_time (priv->config) > 0)
-        priv->refresh_id =
-          g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
-                                 refresh_timeout,
-                                 window);
+      if (refresh_time > 0)
+        {
+          if (priv->refresh_id)
+            break;
+
+          tweet_window_refresh (window);
+          priv->refresh_id = g_timeout_add_seconds (refresh_time,
+                                                    refresh_timeout,
+                                                    window);
+        }
+      else
+        tweet_window_refresh (window);
+
       break;
 
     case LIBNM_NO_DBUS:
@@ -528,6 +542,8 @@ nm_context_callback (libnm_glib_ctx *libnm_ctx,
       g_critical ("Invalid NetworkManager-GLib context");
       break;
     }
+
+  priv->nm_state = nm_state;
 }
 #endif /* HAVE_NM_GLIB */
 
@@ -570,15 +586,18 @@ tweet_window_constructed (GObject *gobject)
   nm_state = libnm_glib_get_network_state (priv->nm_context);
   if (nm_state == LIBNM_ACTIVE_NETWORK_CONNECTION)
     {
+      gint refresh_time;
+
       twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
 
-      if (tweet_config_get_refresh_time (priv->config) > 0)
-        priv->refresh_id =
-          g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
-                                 refresh_timeout,
-                                 window);
+      refresh_time = tweet_config_get_refresh_time (priv->config);
+      if (refresh_time > 0)
+        priv->refresh_id = g_timeout_add_seconds (refresh_time,
+                                                  refresh_timeout,
+                                                  window);
     }
 
+  priv->nm_state = nm_state;
   priv->nm_id = libnm_glib_register_callback (priv->nm_context,
                                               nm_context_callback,
                                               window,
