@@ -566,7 +566,9 @@ tweet_window_constructed (GObject *gobject)
   TweetWindowPrivate *priv = window->priv;
   ClutterActor *stage;
   ClutterActor *img;
+#ifdef HAVE_NM_GLIB
   libnm_glib_state nm_state;
+#endif /* HAVE_NM_GLIB */
 
   stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
 
