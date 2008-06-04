@@ -446,6 +446,15 @@ on_status_view_button_release (ClutterActor       *actor,
 }
 
 static inline void
+tweet_window_clear (TweetWindow *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+
+  tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view), NULL);
+  g_object_unref (priv->status_model);
+}
+
+static inline void
 tweet_window_refresh (TweetWindow *window)
 {
   TweetWindowPrivate *priv = window->priv;
@@ -536,6 +545,7 @@ nm_context_callback (libnm_glib_ctx *libnm_ctx,
     case LIBNM_NO_NETWORK_CONNECTION:
       g_source_remove (priv->refresh_id);
       priv->refresh_id = 0;
+      tweet_window_clear (window);
       break;
 
     case LIBNM_INVALID_CONTEXT:
