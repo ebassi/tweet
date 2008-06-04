@@ -142,6 +142,7 @@ tweet_window_dispose (GObject *gobject)
       priv->action_group = NULL;
     }
 
+#ifdef HAVE_NM_GLIB
   if (priv->nm_id)
     {
       libnm_glib_unregister_callback (priv->nm_context, priv->nm_id);
@@ -150,6 +151,7 @@ tweet_window_dispose (GObject *gobject)
       priv->nm_id = 0;
       priv->nm_context = NULL;
     }
+#endif /* HAVE_NM_GLIB */
 
   G_OBJECT_CLASS (tweet_window_parent_class)->dispose (gobject);
 }
