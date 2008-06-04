@@ -606,6 +606,13 @@ tweet_window_constructed (GObject *gobject)
                                                   refresh_timeout,
                                                   window);
     }
+  else
+    {
+      tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
+      tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
+                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
+                           NULL);
+    }
 
   priv->nm_state = nm_state;
   priv->nm_id = libnm_glib_register_callback (priv->nm_context,
