@@ -1,4 +1,7 @@
+data/tweet.ui
 data/tweet-desktop.in
+data/tweet-preferences.xml
 src/tweet-auth-dialog.c
+stc/tweet-preferences.c
 src/tweet-status-info.c
 src/tweet-utils.c
