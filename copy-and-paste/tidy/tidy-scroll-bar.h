@@ -23,8 +23,7 @@
 #ifndef __TIDY_SCROLL_BAR_H__
 #define __TIDY_SCROLL_BAR_H__
 
-#include <glib-object.h>
-#include <tidy/tidy-frame.h>
+#include <tidy/tidy-actor.h>
 #include <tidy/tidy-adjustment.h>
 
 G_BEGIN_DECLS
@@ -43,14 +42,14 @@ typedef struct _TidyScrollBarClass     TidyScrollBarClass;
 struct _TidyScrollBar
 {
   /*< private >*/
-  TidyFrame parent_instance;
+  TidyActor parent_instance;
   
   TidyScrollBarPrivate *priv;
 };
 
 struct _TidyScrollBarClass
 {
-  TidyFrameClass parent_class;
+  TidyActorClass parent_class;
 };
 
 GType tidy_scroll_bar_get_type (void) G_GNUC_CONST;
@@ -64,6 +63,9 @@ TidyAdjustment *tidy_scroll_bar_get_adjustment (TidyScrollBar  *bar);
 void            tidy_scroll_bar_set_handle     (TidyScrollBar  *bar, 
                                                 ClutterActor   *handle);
 ClutterActor *  tidy_scroll_bar_get_handle     (TidyScrollBar  *bar);
+void            tidy_scroll_bar_set_texture    (TidyScrollBar  *bar,
+                                                ClutterActor   *texture);
+ClutterActor *  tidy_scroll_bar_get_texture    (TidyScrollBar  *bar);
 
 G_END_DECLS
 

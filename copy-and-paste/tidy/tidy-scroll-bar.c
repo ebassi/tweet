@@ -24,8 +24,8 @@
 #include "config.h"
 #endif
 
-#include <clutter/clutter.h>
 #include <clutter/cogl.h>
+#include <clutter/clutter.h>
 
 #include "tidy-scroll-bar.h"
 #include "tidy-marshal.h"
@@ -36,33 +36,37 @@
 
 static void tidy_stylable_iface_init (TidyStylableIface *iface);
 
-G_DEFINE_TYPE_WITH_CODE (TidyScrollBar, tidy_scroll_bar, TIDY_TYPE_FRAME,
+G_DEFINE_TYPE_WITH_CODE (TidyScrollBar, tidy_scroll_bar, TIDY_TYPE_ACTOR,
                          G_IMPLEMENT_INTERFACE (TIDY_TYPE_STYLABLE,
                                                 tidy_stylable_iface_init))
 
-#define TIDY_SCROLL_BAR_GET_PRIVATE(o) \
-        (G_TYPE_INSTANCE_GET_PRIVATE ((o), \
-         TIDY_TYPE_SCROLL_BAR, \
-         TidyScrollBarPrivate))
+#define TIDY_SCROLL_BAR_GET_PRIVATE(o)  (G_TYPE_INSTANCE_GET_PRIVATE ((o), TIDY_TYPE_SCROLL_BAR, TidyScrollBarPrivate))
 
 struct _TidyScrollBarPrivate
 {
-  TidyAdjustment  *adjustment;
+  TidyAdjustment *adjustment;
   
-  ClutterUnit      x_origin;
+  ClutterUnit x_origin;
   
-  ClutterActor    *handle;
+  ClutterActor *handle;
+  ClutterActor *texture;
+
+  ClutterColor bg_color;
 };
 
 enum
 {
   PROP_0,
+
   PROP_HANDLE,
+  PROP_TEXTURE,
   PROP_ADJUSTMENT
 };
 
-static void adjustment_changed_cb (TidyAdjustment *adjustment,
-                                   TidyScrollBar  *bar);
+static void update_adjustment (TidyScrollBar  *bar,
+                               ClutterUnit     width,
+                               ClutterUnit     height,
+                               TidyAdjustment *adjustment);
 
 static void
 tidy_scroll_bar_get_property (GObject    *gobject,
@@ -77,9 +81,15 @@ tidy_scroll_bar_get_property (GObject    *gobject,
     case PROP_ADJUSTMENT:
       g_value_set_object (value, priv->adjustment);
       break;
+
+    case PROP_TEXTURE:
+      g_value_set_object (value, priv->texture);
+      break;
+
     case PROP_HANDLE:
       g_value_set_object (value, priv->handle);
       break;
+
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (gobject, prop_id, pspec);
       break;
@@ -99,8 +109,13 @@ tidy_scroll_bar_set_property (GObject      *gobject,
     case PROP_ADJUSTMENT:
       tidy_scroll_bar_set_adjustment (bar, g_value_get_object (value));
       break;
+
     case PROP_HANDLE:
       tidy_scroll_bar_set_handle (bar, g_value_get_object (value));
+      break;
+
+    case PROP_TEXTURE:
+      tidy_scroll_bar_set_texture (bar, g_value_get_object (value));
       break;
 
     default:
@@ -112,13 +127,18 @@ tidy_scroll_bar_set_property (GObject      *gobject,
 static void
 tidy_scroll_bar_dispose (GObject *gobject)
 {
-  TidyScrollBar *bar = TIDY_SCROLL_BAR (gobject);
-  TidyScrollBarPrivate *priv = bar->priv;
+  TidyScrollBarPrivate *priv = TIDY_SCROLL_BAR (gobject)->priv;
 
   if (priv->adjustment)
     {
       g_object_unref (priv->adjustment);
       priv->adjustment = NULL;
+    }
+
+  if (priv->texture)
+    {
+      clutter_actor_destroy (priv->texture);
+      priv->texture = NULL;
     }
 
   if (priv->handle)
@@ -127,7 +147,47 @@ tidy_scroll_bar_dispose (GObject *gobject)
       priv->handle = NULL;
     }
 
-  G_OBJECT_CLASS (tidy_scroll_bar_parent_class)->finalize (gobject);
+  G_OBJECT_CLASS (tidy_scroll_bar_parent_class)->dispose (gobject);
+}
+
+static void
+tidy_scroll_bar_paint (ClutterActor *actor)
+{
+  TidyScrollBarPrivate *priv = TIDY_SCROLL_BAR (actor)->priv;
+
+  if (priv->texture && CLUTTER_ACTOR_IS_VISIBLE (priv->texture))
+    clutter_actor_paint (priv->texture);
+  else
+    {
+      ClutterColor bg_color;
+      guint w, h;
+
+      clutter_actor_get_size (actor, &w, &h);
+
+      bg_color = priv->bg_color;
+      bg_color.alpha = clutter_actor_get_opacity (actor)
+                     * priv->bg_color.alpha
+                     / 255;
+
+      cogl_enable (CGL_ENABLE_BLEND);
+      cogl_color (&bg_color);
+      cogl_rectangle (0, 0, w, h);
+    }
+
+  if (priv->handle && CLUTTER_ACTOR_IS_VISIBLE (priv->handle))
+    clutter_actor_paint (priv->handle);
+}
+
+static void
+tidy_scroll_bar_pick (ClutterActor       *actor,
+                      const ClutterColor *pick_color)
+{
+  TidyScrollBarPrivate *priv = TIDY_SCROLL_BAR (actor)->priv;
+
+  CLUTTER_ACTOR_CLASS (tidy_scroll_bar_parent_class)->pick (actor, pick_color);
+
+  if (priv->handle && CLUTTER_ACTOR_IS_VISIBLE (priv->handle))
+    clutter_actor_paint (priv->handle);
 }
 
 static void
@@ -140,8 +200,16 @@ tidy_scroll_bar_request_coords (ClutterActor    *actor,
   CLUTTER_ACTOR_CLASS (tidy_scroll_bar_parent_class)->request_coords (actor, 
                                                                       box);
 
+  if (priv->texture)
+    clutter_actor_set_sizeu (priv->texture,
+                             box->x2 - box->x1,
+                             box->y2 - box->y1);
+
   if (priv->adjustment)
-    adjustment_changed_cb (priv->adjustment, TIDY_SCROLL_BAR (actor));
+    update_adjustment (TIDY_SCROLL_BAR (actor),
+                       box->x2 - box->x1,
+                       box->y2 - box->y1,
+                       priv->adjustment);
 }
 
 static void
@@ -149,11 +217,17 @@ on_style_change (TidyStyle     *style,
                  TidyScrollBar *bar)
 {
   TidyScrollBarPrivate *priv = bar->priv;
+  ClutterColor *color = NULL;
+
+  tidy_stylable_get (TIDY_STYLABLE (bar), "bg-color", &color, NULL);
+  if (color)
+    {
+      priv->bg_color = *color;
+      clutter_color_free (color);
+    }
 
   if (CLUTTER_IS_RECTANGLE (priv->handle))
     {
-      ClutterColor *color = NULL;
-
       tidy_stylable_get (TIDY_STYLABLE (bar), "active-color", &color, NULL);
       if (color)
         {
@@ -165,20 +239,21 @@ on_style_change (TidyStyle     *style,
 
 static GObject*
 tidy_scroll_bar_constructor (GType                  type,
-                             guint                  n_construct_properties,
-                             GObjectConstructParam *construct_properties)
+                             guint                  n_properties,
+                             GObjectConstructParam *properties)
 {
+  GObjectClass         *gobject_class;
   GObject              *obj;
   TidyScrollBar        *bar;
   TidyScrollBarPrivate *priv;
 
-  obj = G_OBJECT_CLASS (tidy_scroll_bar_parent_class)->constructor
-    (type, n_construct_properties, construct_properties);
+  gobject_class = G_OBJECT_CLASS (tidy_scroll_bar_parent_class);
+  obj = gobject_class->constructor (type, n_properties, properties);
 
-  bar =  TIDY_SCROLL_BAR (obj);
+  bar  = TIDY_SCROLL_BAR (obj);
   priv = TIDY_SCROLL_BAR_GET_PRIVATE (bar);
 
-  if (priv->handle == NULL)
+  if (!priv->handle)
     {
       /* default handle if not set on construction */
       ClutterColor *color;
@@ -215,6 +290,8 @@ tidy_scroll_bar_class_init (TidyScrollBarClass *klass)
   object_class->constructor  = tidy_scroll_bar_constructor;
 
   actor_class->request_coords = tidy_scroll_bar_request_coords;
+  actor_class->paint          = tidy_scroll_bar_paint;
+  actor_class->pick           = tidy_scroll_bar_pick;
   
   g_object_class_install_property 
            (object_class,
@@ -382,14 +459,10 @@ bar_reactive_notify_cb (GObject *gobject,
                               clutter_actor_get_reactive (CLUTTER_ACTOR (bar)));
 }
 
-
-
 static void
 tidy_scroll_bar_init (TidyScrollBar *self)
 {
-  TidyScrollBarPrivate *priv;
-  
-  priv = self->priv = TIDY_SCROLL_BAR_GET_PRIVATE (self);
+  self->priv = TIDY_SCROLL_BAR_GET_PRIVATE (self);
 }
 
 ClutterActor *
@@ -418,7 +491,7 @@ tidy_scroll_bar_refresh (TidyScrollBar *bar)
   TidyScrollBarPrivate *priv = bar->priv;
   ClutterUnit width, button_width;
   ClutterFixed lower, upper, value, page_size;
-  ClutterFixed position;
+  ClutterFixed x, position;
   
   /* Work out scroll bar size */
   tidy_adjustment_get_valuesx (priv->adjustment,
@@ -441,18 +514,19 @@ tidy_scroll_bar_refresh (TidyScrollBar *bar)
   position = clutter_qdivx (value - lower, upper - lower - page_size);
 
   /* Set padding on trough */
+  x = clutter_qmulx (position, CLUTTER_UNITS_TO_FIXED (width - button_width));
   clutter_actor_set_positionu (CLUTTER_ACTOR (priv->handle),
-    CLUTTER_UNITS_FROM_FIXED (clutter_qmulx (position,
-                              CLUTTER_UNITS_TO_FIXED (width - button_width))),
-                              0);
+                               CLUTTER_UNITS_FROM_FIXED (x),
+                               0);
 }
 
 static void
-adjustment_changed_cb (TidyAdjustment *adjustment,
-                       TidyScrollBar  *bar)
+update_adjustment (TidyScrollBar  *bar,
+                   ClutterUnit     width,
+                   ClutterUnit     height,
+                   TidyAdjustment *adjustment)
 {
   TidyScrollBarPrivate *priv = bar->priv;
-  ClutterUnit width, height;
   ClutterUnit real_width, real_height;
   TidyPadding padding;
   ClutterFixed lower, upper, page_size;
@@ -469,7 +543,6 @@ adjustment_changed_cb (TidyAdjustment *adjustment,
                                &page_size);
 
   tidy_actor_get_padding (TIDY_ACTOR (bar), &padding);
-  clutter_actor_get_sizeu (CLUTTER_ACTOR (bar), &width, &height);
 
   real_width = width - padding.left - padding.right;
   real_height = height - padding.top - padding.bottom;
@@ -498,6 +571,16 @@ adjustment_changed_cb (TidyAdjustment *adjustment,
   tidy_scroll_bar_refresh (bar);
 }
 
+static void
+adjustment_changed_cb (TidyAdjustment *adjustment,
+                       TidyScrollBar  *bar)
+{
+  ClutterUnit width, height;
+
+  clutter_actor_get_sizeu (CLUTTER_ACTOR (bar), &width, &height);
+  update_adjustment (bar, width, height, adjustment);
+}
+
 void
 tidy_scroll_bar_set_adjustment (TidyScrollBar *bar,
                                 TidyAdjustment *adjustment)
@@ -518,16 +601,19 @@ tidy_scroll_bar_set_adjustment (TidyScrollBar *bar,
 
   if (adjustment)
     {
+      ClutterUnit width, height;
+
       priv->adjustment = g_object_ref (adjustment);
 
-      g_signal_connect_swapped (adjustment, "notify::value",
+      g_signal_connect_swapped (priv->adjustment, "notify::value",
                                 G_CALLBACK (tidy_scroll_bar_refresh),
                                 bar);
-      g_signal_connect (adjustment, "changed",
+      g_signal_connect (priv->adjustment, "changed",
                         G_CALLBACK (adjustment_changed_cb),
                         bar);
 
-      adjustment_changed_cb (adjustment, bar);
+      clutter_actor_get_sizeu (CLUTTER_ACTOR (bar), &width, &height);
+      update_adjustment (bar, width, height, priv->adjustment);
     }
 }
 
@@ -544,7 +630,7 @@ tidy_scroll_bar_set_handle (TidyScrollBar *bar,
                             ClutterActor *handle)
 {
   TidyScrollBarPrivate *priv;
-  ClutterActorBox box = { 0, 0, 0, 0 };
+  ClutterActorBox box = { 0, };
   
   g_return_if_fail (TIDY_IS_SCROLL_BAR (bar));
   g_return_if_fail (CLUTTER_IS_ACTOR (handle));
@@ -565,14 +651,13 @@ tidy_scroll_bar_set_handle (TidyScrollBar *bar,
                                            G_CALLBACK (bar_reactive_notify_cb),
                                            NULL);
 
-      clutter_container_remove_actor (CLUTTER_CONTAINER (bar), priv->handle);
-      
+      clutter_actor_unparent (priv->handle);
       priv->handle = NULL;
     }
 
   priv->handle = handle;
+  clutter_actor_set_parent (priv->handle, CLUTTER_ACTOR (bar));
   
-  clutter_container_add_actor (CLUTTER_CONTAINER (bar), priv->handle);
   clutter_actor_show (priv->handle);
   clutter_actor_set_reactive (priv->handle, TRUE);
   clutter_actor_request_coords (priv->handle, &box);
@@ -581,6 +666,9 @@ tidy_scroll_bar_set_handle (TidyScrollBar *bar,
                           G_CALLBACK (button_press_event_cb), bar);
   g_signal_connect (bar, "notify::reactive",
                     G_CALLBACK (bar_reactive_notify_cb), NULL);
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (bar))
+    clutter_actor_queue_redraw (CLUTTER_ACTOR (bar));
 
   g_object_notify (G_OBJECT (bar), "handle");
 }
@@ -592,3 +680,46 @@ tidy_scroll_bar_get_handle (TidyScrollBar *bar)
 
   return bar->priv->handle;
 }
+
+void
+tidy_scroll_bar_set_texture (TidyScrollBar *bar,
+                             ClutterActor  *texture)
+{
+  TidyScrollBarPrivate *priv;
+
+  g_return_if_fail (TIDY_IS_SCROLL_BAR (bar));
+  g_return_if_fail (texture == NULL || CLUTTER_IS_ACTOR (texture));
+
+  priv = bar->priv;
+
+  if (priv->texture)
+    {
+      clutter_actor_unparent (priv->texture);
+      priv->texture = NULL;
+    }
+
+  if (texture)
+    {
+      ClutterUnit width, height;
+
+      clutter_actor_get_sizeu (CLUTTER_ACTOR (bar), &width, &height);
+
+      priv->texture = texture;
+      clutter_actor_set_parent (priv->texture, CLUTTER_ACTOR (bar));
+
+      clutter_actor_set_positionu (priv->texture, 0, 0);
+      clutter_actor_set_sizeu (priv->texture, width, height);
+    }
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (bar))
+    clutter_actor_queue_redraw (CLUTTER_ACTOR (bar));
+}
+
+ClutterActor *
+tidy_scroll_bar_get_texture (TidyScrollBar *bar)
+{
+  g_return_val_if_fail (TIDY_IS_SCROLL_BAR (bar), NULL);
+
+  return bar->priv->texture;
+}
+
