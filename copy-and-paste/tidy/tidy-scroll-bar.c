@@ -31,7 +31,6 @@
 #include "tidy-marshal.h"
 #include "tidy-stylable.h"
 #include "tidy-enum-types.h"
-#include "tidy-frame.h"
 #include "tidy-private.h"
 
 static void tidy_stylable_iface_init (TidyStylableIface *iface);
