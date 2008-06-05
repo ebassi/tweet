@@ -27,7 +27,6 @@ source_h = \
 	$(top_srcdir)/copy-and-paste/tidy/tidy-adjustment.h	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-cell-renderer.h 	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-finger-scroll.h	\
-	$(top_srcdir)/copy-and-paste/tidy/tidy-frame.h		\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-list-column.h 	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-list-view.h 	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-scroll-bar.h	\
@@ -49,7 +48,6 @@ source_c = \
 	tidy-adjustment.c \
 	tidy-cell-renderer.c \
 	tidy-finger-scroll.c \
-	tidy-frame.c \
 	tidy-list-column.c \
 	tidy-list-view.c \
 	tidy-scroll-bar.c \
