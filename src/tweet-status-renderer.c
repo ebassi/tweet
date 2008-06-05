@@ -31,7 +31,6 @@
 #include <clutter/clutter.h>
 #include <clutter-cairo/clutter-cairo.h>
 #include <tidy/tidy-cell-renderer.h>
-#include <tidy/tidy-frame.h>
 #include <tidy/tidy-list-view.h>
 #include <tidy/tidy-stylable.h>
 
@@ -70,22 +69,14 @@ tweet_status_renderer_get_cell_actor (TidyCellRenderer *renderer,
 
   if (row == -1 || cell_state == TIDY_CELL_HEADER)
     {
-      ClutterActor *label;
-
-      retval = tidy_frame_new ();
-      tidy_actor_set_alignmentx (TIDY_ACTOR (retval), x_align, y_align);
-
-      label = g_object_new (CLUTTER_TYPE_LABEL,
-                            "font-name", font_name,
-                            "text", g_value_get_string (value),
-                            "color", text_color,
-                            "alignment", PANGO_ALIGN_CENTER,
-                            "ellipsize", PANGO_ELLIPSIZE_END,
-                            "wrap", FALSE,
-                            NULL);
-      clutter_container_add_actor (CLUTTER_CONTAINER (retval), label);
-      clutter_actor_show (label);
-
+      retval = g_object_new (CLUTTER_TYPE_LABEL,
+                             "font-name", font_name,
+                             "text", g_value_get_string (value),
+                             "color", text_color,
+                             "alignment", PANGO_ALIGN_CENTER,
+                             "ellipsize", PANGO_ELLIPSIZE_END,
+                             "wrap", FALSE,
+                             NULL);
       goto out;
     }
 
