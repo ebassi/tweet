@@ -1305,7 +1305,6 @@ twitter_client_get_friends (TwitterClient *client,
   SoupMessage *msg;
 
   g_return_if_fail (TWITTER_IS_CLIENT (client));
-  g_return_if_fail (status_id > 0);
 
   msg = twitter_api_friends (user, page, omit_status);
 
