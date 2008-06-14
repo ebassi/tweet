@@ -54,6 +54,9 @@ twitter_error_from_status (guint status)
 
     case SOUP_STATUS_GATEWAY_TIMEOUT:
       return TWITTER_ERROR_TIMED_OUT;
+
+    case SOUP_STATUS_NOT_MODIFIED:
+      return TWITTER_ERROR_NOT_MODIFIED;
     }
 
   return TWITTER_ERROR_FAILED;
