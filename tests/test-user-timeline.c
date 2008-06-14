@@ -69,7 +69,7 @@ get_user_timeline (gpointer data)
 {
   TwitterClient *client = data;
 
-  twitter_client_get_user_timeline (client, NULL, 0, NULL);
+  twitter_client_get_user_timeline (client, NULL, 0, 0);
 
   return FALSE;
 }
