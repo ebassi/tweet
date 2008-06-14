@@ -847,7 +847,7 @@ void
 twitter_client_get_user_timeline (TwitterClient *client,
                                   const gchar   *user,
                                   guint          count,
-                                  const gchar   *since_date)
+                                  gint64         since_date)
 {
   GetTimelineClosure *clos;
   SoupMessage *msg;
