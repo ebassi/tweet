@@ -26,7 +26,7 @@ G_BEGIN_DECLS
 
 SoupMessage *twitter_api_public_timeline    (gint         since_id);
 SoupMessage *twitter_api_friends_timeline   (const gchar *user,
-                                             const gchar *since);
+                                             gint64       since);
 SoupMessage *twitter_api_user_timeline      (const gchar *user,
                                              guint        count,
                                              gint64       since);

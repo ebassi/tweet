@@ -823,7 +823,7 @@ twitter_client_get_public_timeline (TwitterClient *client,
 void
 twitter_client_get_friends_timeline (TwitterClient *client,
                                      const gchar   *friend_,
-                                     const gchar   *since_date)
+                                     gint64         since_date)
 {
   GetTimelineClosure *clos;
   SoupMessage *msg;
