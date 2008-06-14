@@ -85,6 +85,8 @@ struct _TweetWindowPrivate
 
   TwitterClient *client;
 
+  GTimeVal last_update;
+
   TweetConfig *config;
   TweetStatusModel *status_model;
 
@@ -171,6 +173,17 @@ on_status_received (TwitterClient *client,
                            "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
                            NULL);
 
+      /* if the content was not modified since the last update,
+       * silently ignore the error; Twitter-GLib still emits it
+       * so that clients can notify the user anyway
+       */
+      if (error->domain == TWITTER_ERROR &&
+          error->code == TWITTER_ERROR_NOT_MODIFIED)
+        {
+          g_get_current_time (&priv->last_update);
+          return;
+        }
+
       g_warning ("Unable to retrieve status from Twitter: %s", error->message);
     }
   else
@@ -187,6 +200,8 @@ on_timeline_complete (TwitterClient *client,
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
                        NULL);
+
+  g_get_current_time (&priv->last_update);
 }
 
 static void
@@ -461,13 +476,6 @@ tweet_window_refresh (TweetWindow *window)
 {
   TweetWindowPrivate *priv = window->priv;
 
-  tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view), NULL);
-  g_object_unref (priv->status_model);
-
-  priv->status_model = TWEET_STATUS_MODEL (tweet_status_model_new ());
-  tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view),
-                            CLUTTER_MODEL (priv->status_model));
-
   clutter_actor_show (priv->spinner);
   tweet_spinner_start (TWEET_SPINNER (priv->spinner));
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
@@ -477,7 +485,10 @@ tweet_window_refresh (TweetWindow *window)
   switch (priv->mode)
     {
     case TWEET_WINDOW_RECENT:
-      twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+      twitter_client_get_user_timeline (priv->client,
+                                        NULL,
+                                        0,
+                                        priv->last_update.tv_sec);
       break;
 
     case TWEET_WINDOW_REPLIES:
@@ -602,7 +613,8 @@ tweet_window_constructed (GObject *gobject)
     {
       gint refresh_time;
 
-      twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+      /* get all updates */
+      twitter_client_get_user_timeline (priv->client, NULL, 0, 0);
 
       refresh_time = tweet_config_get_refresh_time (priv->config);
       if (refresh_time > 0)
@@ -624,7 +636,7 @@ tweet_window_constructed (GObject *gobject)
                                               window,
                                               NULL);
 #else
-  twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+  twitter_client_get_user_timeline (priv->client, NULL, 0, 0);
 
   if (tweet_config_get_refresh_time (priv->config) > 0)
     priv->refresh_id =
