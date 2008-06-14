@@ -29,7 +29,7 @@ SoupMessage *twitter_api_friends_timeline   (const gchar *user,
                                              const gchar *since);
 SoupMessage *twitter_api_user_timeline      (const gchar *user,
                                              guint        count,
-                                             const gchar *since);
+                                             gint64       since);
 SoupMessage *twitter_api_status_show        (guint        status_id);
 SoupMessage *twitter_api_update             (const gchar *text);
 SoupMessage *twitter_api_replies            (void);
