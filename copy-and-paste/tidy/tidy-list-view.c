@@ -1147,6 +1147,49 @@ tidy_list_view_paint (ClutterActor *actor)
 }
 
 static gboolean
+tidy_list_view_scroll (ClutterActor       *actor,
+                       ClutterScrollEvent *event)
+{
+  TidyListView *list_view = TIDY_LIST_VIEW (actor);
+  ClutterFixed value;
+  ClutterFixed lower, upper;
+  ClutterFixed page_increment;
+
+  if (!list_view->priv->vadjustment)
+    return FALSE;
+
+  tidy_adjustment_get_valuesx (list_view->priv->vadjustment,
+                               &value,
+                               &lower, &upper,
+                               NULL,
+                               &page_increment,
+                               NULL);
+
+  switch (event->direction)
+    {
+    case CLUTTER_SCROLL_UP:
+      value -= page_increment;
+      value = MAX (lower, value);
+      break;
+
+    case CLUTTER_SCROLL_DOWN:
+      value += page_increment;
+      value = MIN (upper, value);
+      break;
+
+    default:
+      return FALSE;
+    }
+
+  tidy_adjustment_set_valuex (list_view->priv->vadjustment, value);
+
+  if (CLUTTER_ACTOR_IS_VISIBLE (actor))
+    clutter_actor_queue_redraw (actor);
+
+  return TRUE;
+}
+
+static gboolean
 tidy_list_view_button_press (ClutterActor       *actor,
                              ClutterButtonEvent *event)
 {
@@ -1201,6 +1244,7 @@ tidy_list_view_class_init (TidyListViewClass *klass)
   actor_class->query_coords = tidy_list_view_query_coords;
   actor_class->paint = tidy_list_view_paint;
   actor_class->button_press_event = tidy_list_view_button_press;
+  actor_class->scroll_event = tidy_list_view_scroll;
 
   g_object_class_install_property (gobject_class,
                                    PROP_MODEL,
