@@ -112,6 +112,14 @@ static guint client_signals[LAST_SIGNAL] = { 0, };
 
 G_DEFINE_TYPE (TwitterClient, twitter_client, G_TYPE_OBJECT);
 
+static inline void
+twitter_debug (const gchar *action,
+               const gchar *buffer)
+{
+  if (g_getenv ("TWITTER_GLIB_DEBUG") != NULL)
+    g_print ("[DEBUG]:%s: %s\n", action, buffer);
+}
+
 static void
 twitter_client_finalize (GObject *gobject)
 {
@@ -290,7 +298,6 @@ typedef enum {
   N_CLIENT_ACTIONS
 } ClientAction;
 
-#if 0
 static const gchar *action_names[N_CLIENT_ACTIONS] = {
   "statuses/public_timeline",
   "statuses/friends_timeline",
@@ -313,7 +320,6 @@ static const gchar *action_names[N_CLIENT_ACTIONS] = {
   "notifications/follow",
   "notifications/leave"
 };
-#endif
 
 typedef struct {
   ClientAction action;
@@ -327,6 +333,7 @@ typedef struct {
 #define closure_get_client(c)          (((ClientClosure *) (c))->client)
 #define closure_set_requires_auth(c,v) (((ClientClosure *) (c))->requires_auth) = (v)
 #define closure_get_requires_auth(c)   (((ClientClosure *) (c))->requires_auth)
+#define closure_get_action_name(c)     (action_names[(((ClientClosure *) (c))->action)])
 
 typedef struct {
   ClientClosure closure;
