@@ -84,6 +84,7 @@ struct _TweetWindowPrivate
   GtkActionGroup *action_group;
 
   TwitterClient *client;
+  TwitterUser *user;
 
   GTimeVal last_update;
 
@@ -117,6 +118,12 @@ tweet_window_dispose (GObject *gobject)
     {
       g_source_remove (priv->refresh_id);
       priv->refresh_id = 0;
+    }
+
+  if (priv->user)
+    {
+      g_object_unref (priv->user);
+      priv->user = NULL;
     }
 
   if (priv->client)
@@ -187,7 +194,7 @@ on_status_received (TwitterClient *client,
       g_warning ("Unable to retrieve status from Twitter: %s", error->message);
     }
   else
-    tweet_status_model_prepend_status (window->priv->status_model, status);
+    tweet_status_model_prepend_status (priv->status_model, status);
 }
 
 static void
@@ -515,6 +522,36 @@ refresh_timeout (gpointer data)
   return TRUE;
 }
 
+static void
+on_user_received (TwitterClient *client,
+                  TwitterUser   *user,
+                  const GError  *error,
+                  TweetWindow   *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+  gint refresh_time;
+
+  if (error)
+    {
+      priv->user = NULL;
+      g_warning ("Unable to retrieve user `%s': %s",
+                 tweet_config_get_username (priv->config),
+                 error->message);
+      return;
+    }
+
+  /* keep a reference on ourselves */
+  priv->user = g_object_ref (user);
+
+  twitter_client_get_user_timeline (priv->client, NULL, 0, 0);
+
+  refresh_time = tweet_config_get_refresh_time (priv->config);
+  if (refresh_time > 0)
+    priv->refresh_id = g_timeout_add_seconds (refresh_time,
+                                              refresh_timeout,
+                                              window);
+}
+
 #ifdef HAVE_NM_GLIB
 static void
 nm_context_callback (libnm_glib_ctx *libnm_ctx,
@@ -611,16 +648,14 @@ tweet_window_constructed (GObject *gobject)
   nm_state = libnm_glib_get_network_state (priv->nm_context);
   if (nm_state == LIBNM_ACTIVE_NETWORK_CONNECTION)
     {
-      gint refresh_time;
+      const gchar *email_address;
 
-      /* get all updates */
-      twitter_client_get_user_timeline (priv->client, NULL, 0, 0);
+      g_signal_connect (priv->client,
+                        "user-received", G_CALLBACK (on_user_received),
+                        window);
 
-      refresh_time = tweet_config_get_refresh_time (priv->config);
-      if (refresh_time > 0)
-        priv->refresh_id = g_timeout_add_seconds (refresh_time,
-                                                  refresh_timeout,
-                                                  window);
+      email_address = tweet_config_get_username (priv->config);
+      twitter_client_show_user_from_email (priv->client, email_address);
     }
   else
     {
