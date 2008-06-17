@@ -86,9 +86,8 @@
 #define TWITTER_API_USER_SHOW_ID                \
         "http://twitter.com/users/show/%s.json"
 
-/* @param: email=email address */
-#define TWITTER_API_USER_SHOW_EMAIL             \
-        "http://twitter.com/users/show.json&email=%s"
+#define TWITTER_API_USER_SHOW                   \
+        "http://twitter.com/users/show.json"
 
 #define TWITTER_API_DIRECT_MESSAGES             \
         "http://twitter.com/direct_messages.json"
@@ -327,16 +326,30 @@ SoupMessage *
 twitter_api_user_show (const gchar *user,
                        const gchar *email)
 {
-  gchar *url;
   SoupMessage *msg;
 
   if (user)
-    url = g_strdup_printf (TWITTER_API_USER_SHOW_ID, user);
-  else
-    url = g_strdup_printf (TWITTER_API_USER_SHOW_EMAIL, email);
+    {
+      gchar *url;
+      
+      url = g_strdup_printf (TWITTER_API_USER_SHOW_ID, user);
+      msg = soup_message_new (SOUP_METHOD_GET, url);
 
-  msg = soup_message_new (SOUP_METHOD_GET, url);
-  g_free (url);
+      g_free (url);
+    }
+  else
+    {
+      gchar *post_data;
+
+      /* we need to encode the email correctly */
+      post_data = soup_form_encode ("email", email, NULL);
+      msg = soup_message_new (SOUP_METHOD_GET, TWITTER_API_USER_SHOW);
+      soup_message_set_request (msg, "application/x-www-form-urlencoded",
+                            SOUP_MEMORY_COPY,
+                            post_data, strlen (post_data));
+
+      g_free (post_data);
+    }
 
   return msg;
 }
