@@ -580,6 +580,9 @@ get_status_cb (SoupSession *session,
 
       buffer = g_strndup (msg->response_body->data,
                           msg->response_body->length);
+
+      twitter_debug (closure_get_action_name (closure), buffer);
+
       if (G_UNLIKELY (!buffer))
         g_warning ("No data received");
       else
@@ -965,6 +968,8 @@ get_user_cb (SoupSession *session,
 
       buffer = g_strndup (msg->response_body->data,
                           msg->response_body->length);
+
+      twitter_debug (closure_get_action_name (closure), buffer);
 
       if (G_UNLIKELY (!buffer))
         g_warning ("No data received");
