@@ -1,7 +1,13 @@
+copy-and-paste/tidy/tidy-actor.c
+copy-and-paste/tidy/tidy-list-view.c
+copy-and-paste/tidy/tidy-stylable.c
 data/tweet.ui
-data/tweet-desktop.in
+data/tweet.desktop.in
 data/tweet-preferences.xml
+src/tweet-animation.c
 src/tweet-auth-dialog.c
-stc/tweet-preferences.c
+src/tweet-preferences.c
 src/tweet-status-info.c
 src/tweet-utils.c
+src/tweet-window.c
+twitter-glib/twitter-client.c
