@@ -212,16 +212,19 @@ tweet_window_status_message (TweetWindow     *window,
   message = g_strdup_vprintf (format, args);
   va_end (args);
 
+  gtk_status_icon_set_tooltip (priv->status_icon, message);
+
   switch (status_mode)
     {
     case TWEET_STATUS_ERROR:
-      gtk_status_icon_set_tooltip (priv->status_icon, message);
+      g_warning (message);
+      break;
+
+    case TWEET_STATUS_NO_CONNECTION:
       g_warning (message);
       break;
 
     case TWEET_STATUS_RECEIVED:
-    case TWEET_STATUS_NO_CONNECTION:
-      gtk_status_icon_set_tooltip (priv->status_icon, message);
       g_print (message);
       g_print ("\n");
       break;
