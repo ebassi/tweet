@@ -64,6 +64,12 @@ typedef enum {
   TWEET_WINDOW_FAVORITES
 } TweetWindowMode;
 
+typedef enum {
+  TWEET_STATUS_ERROR,
+  TWEET_STATUS_RECEIVED,
+  TWEET_STATUS_NO_CONNECTION
+} TweetStatusMode;
+
 #define TWEET_WINDOW_GET_PRIVATE(obj)   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWEET_TYPE_WINDOW, TweetWindowPrivate))
 
 struct _TweetWindowPrivate
@@ -75,6 +81,8 @@ struct _TweetWindowPrivate
   GtkWidget *send_button;
   GtkWidget *counter;
 
+  GtkStatusIcon *status_icon;
+
   ClutterActor *spinner;
   ClutterActor *status_view;
   ClutterActor *scroll;
@@ -85,6 +93,8 @@ struct _TweetWindowPrivate
 
   TwitterClient *client;
   TwitterUser *user;
+
+  gint n_status_received;
 
   GTimeVal last_update;
 
@@ -145,6 +155,12 @@ tweet_window_dispose (GObject *gobject)
       priv->manager = NULL;
     }
 
+  if (priv->status_icon)
+    {
+      g_object_unref (priv->status_icon);
+      priv->status_icon = NULL;
+    }
+
   if (priv->action_group)
     {
       g_object_unref (priv->action_group);
@@ -163,6 +179,55 @@ tweet_window_dispose (GObject *gobject)
 #endif /* HAVE_NM_GLIB */
 
   G_OBJECT_CLASS (tweet_window_parent_class)->dispose (gobject);
+}
+
+static void
+on_status_icon_activate (GtkStatusIcon *icon,
+                         TweetWindow   *window)
+{
+  gtk_window_present (GTK_WINDOW (window));
+}
+
+static void
+tweet_window_status_message (TweetWindow     *window,
+                             TweetStatusMode  status_mode,
+                             const gchar     *format,
+                             ...)
+{
+  TweetWindowPrivate *priv = window->priv;
+  va_list args;
+  gchar *message;
+
+  if (!priv->status_icon)
+    {
+      priv->status_icon = gtk_status_icon_new_from_icon_name ("document-send");
+      g_signal_connect (priv->status_icon,
+                        "activate", G_CALLBACK (on_status_icon_activate),
+                        window);
+
+      gtk_status_icon_set_visible (priv->status_icon, TRUE);
+    }
+
+  va_start (args, format);
+  message = g_strdup_vprintf (format, args);
+  va_end (args);
+
+  switch (status_mode)
+    {
+    case TWEET_STATUS_ERROR:
+      gtk_status_icon_set_tooltip (priv->status_icon, message);
+      g_warning (message);
+      break;
+
+    case TWEET_STATUS_RECEIVED:
+    case TWEET_STATUS_NO_CONNECTION:
+      gtk_status_icon_set_tooltip (priv->status_icon, message);
+      g_print (message);
+      g_print ("\n");
+      break;
+    }
+
+  g_free (message);
 }
 
 static void
@@ -191,7 +256,11 @@ on_status_received (TwitterClient *client,
           return;
         }
 
-      g_warning ("Unable to retrieve status from Twitter: %s", error->message);
+      priv->n_status_received = 0;
+
+      tweet_window_status_message (window, TWEET_STATUS_ERROR,
+                                   _("Unable to retrieve status from Twitter: %s"),
+                                   error->message);
     }
   else
     {
@@ -202,7 +271,8 @@ on_status_received (TwitterClient *client,
                                     CLUTTER_MODEL (priv->status_model));
         }
 
-      tweet_status_model_prepend_status (priv->status_model, status);
+      if (tweet_status_model_prepend_status (priv->status_model, status));
+        priv->n_status_received += 1;
     }
 }
 
@@ -216,6 +286,10 @@ on_timeline_complete (TwitterClient *client,
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
                        NULL);
+
+  tweet_window_status_message (window, TWEET_STATUS_RECEIVED,
+                               _("Received %d new statuses"),
+                               priv->n_status_received);
 
   g_get_current_time (&priv->last_update);
 }
@@ -502,6 +576,7 @@ tweet_window_refresh (TweetWindow *window)
   switch (priv->mode)
     {
     case TWEET_WINDOW_RECENT:
+      priv->n_status_received = 0;
       twitter_client_get_friends_timeline (priv->client,
                                            NULL,
                                            priv->last_update.tv_sec);
@@ -547,9 +622,11 @@ on_user_received (TwitterClient *client,
   if (error)
     {
       priv->user = NULL;
-      g_warning ("Unable to retrieve user `%s': %s",
-                 tweet_config_get_username (priv->config),
-                 error->message);
+
+      tweet_window_status_message (window, TWEET_STATUS_ERROR,
+                                   _("Unable to retrieve used `%s': %s"),
+                                   tweet_config_get_username (priv->config),
+                                   error->message);
       return;
     }
 
@@ -606,6 +683,8 @@ nm_context_callback (libnm_glib_ctx *libnm_ctx,
       break;
 
     case LIBNM_NO_NETWORK_CONNECTION:
+      tweet_window_status_message (window, TWEET_STATUS_NO_CONNECTION,
+                                   _("No network connection available"));
       g_source_remove (priv->refresh_id);
       priv->refresh_id = 0;
       tweet_window_clear (window);
@@ -672,6 +751,9 @@ tweet_window_constructed (GObject *gobject)
     }
   else
     {
+      tweet_window_status_message (window, TWEET_STATUS_NO_CONNECTION,
+                                   _("No network connection available"));
+
       tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
       tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
                            "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
@@ -853,7 +935,7 @@ about_url_hook (GtkAboutDialog *dialog,
                        &pid, &error);
   if (error)
     {
-      g_warning ("Unable to launch gnome-open: %s", error->message);
+      g_critical ("Unable to launch gnome-open: %s", error->message);
       g_error_free (error);
     }
 
@@ -1000,8 +1082,7 @@ tweet_window_init (TweetWindow *window)
                                         PKGDATADIR G_DIR_SEPARATOR_S "tweet.ui",
                                         &error))
     {
-     g_critical ("Building menus failed: %s",
-                 error->message);
+     g_critical ("Building menus failed: %s", error->message);
      g_error_free (error);
     }
   else
