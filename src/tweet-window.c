@@ -492,10 +492,9 @@ tweet_window_refresh (TweetWindow *window)
   switch (priv->mode)
     {
     case TWEET_WINDOW_RECENT:
-      twitter_client_get_user_timeline (priv->client,
-                                        NULL,
-                                        0,
-                                        priv->last_update.tv_sec);
+      twitter_client_get_friends_timeline (priv->client,
+                                           NULL,
+                                           priv->last_update.tv_sec);
       break;
 
     case TWEET_WINDOW_REPLIES:
@@ -543,7 +542,7 @@ on_user_received (TwitterClient *client,
   /* keep a reference on ourselves */
   priv->user = g_object_ref (user);
 
-  twitter_client_get_user_timeline (priv->client, NULL, 0, 0);
+  twitter_client_get_friends_timeline (priv->client, NULL, 0);
 
   refresh_time = tweet_config_get_refresh_time (priv->config);
   if (refresh_time > 0)
@@ -671,7 +670,7 @@ tweet_window_constructed (GObject *gobject)
                                               window,
                                               NULL);
 #else
-  twitter_client_get_user_timeline (priv->client, NULL, 0, 0);
+  twitter_client_get_friends_timeline (priv->client, NULL, 0);
 
   if (tweet_config_get_refresh_time (priv->config) > 0)
     priv->refresh_id =
