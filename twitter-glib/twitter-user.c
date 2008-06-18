@@ -36,6 +36,31 @@
 #include "twitter-private.h"
 #include "twitter-user.h"
 
+/**
+ * SECTION:twitter-user
+ * @show_description: A class representing a Twitter user
+ *
+ * #TwitterUser is a class holding the various data retrieved from Twitter
+ * and describing a Twitter user.
+ */
+
+/**
+ * TwitterUser:
+ *
+ * Representation of a Twitter user data.
+ *
+ * The #TwitterUser-struct struct contains private data only, and should be
+ * accessed using the functions below.
+ */
+
+/**
+ * TwitterUserClass:
+ * @changed: class handler for the #TwitterUser::changed signal
+ *
+ * The #TwitterUserClass-struct contains private data only, and should be
+ * accessed using the functions below.
+ */
+
 #define TWITTER_USER_GET_PRIVATE(obj)   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWITTER_TYPE_USER, TwitterUserPrivate))
 
 struct _TwitterUserPrivate
@@ -478,6 +503,14 @@ twitter_user_build (TwitterUser *user,
     priv->utc_offset = json_node_get_int (member);
 }
 
+/**
+ * twitter_user_new:
+ *
+ * Creates a new #TwitterUser.
+ *
+ * Return value: the newly created #TwitterUser. Use g_object_unref() to
+ *   release the resources it allocates
+ */
 TwitterUser *
 twitter_user_new (void)
 {
@@ -497,6 +530,16 @@ twitter_user_new_from_node (JsonNode *node)
   return retval;
 }
 
+/**
+ * twitter_user_new_from_data:
+ * @buffer: a JSON buffer holding a Twitter user
+ *
+ * Creates a #TwitterUser from @buffer by parsing the JSON data.
+ *
+ * Return value: the newly created #TwitterUser from the passed
+ *   JSON data. Use g_object_unref() to release the resources
+ *   it allocates
+ */
 TwitterUser *
 twitter_user_new_from_data (const gchar *buffer)
 {
@@ -525,6 +568,14 @@ twitter_user_new_from_data (const gchar *buffer)
   return retval;
 }
 
+/**
+ * twitter_user_load_from_data:
+ * @user: a #TwitterUser
+ * @buffer: a JSON buffer holding a Twitter user
+ *
+ * Constructs the @user properties by parsing a JSON data representation
+ * of a Twitter user.
+ */
 void
 twitter_user_load_from_data (TwitterUser *user,
                              const gchar *buffer)
