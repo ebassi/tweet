@@ -50,9 +50,9 @@ struct _TweetStatusModelClass
 GType tweet_status_model_get_type (void);
 
 ClutterModel * tweet_status_model_new            (void);
-void           tweet_status_model_append_status  (TweetStatusModel *model,
+gboolean       tweet_status_model_append_status  (TweetStatusModel *model,
                                                   TwitterStatus    *status);
-void           tweet_status_model_prepend_status (TweetStatusModel *model,
+gboolean       tweet_status_model_prepend_status (TweetStatusModel *model,
                                                   TwitterStatus    *status);
 
 TwitterStatus *tweet_status_model_get_status     (TweetStatusModel *model,
