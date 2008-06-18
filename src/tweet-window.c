@@ -68,7 +68,8 @@ typedef enum {
 typedef enum {
   TWEET_STATUS_ERROR,
   TWEET_STATUS_RECEIVED,
-  TWEET_STATUS_NO_CONNECTION
+  TWEET_STATUS_NO_CONNECTION,
+  TWEET_STATUS_MESSAGE
 } TweetStatusMode;
 
 #define TWEET_WINDOW_GET_PRIVATE(obj)   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWEET_TYPE_WINDOW, TweetWindowPrivate))
@@ -217,6 +218,9 @@ tweet_window_status_message (TweetWindow     *window,
 
   switch (status_mode)
     {
+    case TWEET_STATUS_MESSAGE:
+      break;
+
     case TWEET_STATUS_ERROR:
       g_warning (message);
       break;
@@ -256,15 +260,16 @@ on_status_received (TwitterClient *client,
       if (error->domain == TWITTER_ERROR &&
           error->code == TWITTER_ERROR_NOT_MODIFIED)
         {
+          tweet_window_status_message (window, TWEET_STATUS_MESSAGE,
+                                       _("No new statuses"));
           g_get_current_time (&priv->last_update);
-          return;
         }
+      else
+        tweet_window_status_message (window, TWEET_STATUS_ERROR,
+                                     _("Unable to retrieve status from Twitter: %s"),
+                                     error->message);
 
       priv->n_status_received = 0;
-
-      tweet_window_status_message (window, TWEET_STATUS_ERROR,
-                                   _("Unable to retrieve status from Twitter: %s"),
-                                   error->message);
     }
   else
     {
