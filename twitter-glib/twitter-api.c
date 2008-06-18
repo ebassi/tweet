@@ -192,18 +192,18 @@ twitter_api_user_timeline (const gchar *user,
   if (count > 0)
     {
       if (user && *user != '\0')
-        url = g_strdup_printf (TWITTER_API_FRIENDS_TIMELINE_ID "?count=%u",
+        url = g_strdup_printf (TWITTER_API_USER_TIMELINE_ID "?count=%u",
                                user,
                                count);
       else
-        url = g_strdup_printf (TWITTER_API_FRIENDS_TIMELINE "?count=%u", count);
+        url = g_strdup_printf (TWITTER_API_USER_TIMELINE "?count=%u", count);
     }
   else
     {
       if (user && *user != '\0')
-        url = g_strdup_printf (TWITTER_API_FRIENDS_TIMELINE_ID, user);
+        url = g_strdup_printf (TWITTER_API_USER_TIMELINE_ID, user);
       else
-        url = g_strdup (TWITTER_API_FRIENDS_TIMELINE);
+        url = g_strdup (TWITTER_API_USER_TIMELINE);
     }
 
   msg = soup_message_new (SOUP_METHOD_GET, url);
