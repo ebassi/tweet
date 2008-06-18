@@ -87,6 +87,8 @@ lib_LTLIBRARIES = libtwitter-glib-1.0.la
 
 libtwitter_glib_1_0_la_LIBADD = $(TWITTER_GLIB_LIBS)
 libtwitter_glib_1_0_la_SOURCES = \
+	$(sources_public_h) \
+	$(sources_private_h) \
 	$(sources_c) \
 	$(BUILT_SOURCES) \
 	$(NULL)

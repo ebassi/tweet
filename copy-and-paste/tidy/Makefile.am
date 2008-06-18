@@ -100,18 +100,14 @@ libtidy_la_LIBADD = $(TWEET_LIBS)
 libtidy_la_SOURCES = \
 	$(source_c) \
 	$(source_h) \
-	$(source_h_priv) \
+	$(source_h_private) \
 	$(BUILT_SOURCES) \
 	$(NULL)
 
 CLEANFILES = $(STAMP_FILES) $(BUILT_SOURCES)
 
-DISTCLEANFILES = tidy-version.h
-
 EXTRA_DIST = \
 	tidy-enum-types.h.in \
 	tidy-enum-types.c.in \
 	tidy-private.h \
-	tidy-version.h.in \
-	tidy.h \
 	tidy-marshal.list

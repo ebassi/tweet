@@ -117,4 +117,6 @@ tweet_LDADD = $(common_ldadd) libtweet-ui.la
 
 CLEANFILES = stamp-tweet-enum-types.h
 
+DISTCLEANFILES = tweet-enum-types.h tweet-enum-types.c
+
 EXTRA_DIST = tweet-enum-types.c.in tweet-enum-types.h.in
