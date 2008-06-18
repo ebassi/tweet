@@ -414,9 +414,9 @@ tweet_format_time_for_display (GTimeVal *time_)
       else
         {
           if (days_diff > 1 && days_diff < 7)
-            format = "%A"; /* day of the week */
+            format = _("Last %A at %H:%M"); /* day of the week */
           else
-            format = "%x"; /* any other date */
+            format = _("%x at %H:%M"); /* any other date */
         }
     }
 
