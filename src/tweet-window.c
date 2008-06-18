@@ -512,6 +512,10 @@ tweet_window_refresh (TweetWindow *window)
       break;
 
     case TWEET_WINDOW_ARCHIVE:
+      twitter_client_get_user_timeline (priv->client,
+                                        NULL,
+                                        0,
+                                        priv->last_update.tv_sec);
       break;
 
     case TWEET_WINDOW_FAVORITES:
