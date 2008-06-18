@@ -194,7 +194,16 @@ on_status_received (TwitterClient *client,
       g_warning ("Unable to retrieve status from Twitter: %s", error->message);
     }
   else
-    tweet_status_model_prepend_status (priv->status_model, status);
+    {
+      if (!priv->status_model)
+        {
+          priv->status_model = TWEET_STATUS_MODEL (tweet_status_model_new ());
+          tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view),
+                                    CLUTTER_MODEL (priv->status_model));
+        }
+
+      tweet_status_model_prepend_status (priv->status_model, status);
+    }
 }
 
 static void
@@ -476,6 +485,7 @@ tweet_window_clear (TweetWindow *window)
 
   tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view), NULL);
   g_object_unref (priv->status_model);
+  priv->status_model = NULL;
 }
 
 static inline void
@@ -738,8 +748,13 @@ static void
 tweet_window_cmd_view_recent (GtkAction   *action,
                               TweetWindow *window)
 {
-  window->priv->mode = TWEET_WINDOW_RECENT;
+  if (window->priv->mode == TWEET_WINDOW_RECENT)
+    return;
 
+  window->priv->mode = TWEET_WINDOW_RECENT;
+  window->priv->last_update.tv_sec = 0;
+
+  tweet_window_clear (window);
   tweet_window_refresh (window);
 }
 
@@ -747,8 +762,13 @@ static void
 tweet_window_cmd_view_replies (GtkAction   *action,
                                TweetWindow *window)
 {
-  window->priv->mode = TWEET_WINDOW_REPLIES;
+  if (window->priv->mode == TWEET_WINDOW_REPLIES)
+    return;
 
+  window->priv->mode = TWEET_WINDOW_REPLIES;
+  window->priv->last_update.tv_sec = 0;
+
+  tweet_window_clear (window);
   tweet_window_refresh (window);
 }
 
@@ -756,14 +776,27 @@ static void
 tweet_window_cmd_view_archive (GtkAction   *action,
                                TweetWindow *window)
 {
+  if (window->priv->mode == TWEET_WINDOW_ARCHIVE)
+    return;
+
+  window->priv->mode = TWEET_WINDOW_ARCHIVE;
+  window->priv->last_update.tv_sec = 0;
+
+  tweet_window_clear (window);
+  tweet_window_refresh (window);
 }
 
 static void
 tweet_window_cmd_view_favorites (GtkAction   *action,
                                  TweetWindow *window)
 {
-  window->priv->mode = TWEET_WINDOW_FAVORITES;
+  if (window->priv->mode == TWEET_WINDOW_FAVORITES)
+    return;
 
+  window->priv->mode = TWEET_WINDOW_FAVORITES;
+  window->priv->last_update.tv_sec = 0;
+
+  tweet_window_clear (window);
   tweet_window_refresh (window);
 }
 
