@@ -287,6 +287,7 @@ typedef enum {
   USER_SHOW,
   VERIFY_CREDENTIALS,
   END_SESSION,
+  ARCHIVE,
   FRIEND_CREATE,
   FRIEND_DESTROY,
   FAVORITE_CREATE,
@@ -312,6 +313,7 @@ static const gchar *action_names[N_CLIENT_ACTIONS] = {
   "users/show",
   "account/verify_credentials",
   "account/end_session",
+  "account/archive",
   "friendship/create",
   "friendship/destroy",
   "favorites/create",
@@ -912,6 +914,28 @@ twitter_client_get_favorites (TwitterClient *client,
 
   clos = g_new0 (GetTimelineClosure, 1);
   closure_set_action (clos, FAVORITES);
+  closure_set_client (clos, g_object_ref (client));
+  closure_set_requires_auth (clos, TRUE);
+  clos->timeline = twitter_timeline_new ();
+
+  twitter_client_queue_message (client, msg, TRUE,
+                                get_timeline_cb,
+                                clos);
+}
+
+void
+twitter_client_get_archive (TwitterClient *client,
+                            gint           page)
+{
+  GetTimelineClosure *clos;
+  SoupMessage *msg;
+
+  g_return_if_fail (TWITTER_IS_CLIENT (client));
+
+  msg = twitter_api_archive (page);
+
+  clos = g_new0 (GetTimelineClosure, 1);
+  closure_set_action (clos, ARCHIVE);
   closure_set_client (clos, g_object_ref (client));
   closure_set_requires_auth (clos, TRUE);
   clos->timeline = twitter_timeline_new ();

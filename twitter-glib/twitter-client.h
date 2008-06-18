@@ -144,6 +144,8 @@ void           twitter_client_get_replies          (TwitterClient  *client);
 void           twitter_client_get_favorites        (TwitterClient  *client,
                                                     const gchar    *user,
                                                     gint            page);
+void           twitter_client_get_archive          (TwitterClient  *client,
+                                                    gint            page);
 void           twitter_client_get_friends          (TwitterClient  *client,
                                                     const gchar    *user,
                                                     gint            page,
