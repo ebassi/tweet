@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <glib.h>
+#include <glib-object.h>
 #include <twitter-glib/twitter-glib.h>
 
 static GMainLoop *main_loop = NULL;
@@ -64,6 +64,14 @@ status_received_cb (TwitterClient *client,
            twitter_status_get_created_at (status));
 }
 
+static void
+timeline_received_cb (TwitterClient *client,
+                      gpointer       user_data)
+{
+  if (g_main_loop_is_running (main_loop))
+    g_main_loop_quit (main_loop);
+}
+
 static gboolean
 get_user_timeline (gpointer data)
 {
@@ -104,6 +112,9 @@ main (int   argc,
                     NULL);
   g_signal_connect (client, "status-received",
                     G_CALLBACK (status_received_cb),
+                    NULL);
+  g_signal_connect (client, "timeline-complete",
+                    G_CALLBACK (timeline_received_cb),
                     NULL);
 
   main_loop = g_main_loop_new (NULL, FALSE);
