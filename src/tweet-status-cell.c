@@ -141,7 +141,6 @@ tweet_status_cell_constructed (GObject *gobject)
   cairo_t *cr;
   cairo_pattern_t *pat;
   ClutterColor bg_color = { 162, 162, 162, 0xcc };
-  ClutterColor bubble_color = { 255, 255, 255, 224 };
   ClutterColor text_color = { 0, 0, 0, 255 };
   TwitterUser *user;
   gchar *text, *created_at, *escaped;
