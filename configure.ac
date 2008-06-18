@@ -1,5 +1,5 @@
 m4_define([tweet_major_version], [0])
-m4_define([tweet_minor_version], [1])
+m4_define([tweet_minor_version], [2])
 m4_define([tweet_micro_version], [0])
 
 m4_define([tweet_version],

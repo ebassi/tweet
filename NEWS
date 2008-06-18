@@ -1,1 +1,6 @@
-[none]
+Tweet 0.2.0 - "Finally Woken"
+===============================================================================
+* Initial release of Tweet
+* Support for the friends timeline, user's timeline, favorites and replies
+* Allow to reply and mark a status as a favorite
+* Send status
