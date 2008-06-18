@@ -92,6 +92,7 @@ struct _TwitterStatusClass
  * @TWITTER_ERROR_NOT_FOUND:
  * @TWITTER_ERROR_TIMED_OUT:
  * @TWITTER_ERROR_FAILED:
+ * @TWITTER_ERROR_NOT_MODIFIED:
  *
  * Twitter error enumeration.
  */
@@ -101,7 +102,8 @@ typedef enum {
   TWITTER_ERROR_PERMISSION_DENIED,
   TWITTER_ERROR_NOT_FOUND,
   TWITTER_ERROR_TIMED_OUT,
-  TWITTER_ERROR_FAILED
+  TWITTER_ERROR_FAILED,
+  TWITTER_ERROR_NOT_MODIFIED
 } TwitterError;
 
 GQuark twitter_error_quark (void);

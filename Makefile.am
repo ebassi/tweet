@@ -6,6 +6,8 @@ endif
 
 DIST_SUBDIRS = $(SUBDIRS) doc
 
+EXTRA_DIST = NEWS
+
 dist-hook:
 	git-log --stat > ChangeLog.in && \
 	cp -f ChangeLog.in $(distdir)/ChangeLog && \

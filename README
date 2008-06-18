@@ -29,6 +29,10 @@ Tweet depends on:
   - libsoup >= 2.4.1
   - GTK+ >= 2.12
 
+And has a soft requirement on:
+
+  - libnm_glib
+
 Tweet is based on, and provides for third parties, a GObject-based library
 for reading and updating the Twitter status; the library is installed and
 it is available so that other applications can integrate with it.

@@ -7,19 +7,25 @@ INCLUDES = \
 	-DPKGDATADIR=\""$(datadir)/tweet"\"			\
 	-DUIDATADIR=\""$(datadir)/gnome-2.0/ui"\"		\
 	-DGNOMELOCALEDIR=\""$(prefix)/$(DATADIRNAME)/locale"\"	\
+	-DG_DISABLE_DEPRECATED					\
+	-DGDK_DISABLE_DEPRECATED				\
+	-DGDK_PIXBUF_DISABLE_DEPRECATED				\
+	-DGTK_DISABLE_DEPRECATED				\
 	$(NULL)
 
 common_cflags = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/twitter-glib \
 	-I$(top_srcdir)/copy-and-paste \
-	$(TWEET_CFLAGS)
+	$(TWEET_CFLAGS) \
+	$(NMGLIB_CFLAGS) \
 	$(NULL)
 
 common_ldadd = \
 	$(top_builddir)/twitter-glib/libtwitter-glib-1.0.la \
 	$(top_builddir)/copy-and-paste/tidy/libtidy.la \
 	$(TWEET_LIBS) \
+	$(NMGLIB_LIBS) \
 	$(NULL)
 
 
@@ -110,5 +116,7 @@ tweet_CFLAGS = $(common_cflags)
 tweet_LDADD = $(common_ldadd) libtweet-ui.la
 
 CLEANFILES = stamp-tweet-enum-types.h
+
+DISTCLEANFILES = tweet-enum-types.h tweet-enum-types.c
 
 EXTRA_DIST = tweet-enum-types.c.in tweet-enum-types.h.in

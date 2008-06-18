@@ -86,9 +86,8 @@
 #define TWITTER_API_USER_SHOW_ID                \
         "http://twitter.com/users/show/%s.json"
 
-/* @param: email=email address */
-#define TWITTER_API_USER_SHOW_EMAIL             \
-        "http://twitter.com/users/show.json&email=%s"
+#define TWITTER_API_USER_SHOW                   \
+        "http://twitter.com/users/show.json"
 
 #define TWITTER_API_DIRECT_MESSAGES             \
         "http://twitter.com/direct_messages.json"
@@ -149,7 +148,7 @@ twitter_api_public_timeline (gint since_id)
 
 SoupMessage *
 twitter_api_friends_timeline (const gchar *user,
-                              const gchar *since)
+                              gint64       since)
 {
   SoupMessage *msg;
   gchar *url;
@@ -161,10 +160,21 @@ twitter_api_friends_timeline (const gchar *user,
 
   msg = soup_message_new (SOUP_METHOD_GET, url);
 
-  if (since && *since != '\0')
-    soup_message_headers_append (msg->request_headers,
-                                 "If-Modified-Since",
-                                 since);
+  if (since > 0)
+    {
+      SoupDate *since_date;
+      gchar *date;
+
+      since_date = soup_date_new_from_time_t ((time_t) since);
+      date = soup_date_to_string (since_date, SOUP_DATE_HTTP);
+
+      soup_message_headers_append (msg->request_headers,
+                                   "If-Modified-Since",
+                                   date);
+
+      g_free (date);
+      soup_date_free (since_date);
+    }
 
   g_free (url);
 
@@ -174,7 +184,7 @@ twitter_api_friends_timeline (const gchar *user,
 SoupMessage *
 twitter_api_user_timeline (const gchar *user,
                            guint        count,
-                           const gchar *since)
+                           gint64       since)
 {
   SoupMessage *msg;
   gchar *url;
@@ -182,26 +192,37 @@ twitter_api_user_timeline (const gchar *user,
   if (count > 0)
     {
       if (user && *user != '\0')
-        url = g_strdup_printf (TWITTER_API_FRIENDS_TIMELINE_ID "?count=%u",
+        url = g_strdup_printf (TWITTER_API_USER_TIMELINE_ID "?count=%u",
                                user,
                                count);
       else
-        url = g_strdup_printf (TWITTER_API_FRIENDS_TIMELINE "?count=%u", count);
+        url = g_strdup_printf (TWITTER_API_USER_TIMELINE "?count=%u", count);
     }
   else
     {
       if (user && *user != '\0')
-        url = g_strdup_printf (TWITTER_API_FRIENDS_TIMELINE_ID, user);
+        url = g_strdup_printf (TWITTER_API_USER_TIMELINE_ID, user);
       else
-        url = g_strdup (TWITTER_API_FRIENDS_TIMELINE);
+        url = g_strdup (TWITTER_API_USER_TIMELINE);
     }
 
   msg = soup_message_new (SOUP_METHOD_GET, url);
 
-  if (since && *since != '\0')
-    soup_message_headers_append (msg->request_headers,
-                                 "If-Modified-Since",
-                                 since);
+  if (since > 0)
+    {
+      SoupDate *since_date;
+      gchar *date;
+
+      since_date = soup_date_new_from_time_t ((time_t) since);
+      date = soup_date_to_string (since_date, SOUP_DATE_HTTP);
+
+      soup_message_headers_append (msg->request_headers,
+                                   "If-Modified-Since",
+                                   date);
+
+      g_free (date);
+      soup_date_free (since_date);
+    }
 
   g_free (url);
 
@@ -305,16 +326,30 @@ SoupMessage *
 twitter_api_user_show (const gchar *user,
                        const gchar *email)
 {
-  gchar *url;
   SoupMessage *msg;
 
   if (user)
-    url = g_strdup_printf (TWITTER_API_USER_SHOW_ID, user);
-  else
-    url = g_strdup_printf (TWITTER_API_USER_SHOW_EMAIL, email);
+    {
+      gchar *url;
+      
+      url = g_strdup_printf (TWITTER_API_USER_SHOW_ID, user);
+      msg = soup_message_new (SOUP_METHOD_GET, url);
 
-  msg = soup_message_new (SOUP_METHOD_GET, url);
-  g_free (url);
+      g_free (url);
+    }
+  else
+    {
+      gchar *post_data;
+
+      /* we need to encode the email correctly */
+      post_data = soup_form_encode ("email", email, NULL);
+      msg = soup_message_new (SOUP_METHOD_GET, TWITTER_API_USER_SHOW);
+      soup_message_set_request (msg, "application/x-www-form-urlencoded",
+                            SOUP_MEMORY_COPY,
+                            post_data, strlen (post_data));
+
+      g_free (post_data);
+    }
 
   return msg;
 }

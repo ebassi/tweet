@@ -139,6 +139,7 @@ tweet_status_cell_constructed (GObject *gobject)
 {
   TweetStatusCell *cell = TWEET_STATUS_CELL (gobject);
   cairo_t *cr;
+  cairo_pattern_t *pat;
   ClutterColor bg_color = { 162, 162, 162, 0xcc };
   ClutterColor bubble_color = { 255, 255, 255, 224 };
   ClutterColor text_color = { 0, 0, 0, 255 };
@@ -243,6 +244,12 @@ tweet_status_cell_constructed (GObject *gobject)
   cr = clutter_cairo_create (CLUTTER_CAIRO (cell->bubble));
   g_assert (cr != NULL);
 
+  pat = cairo_pattern_create_linear (0, 0, 0, height);
+  cairo_pattern_add_color_stop_rgba (pat, 1, .85, .85, .85, 1);
+  cairo_pattern_add_color_stop_rgba (pat, .85, 1, 1, 1, 1);
+  cairo_pattern_add_color_stop_rgba (pat, .15, 1, 1, 1, 1);
+  cairo_pattern_add_color_stop_rgba (pat, 0, .85, .85, .85, 1);
+
   {
     gint x = H_PADDING / 2;
     gint y = 0;
@@ -278,9 +285,10 @@ tweet_status_cell_constructed (GObject *gobject)
 
   cairo_close_path (cr);
 
-  clutter_cairo_set_source_color (cr, &bubble_color);
+  cairo_set_source (cr, pat);
   cairo_fill_preserve (cr);
 
+  cairo_pattern_destroy (pat);
   cairo_destroy (cr);
 
   /* we add them in the right order */

@@ -713,30 +713,72 @@ status_changed_cb (TwitterStatus    *status,
   g_object_unref (iter);
 }
 
-void
+static gboolean
+tweet_status_model_lookup_status (TweetStatusModel *model,
+                                  TwitterStatus    *status)
+{
+  ClutterModelIter *iter;
+  gboolean retval = FALSE;
+
+  iter = clutter_model_get_first_iter (CLUTTER_MODEL (model));
+  if (!iter)
+    return FALSE;
+
+  while (!clutter_model_iter_is_last (iter))
+    {
+      TwitterStatus *s;
+
+      clutter_model_iter_get (iter, 0, &s, -1);
+      if (twitter_status_get_id (s) == twitter_status_get_id (status))
+        {
+          retval = TRUE;
+          g_object_unref (s);
+          break;
+        }
+
+      g_object_unref (s);
+      clutter_model_iter_next (iter);
+    }
+
+  g_object_unref (iter);
+
+  return retval;
+}
+
+gboolean
 tweet_status_model_append_status (TweetStatusModel *model,
                                   TwitterStatus    *status)
 {
-  g_return_if_fail (TWEET_IS_STATUS_MODEL (model));
-  g_return_if_fail (TWITTER_IS_STATUS (status));
+  g_return_val_if_fail (TWEET_IS_STATUS_MODEL (model), FALSE);
+  g_return_val_if_fail (TWITTER_IS_STATUS (status), FALSE);
+
+  if (tweet_status_model_lookup_status (model, status))
+    return FALSE;
 
   clutter_model_append (CLUTTER_MODEL (model), 0, status, -1);
   g_signal_connect (status, "changed",
                     G_CALLBACK (status_changed_cb),
                     model);
+
+  return TRUE;
 }
 
-void
+gboolean
 tweet_status_model_prepend_status (TweetStatusModel *model,
                                    TwitterStatus    *status)
 {
-  g_return_if_fail (TWEET_IS_STATUS_MODEL (model));
-  g_return_if_fail (TWITTER_IS_STATUS (status));
+  g_return_val_if_fail (TWEET_IS_STATUS_MODEL (model), FALSE);
+  g_return_val_if_fail (TWITTER_IS_STATUS (status), FALSE);
+
+  if (tweet_status_model_lookup_status (model, status))
+    return FALSE;
 
   clutter_model_prepend (CLUTTER_MODEL (model), 0, status, -1);
   g_signal_connect (status, "changed",
                     G_CALLBACK (status_changed_cb),
                     model);
+
+  return TRUE;
 }
 
 TwitterStatus *

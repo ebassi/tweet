@@ -27,6 +27,10 @@
 
 #include <glib-object.h>
 
+#ifdef HAVE_NM_GLIB
+#include <libnm_glib.h>
+#endif
+
 #include <gtk/gtk.h>
 
 #include <clutter/clutter.h>
@@ -60,17 +64,24 @@ typedef enum {
   TWEET_WINDOW_FAVORITES
 } TweetWindowMode;
 
+typedef enum {
+  TWEET_STATUS_ERROR,
+  TWEET_STATUS_RECEIVED,
+  TWEET_STATUS_NO_CONNECTION
+} TweetStatusMode;
+
 #define TWEET_WINDOW_GET_PRIVATE(obj)   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), TWEET_TYPE_WINDOW, TweetWindowPrivate))
 
 struct _TweetWindowPrivate
 {
   GtkWidget *vbox;
   GtkWidget *menubar;
-  GtkWidget *toolbar;
   GtkWidget *entry;
   GtkWidget *canvas;
   GtkWidget *send_button;
   GtkWidget *counter;
+
+  GtkStatusIcon *status_icon;
 
   ClutterActor *spinner;
   ClutterActor *status_view;
@@ -81,6 +92,11 @@ struct _TweetWindowPrivate
   GtkActionGroup *action_group;
 
   TwitterClient *client;
+  TwitterUser *user;
+
+  gint n_status_received;
+
+  GTimeVal last_update;
 
   TweetConfig *config;
   TweetStatusModel *status_model;
@@ -93,6 +109,12 @@ struct _TweetWindowPrivate
   guint refresh_id;
 
   TweetWindowMode mode;
+
+#ifdef HAVE_NM_GLIB
+  libnm_glib_ctx *nm_context;
+  guint nm_id;
+  libnm_glib_state nm_state;
+#endif
 };
 
 G_DEFINE_TYPE (TweetWindow, tweet_window, GTK_TYPE_WINDOW);
@@ -106,6 +128,12 @@ tweet_window_dispose (GObject *gobject)
     {
       g_source_remove (priv->refresh_id);
       priv->refresh_id = 0;
+    }
+
+  if (priv->user)
+    {
+      g_object_unref (priv->user);
+      priv->user = NULL;
     }
 
   if (priv->client)
@@ -127,13 +155,82 @@ tweet_window_dispose (GObject *gobject)
       priv->manager = NULL;
     }
 
+  if (priv->status_icon)
+    {
+      g_object_unref (priv->status_icon);
+      priv->status_icon = NULL;
+    }
+
   if (priv->action_group)
     {
       g_object_unref (priv->action_group);
       priv->action_group = NULL;
     }
 
+#ifdef HAVE_NM_GLIB
+  if (priv->nm_id)
+    {
+      libnm_glib_unregister_callback (priv->nm_context, priv->nm_id);
+      libnm_glib_shutdown (priv->nm_context);
+
+      priv->nm_id = 0;
+      priv->nm_context = NULL;
+    }
+#endif /* HAVE_NM_GLIB */
+
   G_OBJECT_CLASS (tweet_window_parent_class)->dispose (gobject);
+}
+
+static void
+on_status_icon_activate (GtkStatusIcon *icon,
+                         TweetWindow   *window)
+{
+  gtk_window_present (GTK_WINDOW (window));
+}
+
+static void
+tweet_window_status_message (TweetWindow     *window,
+                             TweetStatusMode  status_mode,
+                             const gchar     *format,
+                             ...)
+{
+  TweetWindowPrivate *priv = window->priv;
+  va_list args;
+  gchar *message;
+
+  if (!priv->status_icon)
+    {
+      priv->status_icon = gtk_status_icon_new_from_icon_name ("document-send");
+      g_signal_connect (priv->status_icon,
+                        "activate", G_CALLBACK (on_status_icon_activate),
+                        window);
+
+      gtk_status_icon_set_visible (priv->status_icon, TRUE);
+    }
+
+  va_start (args, format);
+  message = g_strdup_vprintf (format, args);
+  va_end (args);
+
+  gtk_status_icon_set_tooltip (priv->status_icon, message);
+
+  switch (status_mode)
+    {
+    case TWEET_STATUS_ERROR:
+      g_warning (message);
+      break;
+
+    case TWEET_STATUS_NO_CONNECTION:
+      g_warning (message);
+      break;
+
+    case TWEET_STATUS_RECEIVED:
+      g_print (message);
+      g_print ("\n");
+      break;
+    }
+
+  g_free (message);
 }
 
 static void
@@ -151,10 +248,35 @@ on_status_received (TwitterClient *client,
                            "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
                            NULL);
 
-      g_warning ("Unable to retrieve status from Twitter: %s", error->message);
+      /* if the content was not modified since the last update,
+       * silently ignore the error; Twitter-GLib still emits it
+       * so that clients can notify the user anyway
+       */
+      if (error->domain == TWITTER_ERROR &&
+          error->code == TWITTER_ERROR_NOT_MODIFIED)
+        {
+          g_get_current_time (&priv->last_update);
+          return;
+        }
+
+      priv->n_status_received = 0;
+
+      tweet_window_status_message (window, TWEET_STATUS_ERROR,
+                                   _("Unable to retrieve status from Twitter: %s"),
+                                   error->message);
     }
   else
-    tweet_status_model_prepend_status (window->priv->status_model, status);
+    {
+      if (!priv->status_model)
+        {
+          priv->status_model = TWEET_STATUS_MODEL (tweet_status_model_new ());
+          tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view),
+                                    CLUTTER_MODEL (priv->status_model));
+        }
+
+      if (tweet_status_model_prepend_status (priv->status_model, status));
+        priv->n_status_received += 1;
+    }
 }
 
 static void
@@ -167,6 +289,12 @@ on_timeline_complete (TwitterClient *client,
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
                        NULL);
+
+  tweet_window_status_message (window, TWEET_STATUS_RECEIVED,
+                               _("Received %d new statuses"),
+                               priv->n_status_received);
+
+  g_get_current_time (&priv->last_update);
 }
 
 static void
@@ -428,16 +556,19 @@ on_status_view_button_release (ClutterActor       *actor,
 }
 
 static inline void
-tweet_window_refresh (TweetWindow *window)
+tweet_window_clear (TweetWindow *window)
 {
   TweetWindowPrivate *priv = window->priv;
 
   tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view), NULL);
   g_object_unref (priv->status_model);
+  priv->status_model = NULL;
+}
 
-  priv->status_model = TWEET_STATUS_MODEL (tweet_status_model_new ());
-  tidy_list_view_set_model (TIDY_LIST_VIEW (priv->status_view),
-                            CLUTTER_MODEL (priv->status_model));
+static inline void
+tweet_window_refresh (TweetWindow *window)
+{
+  TweetWindowPrivate *priv = window->priv;
 
   clutter_actor_show (priv->spinner);
   tweet_spinner_start (TWEET_SPINNER (priv->spinner));
@@ -448,7 +579,10 @@ tweet_window_refresh (TweetWindow *window)
   switch (priv->mode)
     {
     case TWEET_WINDOW_RECENT:
-      twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+      priv->n_status_received = 0;
+      twitter_client_get_friends_timeline (priv->client,
+                                           NULL,
+                                           priv->last_update.tv_sec);
       break;
 
     case TWEET_WINDOW_REPLIES:
@@ -456,6 +590,10 @@ tweet_window_refresh (TweetWindow *window)
       break;
 
     case TWEET_WINDOW_ARCHIVE:
+      twitter_client_get_user_timeline (priv->client,
+                                        NULL,
+                                        0,
+                                        priv->last_update.tv_sec);
       break;
 
     case TWEET_WINDOW_FAVORITES:
@@ -476,12 +614,104 @@ refresh_timeout (gpointer data)
 }
 
 static void
+on_user_received (TwitterClient *client,
+                  TwitterUser   *user,
+                  const GError  *error,
+                  TweetWindow   *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+  gint refresh_time;
+
+  if (error)
+    {
+      priv->user = NULL;
+
+      tweet_window_status_message (window, TWEET_STATUS_ERROR,
+                                   _("Unable to retrieve used `%s': %s"),
+                                   tweet_config_get_username (priv->config),
+                                   error->message);
+      return;
+    }
+
+  /* keep a reference on ourselves */
+  priv->user = g_object_ref (user);
+
+  twitter_client_get_friends_timeline (priv->client, NULL, 0);
+
+  refresh_time = tweet_config_get_refresh_time (priv->config);
+  if (refresh_time > 0)
+    priv->refresh_id = g_timeout_add_seconds (refresh_time,
+                                              refresh_timeout,
+                                              window);
+}
+
+#ifdef HAVE_NM_GLIB
+static void
+nm_context_callback (libnm_glib_ctx *libnm_ctx,
+                     gpointer        user_data)
+{
+  TweetWindow *window = user_data;
+  TweetWindowPrivate *priv = window->priv;
+  libnm_glib_state nm_state;
+  gint refresh_time;
+
+  nm_state = libnm_glib_get_network_state (libnm_ctx);
+
+  if (nm_state == priv->nm_state)
+    return;
+
+  switch (nm_state)
+    {
+    case LIBNM_ACTIVE_NETWORK_CONNECTION:
+      refresh_time = tweet_config_get_refresh_time (priv->config);
+
+      if (refresh_time > 0)
+        {
+          if (priv->refresh_id)
+            break;
+
+          tweet_window_refresh (window);
+          priv->refresh_id = g_timeout_add_seconds (refresh_time,
+                                                    refresh_timeout,
+                                                    window);
+        }
+      else
+        tweet_window_refresh (window);
+
+      break;
+
+    case LIBNM_NO_DBUS:
+    case LIBNM_NO_NETWORKMANAGER:
+      g_critical ("No NetworkManager running");
+      break;
+
+    case LIBNM_NO_NETWORK_CONNECTION:
+      tweet_window_status_message (window, TWEET_STATUS_NO_CONNECTION,
+                                   _("No network connection available"));
+      g_source_remove (priv->refresh_id);
+      priv->refresh_id = 0;
+      tweet_window_clear (window);
+      break;
+
+    case LIBNM_INVALID_CONTEXT:
+      g_critical ("Invalid NetworkManager-GLib context");
+      break;
+    }
+
+  priv->nm_state = nm_state;
+}
+#endif /* HAVE_NM_GLIB */
+
+static void
 tweet_window_constructed (GObject *gobject)
 {
   TweetWindow *window = TWEET_WINDOW (gobject);
   TweetWindowPrivate *priv = window->priv;
   ClutterActor *stage;
   ClutterActor *img;
+#ifdef HAVE_NM_GLIB
+  libnm_glib_state nm_state;
+#endif /* HAVE_NM_GLIB */
 
   stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
 
@@ -507,13 +737,46 @@ tweet_window_constructed (GObject *gobject)
 
   gtk_widget_show_all (GTK_WIDGET (window));
 
-  twitter_client_get_user_timeline (priv->client, NULL, 0, NULL);
+#ifdef HAVE_NM_GLIB
+  priv->nm_context = libnm_glib_init ();
+
+  nm_state = libnm_glib_get_network_state (priv->nm_context);
+  if (nm_state == LIBNM_ACTIVE_NETWORK_CONNECTION)
+    {
+      const gchar *email_address;
+
+      g_signal_connect (priv->client,
+                        "user-received", G_CALLBACK (on_user_received),
+                        window);
+
+      email_address = tweet_config_get_username (priv->config);
+      twitter_client_show_user_from_email (priv->client, email_address);
+    }
+  else
+    {
+      tweet_window_status_message (window, TWEET_STATUS_NO_CONNECTION,
+                                   _("No network connection available"));
+
+      tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
+      tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
+                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
+                           NULL);
+    }
+
+  priv->nm_state = nm_state;
+  priv->nm_id = libnm_glib_register_callback (priv->nm_context,
+                                              nm_context_callback,
+                                              window,
+                                              NULL);
+#else
+  twitter_client_get_friends_timeline (priv->client, NULL, 0);
 
   if (tweet_config_get_refresh_time (priv->config) > 0)
     priv->refresh_id =
       g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
                              refresh_timeout,
                              window);
+#endif /* HAVE_NM_GLIB */
 }
 
 static void
@@ -574,8 +837,13 @@ static void
 tweet_window_cmd_view_recent (GtkAction   *action,
                               TweetWindow *window)
 {
-  window->priv->mode = TWEET_WINDOW_RECENT;
+  if (window->priv->mode == TWEET_WINDOW_RECENT)
+    return;
 
+  window->priv->mode = TWEET_WINDOW_RECENT;
+  window->priv->last_update.tv_sec = 0;
+
+  tweet_window_clear (window);
   tweet_window_refresh (window);
 }
 
@@ -583,8 +851,13 @@ static void
 tweet_window_cmd_view_replies (GtkAction   *action,
                                TweetWindow *window)
 {
-  window->priv->mode = TWEET_WINDOW_REPLIES;
+  if (window->priv->mode == TWEET_WINDOW_REPLIES)
+    return;
 
+  window->priv->mode = TWEET_WINDOW_REPLIES;
+  window->priv->last_update.tv_sec = 0;
+
+  tweet_window_clear (window);
   tweet_window_refresh (window);
 }
 
@@ -592,14 +865,27 @@ static void
 tweet_window_cmd_view_archive (GtkAction   *action,
                                TweetWindow *window)
 {
+  if (window->priv->mode == TWEET_WINDOW_ARCHIVE)
+    return;
+
+  window->priv->mode = TWEET_WINDOW_ARCHIVE;
+  window->priv->last_update.tv_sec = 0;
+
+  tweet_window_clear (window);
+  tweet_window_refresh (window);
 }
 
 static void
 tweet_window_cmd_view_favorites (GtkAction   *action,
                                  TweetWindow *window)
 {
-  window->priv->mode = TWEET_WINDOW_FAVORITES;
+  if (window->priv->mode == TWEET_WINDOW_FAVORITES)
+    return;
 
+  window->priv->mode = TWEET_WINDOW_FAVORITES;
+  window->priv->last_update.tv_sec = 0;
+
+  tweet_window_clear (window);
   tweet_window_refresh (window);
 }
 
@@ -652,7 +938,7 @@ about_url_hook (GtkAboutDialog *dialog,
                        &pid, &error);
   if (error)
     {
-      g_warning ("Unable to launch gnome-open: %s", error->message);
+      g_critical ("Unable to launch gnome-open: %s", error->message);
       g_error_free (error);
     }
 
@@ -799,8 +1085,7 @@ tweet_window_init (TweetWindow *window)
                                         PKGDATADIR G_DIR_SEPARATOR_S "tweet.ui",
                                         &error))
     {
-     g_critical ("Building menus and toolbar failed: %s",
-                 error->message);
+     g_critical ("Building menus failed: %s", error->message);
      g_error_free (error);
     }
   else
@@ -808,10 +1093,6 @@ tweet_window_init (TweetWindow *window)
       priv->menubar = gtk_ui_manager_get_widget (priv->manager, "/TweetMenubar");
       gtk_box_pack_start (GTK_BOX (priv->vbox), priv->menubar, FALSE, FALSE, 0);
       gtk_widget_show (priv->menubar);
-
-      priv->toolbar = gtk_ui_manager_get_widget (priv->manager, "/TweetToolbar");
-      gtk_box_pack_start (GTK_BOX (priv->vbox), priv->toolbar, FALSE, FALSE, 0);
-      gtk_widget_show (priv->toolbar);
     }
 
   frame = gtk_frame_new (NULL);
@@ -875,8 +1156,8 @@ tweet_window_init (TweetWindow *window)
 
   button = gtk_button_new ();
   gtk_button_set_image (GTK_BUTTON (button),
-                        gtk_image_new_from_stock (GTK_STOCK_JUMP_TO,
-                                                  GTK_ICON_SIZE_BUTTON));
+                        gtk_image_new_from_icon_name ("document-send",
+                                                      GTK_ICON_SIZE_BUTTON));
   gtk_box_pack_end (GTK_BOX (hbox), button, FALSE, FALSE, 0);
   gtk_widget_set_sensitive (button, FALSE);
   gtk_widget_show (button);

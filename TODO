@@ -1,0 +1,23 @@
+Features for the 0.4 release
+-------------------------------------------------------------------------------
+
+- status icon for displaying the status (connection, new statuses) [done]
+- display errors inside the UI and not on the console
+- display following and followers
+- allow direct messages
+- show direct messages
+- show a specific user timeline
+- open the web browser on a specific status
+- open the web browser on a specific user
+- display user's data (protected, following) in the status info
+- update the menus with the window status
+- move the canvas and the entry into TweetVBox
+- allow follow/unfollow
+
+Features for the 0.6 release
+-------------------------------------------------------------------------------
+
+- integration with Gypsy for updating the Twitter users/location data
+- exporting the archive as a JSON data structure to be read back by
+  Twitter-GLib
+

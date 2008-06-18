@@ -4,11 +4,11 @@ Tweet - A simple Twitter desktop client
 Tweet is a desktop client for the Twitter web service. The Twitter
 web service is described as:
 
-  Twitter is for staying in touch and keeping up with friends no matter
-  where you are or what you’re doing. For some friends you might want
-  instant mobile updates - for others, you can just check the web. Invite
-  your friends to Twitter and decide how connected you want you to be.
-                -- from http://twitter.com
+        Twitter is for staying in touch and keeping up with friends no matter
+        where you are or what you’re doing. For some friends you might want
+        instant mobile updates - for others, you can just check the web. Invite
+        your friends to Twitter and decide how connected you want you to be.
+        -- from http://twitter.com
 
 In short, is a web-based SMS-like service.
 
@@ -28,6 +28,10 @@ Tweet depends on:
   * ClutterCairo >= 0.6.1
   * libsoup >= 2.4.1
   * GTK+ >= 2.12
+
+And has a soft requirement on:
+
+  * libnm_glib
 
 Tweet is based on, and provides for third parties, a GObject-based library
 for reading and updating the Twitter status; the library is installed and

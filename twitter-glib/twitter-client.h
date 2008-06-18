@@ -135,14 +135,16 @@ void           twitter_client_get_public_timeline  (TwitterClient  *client,
                                                     guint           since_id);
 void           twitter_client_get_friends_timeline (TwitterClient  *client,
                                                     const gchar    *friend_,
-                                                    const gchar    *since_date);
+                                                    gint64          since_date);
 void           twitter_client_get_user_timeline    (TwitterClient  *client,
                                                     const gchar    *user,
                                                     guint           count,
-                                                    const gchar    *since_date);
+                                                    gint64          since_date);
 void           twitter_client_get_replies          (TwitterClient  *client);
 void           twitter_client_get_favorites        (TwitterClient  *client,
                                                     const gchar    *user,
+                                                    gint            page);
+void           twitter_client_get_archive          (TwitterClient  *client,
                                                     gint            page);
 void           twitter_client_get_friends          (TwitterClient  *client,
                                                     const gchar    *user,

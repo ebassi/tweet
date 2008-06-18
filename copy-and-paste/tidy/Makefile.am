@@ -27,7 +27,6 @@ source_h = \
 	$(top_srcdir)/copy-and-paste/tidy/tidy-adjustment.h	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-cell-renderer.h 	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-finger-scroll.h	\
-	$(top_srcdir)/copy-and-paste/tidy/tidy-frame.h		\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-list-column.h 	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-list-view.h 	\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-scroll-bar.h	\
@@ -37,7 +36,6 @@ source_h = \
 	$(top_srcdir)/copy-and-paste/tidy/tidy-style.h 		\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-types.h 		\
 	$(top_srcdir)/copy-and-paste/tidy/tidy-util.h 		\
-	$(top_srcdir)/copy-and-paste/tidy/tidy-viewport.h	\
 	$(NULL)
 
 source_h_private = \
@@ -49,7 +47,6 @@ source_c = \
 	tidy-adjustment.c \
 	tidy-cell-renderer.c \
 	tidy-finger-scroll.c \
-	tidy-frame.c \
 	tidy-list-column.c \
 	tidy-list-view.c \
 	tidy-scroll-bar.c \
@@ -58,7 +55,6 @@ source_c = \
 	tidy-stylable.c \
 	tidy-style.c \
 	tidy-util.c \
-	tidy-viewport.c \
 	$(NULL)
 
 tidy-marshal.h: stamp-tidy-marshal.h
@@ -104,18 +100,14 @@ libtidy_la_LIBADD = $(TWEET_LIBS)
 libtidy_la_SOURCES = \
 	$(source_c) \
 	$(source_h) \
-	$(source_h_priv) \
+	$(source_h_private) \
 	$(BUILT_SOURCES) \
 	$(NULL)
 
 CLEANFILES = $(STAMP_FILES) $(BUILT_SOURCES)
 
-DISTCLEANFILES = tidy-version.h
-
 EXTRA_DIST = \
 	tidy-enum-types.h.in \
 	tidy-enum-types.c.in \
 	tidy-private.h \
-	tidy-version.h.in \
-	tidy.h \
 	tidy-marshal.list

@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <glib.h>
+#include <glib/gi18n.h>
 
 #include <gtk/gtk.h>
 #include <clutter/clutter.h>
@@ -346,7 +347,7 @@ tweet_format_time_for_display (GTimeVal *time_)
   const gchar *format = NULL;
   gchar *locale_format = NULL;
   gchar buf[256];
-  gchar *retval;
+  gchar *retval = NULL;
   gint secs_diff;
 
   g_return_val_if_fail (time_->tv_usec >= 0 && time_->tv_usec < G_USEC_PER_SEC, NULL);
@@ -373,16 +374,30 @@ tweet_format_time_for_display (GTimeVal *time_)
 
   /* within the hour */
   if (secs_diff < 60)
-    format = "%d seconds ago";
+    retval = g_strdup (_("Less than a minute ago"));
   else
     {
       gint mins_diff = secs_diff / 60;
 
       if (mins_diff < 60)
-        format = "%d minutes ago";
+        retval = g_strdup_printf (ngettext ("About a minute ago",
+                                            "About %d minutes ago",
+                                            mins_diff),
+                                  mins_diff);
+      else if (mins_diff < 360)
+        {
+          gint hours_diff = mins_diff / 60;
+
+          retval = g_strdup_printf (ngettext ("About an hour ago",
+                                              "About %d hours ago",
+                                              hours_diff),
+                                    hours_diff);
+        }
     }
 
-  if (!format)
+  if (retval)
+    return retval;
+  else
     {
       GDate d1, d2;
       gint days_diff;
@@ -393,15 +408,15 @@ tweet_format_time_for_display (GTimeVal *time_)
       days_diff = g_date_get_julian (&d1) - g_date_get_julian (&d2);
 
       if (days_diff == 0)
-        format = "Today at %H:%M";
+        format = _("Today at %H:%M");
       else if (days_diff == 1)
-        format = "Yesterday at %H:%M";
+        format = _("Yesterday at %H:%M");
       else
         {
           if (days_diff > 1 && days_diff < 7)
-            format = "%A"; /* days of the week */
+            format = _("Last %A at %H:%M"); /* day of the week */
           else
-            format = "%x"; /* any other date */
+            format = _("%x at %H:%M"); /* any other date */
         }
     }
 
@@ -410,7 +425,7 @@ tweet_format_time_for_display (GTimeVal *time_)
   if (strftime (buf, sizeof (buf), locale_format, &tm_mtime) != 0)
     retval = g_locale_to_utf8 (buf, -1, NULL, NULL, NULL);
   else
-    retval = g_strdup ("Unknown");
+    retval = g_strdup (_("Unknown"));
 
   g_free (locale_format);
 

@@ -54,6 +54,9 @@ twitter_error_from_status (guint status)
 
     case SOUP_STATUS_GATEWAY_TIMEOUT:
       return TWITTER_ERROR_TIMED_OUT;
+
+    case SOUP_STATUS_NOT_MODIFIED:
+      return TWITTER_ERROR_NOT_MODIFIED;
     }
 
   return TWITTER_ERROR_FAILED;
@@ -147,12 +150,27 @@ twitter_date_to_time_val (const gchar *date,
   {
     struct tm tmp;
 
-    /* OMFG, what are they? insane? */
+    /* OMFG, ctime()? really? what are they? insane? and it's already been
+     * adjusted to the user settings instead of giving us the time of the
+     * status when it was sent
+     */
     strptime (date, "%a %b %d %T %z %Y", &tmp);
 
     res = mktime (&tmp);
     if (res != 0)
       {
+        time_t now_t;
+        struct tm now_tm;
+
+        time (&now_t);
+        localtime_r (&now_t, &now_tm);
+
+        /* twitter blissfully ignores the existence of the
+         * daylight saving time
+         */
+        if (now_tm.tm_isdst)
+          res += 3600;
+
         time_->tv_sec = res;
         time_->tv_usec = 0;
 
