@@ -182,7 +182,7 @@ tweet_status_cell_constructed (GObject *gobject)
   clutter_label_set_text (CLUTTER_LABEL (cell->label), text);
   clutter_label_set_use_markup (CLUTTER_LABEL (cell->label), TRUE);
   clutter_actor_set_position (cell->label, TEXT_X, TEXT_Y);
-  clutter_actor_set_width (cell->label, 230);
+  clutter_actor_set_size (cell->label, 230, 1);
   clutter_actor_show (cell->label);
 
   height =
