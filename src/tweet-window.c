@@ -953,7 +953,7 @@ about_url_hook (GtkAboutDialog *dialog,
     screen = gdk_screen_get_default ();
 
   argv = g_new (gchar*, 3);
-  argv[0] = g_strdup ("gnome-open");
+  argv[0] = g_strdup ("xdg-open");
   argv[1] = g_strdup (link_);
   argv[2] = NULL;
 
