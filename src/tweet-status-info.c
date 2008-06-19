@@ -285,7 +285,7 @@ tweet_status_info_constructed (GObject *gobject)
   clutter_label_set_use_markup (CLUTTER_LABEL (info->label), TRUE);
   clutter_container_add_actor (CLUTTER_CONTAINER (gobject), info->label);
   clutter_actor_set_position (info->label, TEXT_X, TEXT_Y);
-  clutter_actor_set_width (info->label, TEXT_WIDTH);
+  clutter_actor_set_size (info->label, TEXT_WIDTH, 1);
 
   g_free (text);
 
@@ -355,7 +355,7 @@ tweet_status_info_constructed (GObject *gobject)
   clutter_label_set_use_markup (CLUTTER_LABEL (info->button_tip), TRUE);
   clutter_container_add_actor (CLUTTER_CONTAINER (info), info->button_tip);
   clutter_actor_set_position (info->button_tip, TEXT_WIDTH / 2, 0);
-  clutter_actor_set_width (info->button_tip, TEXT_WIDTH - (2 * BUTTON_SIZE));
+  clutter_actor_set_size (info->button_tip, TEXT_WIDTH - (2 * BUTTON_SIZE), 1);
   clutter_actor_set_opacity (info->button_tip, 0);
   clutter_actor_show (info->button_tip);
 
