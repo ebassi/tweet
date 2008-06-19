@@ -280,6 +280,7 @@ tweet_status_info_constructed (GObject *gobject)
   clutter_label_set_color (CLUTTER_LABEL (info->label), &text_color);
   clutter_label_set_font_name (CLUTTER_LABEL (info->label), font_name);
   clutter_label_set_line_wrap (CLUTTER_LABEL (info->label), TRUE);
+  clutter_label_set_line_wrap_mode (CLUTTER_LABEL (info->label), PANGO_WRAP_WORD_CHAR);  
   clutter_label_set_text (CLUTTER_LABEL (info->label), text);
   clutter_label_set_use_markup (CLUTTER_LABEL (info->label), TRUE);
   clutter_container_add_actor (CLUTTER_CONTAINER (gobject), info->label);
