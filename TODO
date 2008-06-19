@@ -3,6 +3,7 @@ Features for the 0.4 release
 
 - status icon for displaying the status (connection, new statuses) [done]
 - display errors inside the UI and not on the console [done]
+- add key navigation [done]
 - display following and followers
 - allow direct messages
 - show direct messages
