@@ -179,6 +179,7 @@ tweet_status_cell_constructed (GObject *gobject)
   clutter_label_set_color (CLUTTER_LABEL (cell->label), &text_color);
   clutter_label_set_font_name (CLUTTER_LABEL (cell->label), cell->font_name);
   clutter_label_set_line_wrap (CLUTTER_LABEL (cell->label), TRUE);
+  clutter_label_set_line_wrap_mode (CLUTTER_LABEL (cell->label), PANGO_WRAP_WORD_CHAR);
   clutter_label_set_text (CLUTTER_LABEL (cell->label), text);
   clutter_label_set_use_markup (CLUTTER_LABEL (cell->label), TRUE);
   clutter_actor_set_position (cell->label, TEXT_X, TEXT_Y);
