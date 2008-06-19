@@ -439,6 +439,51 @@ on_reply_clicked (TweetStatusInfo *info,
 }
 
 static void
+on_icon_clicked (TweetStatusInfo *info,
+                 TweetWindow     *window)
+{
+  TwitterStatus *status;
+  TwitterUser *user;
+  GdkScreen *screen;
+  gint pid;
+  GError *error;
+  gchar **argv;
+
+  status = tweet_status_info_get_status (info);
+  g_assert (TWITTER_IS_STATUS (status));
+
+  user = twitter_status_get_user (status);
+  if (!user)
+    return;
+
+  if (gtk_widget_has_screen (GTK_WIDGET (window)))
+    screen = gtk_widget_get_screen (GTK_WIDGET (window));
+  else
+    screen = gdk_screen_get_default ();
+
+  argv = g_new (gchar*, 3);
+  argv[0] = g_strdup ("xdg-open");
+  argv[1] = g_strdup_printf ("http://twitter.com/%s",
+                             twitter_user_get_screen_name (user));
+  argv[2] = NULL;
+
+  error = NULL;
+  gdk_spawn_on_screen (screen,
+                       NULL,
+                       argv, NULL,
+                       G_SPAWN_SEARCH_PATH,
+                       NULL, NULL,
+                       &pid, &error);
+  if (error)
+    {
+      g_critical ("Unable to launch gnome-open: %s", error->message);
+      g_error_free (error);
+    }
+
+  g_strfreev (argv);
+}
+
+static void
 on_status_info_visible (TweetAnimation *animation,
                         TweetWindow    *window)
 {
@@ -534,6 +579,9 @@ on_status_view_button_release (ClutterActor       *actor,
                         window);
       g_signal_connect (priv->info,
                         "reply-clicked", G_CALLBACK (on_reply_clicked),
+                        window);
+      g_signal_connect (priv->info,
+                        "icon-clicked", G_CALLBACK (on_icon_clicked),
                         window);
                                 
       clutter_container_add_actor (CLUTTER_CONTAINER (stage), priv->info);
