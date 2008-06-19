@@ -69,6 +69,7 @@ enum
 {
   STAR_CLICKED,
   REPLY_CLICKED,
+  ICON_CLICKED,
 
   LAST_SIGNAL
 };
@@ -206,6 +207,8 @@ on_button_press (ClutterActor       *actor,
     g_signal_emit (info, info_signals[STAR_CLICKED], 0);
   else if (actor == info->reply_button)
     g_signal_emit (info, info_signals[REPLY_CLICKED], 0);
+  else if (actor == info->icon)
+    g_signal_emit (info, info_signals[ICON_CLICKED], 0);
   else
     return FALSE;
 
@@ -245,7 +248,11 @@ tweet_status_info_constructed (GObject *gobject)
                                    &text_color);
     }
 
+  g_signal_connect (info->icon,
+                    "button-press-event", G_CALLBACK (on_button_press),
+                    info);
   clutter_container_add_actor (CLUTTER_CONTAINER (gobject), info->icon);
+  clutter_actor_set_reactive (info->icon, TRUE);
   clutter_actor_set_size (info->icon, ICON_WIDTH, ICON_HEIGHT);
   clutter_actor_set_position (info->icon,
                               (MAX_WIDTH - ICON_WIDTH) / 2,
@@ -436,6 +443,14 @@ tweet_status_info_class_init (TweetStatusInfoClass *klass)
                   G_TYPE_FROM_CLASS (klass),
                   G_SIGNAL_RUN_LAST,
                   G_STRUCT_OFFSET (TweetStatusInfoClass, reply_clicked),
+                  NULL, NULL,
+                  g_cclosure_marshal_VOID__VOID,
+                  G_TYPE_NONE, 0);
+  info_signals[ICON_CLICKED] =
+    g_signal_new ("icon-clicked",
+                  G_TYPE_FROM_CLASS (klass),
+                  G_SIGNAL_RUN_LAST,
+                  G_STRUCT_OFFSET (TweetStatusInfoClass, icon_clicked),
                   NULL, NULL,
                   g_cclosure_marshal_VOID__VOID,
                   G_TYPE_NONE, 0);

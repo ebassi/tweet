@@ -56,6 +56,7 @@ struct _TweetStatusInfoClass
 
   void (* star_clicked)  (TweetStatusInfo *info);
   void (* reply_clicked) (TweetStatusInfo *info);
+  void (* icon_clicked)  (TweetStatusInfo *info);
 };
 
 GType          tweet_status_info_get_type   (void) G_GNUC_CONST;
