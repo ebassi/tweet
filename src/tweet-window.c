@@ -596,6 +596,11 @@ tweet_window_refresh (TweetWindow *window)
                        "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 127),
                        NULL);
 
+  /* check for the user */
+  if (!priv->user)
+    twitter_client_show_user_from_email (priv->client,
+                                         tweet_config_get_username (priv->config));
+
   switch (priv->mode)
     {
     case TWEET_WINDOW_RECENT:
@@ -640,7 +645,6 @@ on_user_received (TwitterClient *client,
                   TweetWindow   *window)
 {
   TweetWindowPrivate *priv = window->priv;
-  gint refresh_time;
 
   if (error)
     {
@@ -653,16 +657,11 @@ on_user_received (TwitterClient *client,
       return;
     }
 
+  if (priv->user)
+    g_object_unref (priv->user);
+
   /* keep a reference on ourselves */
   priv->user = g_object_ref (user);
-
-  twitter_client_get_friends_timeline (priv->client, NULL, 0);
-
-  refresh_time = tweet_config_get_refresh_time (priv->config);
-  if (refresh_time > 0)
-    priv->refresh_id = g_timeout_add_seconds (refresh_time,
-                                              refresh_timeout,
-                                              window);
 }
 
 #ifdef HAVE_NM_GLIB
@@ -764,6 +763,7 @@ tweet_window_constructed (GObject *gobject)
   if (nm_state == LIBNM_ACTIVE_NETWORK_CONNECTION)
     {
       const gchar *email_address;
+      gint refresh_time;
 
       g_signal_connect (priv->client,
                         "user-received", G_CALLBACK (on_user_received),
@@ -771,6 +771,14 @@ tweet_window_constructed (GObject *gobject)
 
       email_address = tweet_config_get_username (priv->config);
       twitter_client_show_user_from_email (priv->client, email_address);
+
+      twitter_client_get_friends_timeline (priv->client, NULL, 0);
+
+      refresh_time = tweet_config_get_refresh_time (priv->config);
+      if (refresh_time > 0)
+        priv->refresh_id = g_timeout_add_seconds (refresh_time,
+                                                  refresh_timeout,
+                                                  window);
     }
   else
     {
