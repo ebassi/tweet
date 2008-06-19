@@ -991,6 +991,39 @@ tweet_window_cmd_help_about (GtkAction   *action,
                          NULL);
 }
 
+static gboolean
+on_canvas_focus_in (GtkWidget *widget,
+                    GdkEventFocus *event,
+                    TweetWindow   *window)
+{
+  GtkClutterEmbed *embed = GTK_CLUTTER_EMBED (widget);
+  ClutterActor *stage = gtk_clutter_embed_get_stage (embed);
+
+  gtk_widget_queue_draw (widget);
+
+  clutter_stage_set_key_focus (CLUTTER_STAGE (stage),
+                               window->priv->status_view);
+
+  gtk_widget_grab_focus (widget);
+
+  return FALSE;
+}
+
+static gboolean
+on_canvas_focus_out (GtkWidget *widget,
+                     GdkEventFocus *event,
+                     TweetWindow   *window)
+{
+  GtkClutterEmbed *embed = GTK_CLUTTER_EMBED (widget);
+  ClutterActor *stage = gtk_clutter_embed_get_stage (embed);
+
+  gtk_widget_queue_draw (widget);
+
+  clutter_stage_set_key_focus (CLUTTER_STAGE (stage), NULL);
+
+  return FALSE;
+}
+
 static void
 tweet_window_class_init (TweetWindowClass *klass)
 {
@@ -1121,6 +1154,14 @@ tweet_window_init (TweetWindow *window)
   gtk_widget_show (frame);
 
   priv->canvas = gtk_clutter_embed_new ();
+  g_signal_connect (priv->canvas,
+                    "focus-in-event", G_CALLBACK (on_canvas_focus_in),
+                    window);
+  g_signal_connect (priv->canvas,
+                    "focus-out-event", G_CALLBACK (on_canvas_focus_out),
+                    window);
+  GTK_WIDGET_SET_FLAGS (priv->canvas, GTK_CAN_FOCUS);
+
   gtk_widget_set_size_request (priv->canvas,
                                CANVAS_WIDTH + CANVAS_PADDING,
                                CANVAS_HEIGHT + CANVAS_PADDING);
