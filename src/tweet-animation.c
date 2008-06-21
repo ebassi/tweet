@@ -389,6 +389,15 @@ tweet_animation_get_duration (TweetAnimation *animation)
   return animation->priv->duration;
 }
 
+/*
+ * tweet_interval_compute_value:
+ * @interval: a #TweetInterval
+ * @factor: the progress factor, between 0 and %CLUTTER_ALPHA_MAX_ALPHA
+ * @value: return location for an initialized #GValue
+ *
+ * Computes the value between the @interval boundaries fiven the
+ * progress @factor and puts it into @value.
+ */
 static void
 tweet_interval_compute_value (TweetInterval *interval,
                               guint32        factor,
@@ -778,6 +787,42 @@ on_animation_complete (TweetAnimation *animation,
   g_object_unref (animation);
 }
 
+/*
+ * tweet_actor_animate:
+ * @actor: a #ClutterActor
+ * @mode: a #TweetAnimationMode value
+ * @duration: duration of the animation, in milliseconds
+ * @first_property_name: the name of a property
+ * @VarArgs: a %NULL terminated list of properties and #TweetInterval<!-- -->s
+ *   pairs
+ *
+ * Animates the given list of properties of @actor between two values of
+ * an interval set for each property. The animation has a definite duration
+ * and a speed given by the @mode.
+ *
+ * For example, this:
+ *
+ * |[
+ *   tweet_actor_animate (rectangle, TWEET_LINEAR, 250,
+ *                        "width", tweet_interval_new (G_TYPE_UINT, 1, 100),
+ *                        "height", tweet_interval_new (G_TYPE_UINT, 1, 100),
+ *                        NULL);
+ * ]|
+ *
+ * will make width and height properties of the #ClutterActor "rectangle"
+ * grow linearly between the values of 1 and 100 pixels.
+ *
+ * This function will implicitly create a #TweetAnimation object which
+ * will be assigned to the @actor and will be returned to the developer
+ * to control the animation or to know when the animation has been
+ * completed.
+ *
+ * <note>Unless the animation is looping, it will become invalid as soon
+ * as it is complete.</note>
+ *
+ * Return value: a #TweetAnimation object. The object is owned by the
+ *   #ClutterActor and should not be unreferenced with g_object_unref()
+ */
 TweetAnimation *
 tweet_actor_animate (ClutterActor       *actor,
                      TweetAnimationMode  mode,
