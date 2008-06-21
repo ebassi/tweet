@@ -56,6 +56,8 @@ tweet_app_init (TweetApp *app)
 {
   app->config = tweet_config_get_default ();
 
+  gtk_window_set_default_icon_name ("tweet");
+
   gtk_icon_theme_append_search_path (gtk_icon_theme_get_default (),
                                      PKGDATADIR G_DIR_SEPARATOR_S "icons");
 }
