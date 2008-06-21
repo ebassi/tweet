@@ -158,11 +158,17 @@ AC_CONFIG_FILES([
         po/Makefile.in
         data/Makefile
         data/icons/Makefile
+        data/icons/16x16/Makefile
+        data/icons/16x16/apps/Makefile
+        data/icons/22x22/Makefile
+        data/icons/22x22/apps/Makefile
         data/icons/32x32/Makefile
         data/icons/32x32/actions/Makefile
+        data/icons/32x32/apps/Makefile
         data/icons/32x32/status/Makefile
         data/icons/scalable/Makefile
         data/icons/scalable/actions/Makefile
+        data/icons/scalable/apps/Makefile
         data/icons/scalable/status/Makefile
 ])
 
