@@ -95,8 +95,26 @@ tweet_animation_dispose (GObject *gobject)
 
   if (priv->timeline)
     {
+      if (priv->timeline_completed_id)
+        {
+          g_signal_handler_disconnect (priv->timeline, priv->timeline_completed_id);
+          priv->timeline_completed_id = 0;
+        }
+
       g_object_unref (priv->timeline);
       priv->timeline = NULL;
+    }
+
+  if (priv->alpha)
+    {
+      if (priv->alpha_notify_id)
+        {
+          g_signal_handler_disconnect (priv->alpha, priv->alpha_notify_id);
+          priv->alpha_notify_id = 0;
+        }
+
+      g_object_unref (priv->alpha);
+      priv->alpha = NULL;
     }
 
   G_OBJECT_CLASS (tweet_animation_parent_class)->dispose (gobject);
@@ -250,10 +268,7 @@ tweet_animation_set_actor (TweetAnimation *animation,
   priv = animation->priv;
 
   if (priv->actor)
-    {
-      g_object_unref (priv->actor);
-      priv->actor = NULL;
-    }
+    g_object_unref (priv->actor);
 
   priv->actor = g_object_ref (actor);
 
@@ -617,8 +632,8 @@ on_timeline_completed (ClutterTimeline *timeline,
 }
 
 static void
-on_alpha_notify (GObject       *gobject,
-                 GParamSpec    *pspec,
+on_alpha_notify (GObject        *gobject,
+                 GParamSpec     *pspec,
                  TweetAnimation *animation)
 {
   TweetAnimationPrivate *priv = animation->priv;
@@ -639,9 +654,8 @@ on_alpha_notify (GObject       *gobject,
       g_assert (TWEET_IS_INTERVAL (interval));
 
       g_value_init (&value, tweet_interval_get_value_type (interval));
-      tweet_interval_compute_value (interval,
-                                    alpha_value,
-                                    &value);
+
+      tweet_interval_compute_value (interval, alpha_value, &value);
 
       g_object_set_property (G_OBJECT (priv->actor), p_name, &value);
 
