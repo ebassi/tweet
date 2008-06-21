@@ -296,6 +296,29 @@ tweet_animation_set_mode (TweetAnimation     *animation,
   if (priv->mode != mode)
     {
       priv->mode = mode;
+
+      if (priv->alpha)
+        {
+          switch (priv->mode)
+            {
+            case TWEET_LINEAR:
+              clutter_alpha_set_func (priv->alpha,
+                                      CLUTTER_ALPHA_RAMP_INC,
+                                      NULL, NULL);
+              break;
+
+            case TWEET_SINE:
+              clutter_alpha_set_func (priv->alpha,
+                                      CLUTTER_ALPHA_SINE_INC,
+                                      NULL, NULL);
+              break;
+
+            default:
+              g_assert_not_reached ();
+              break;
+            }
+        }
+
       g_object_notify (G_OBJECT (animation), "mode");
     }
 }
