@@ -204,7 +204,7 @@ tweet_window_status_message (TweetWindow     *window,
 
   if (!priv->status_icon)
     {
-      priv->status_icon = gtk_status_icon_new_from_icon_name ("document-send");
+      priv->status_icon = gtk_status_icon_new_from_icon_name ("tweet");
       g_signal_connect (priv->status_icon,
                         "activate", G_CALLBACK (on_status_icon_activate),
                         window);
