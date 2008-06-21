@@ -1030,8 +1030,19 @@ tweet_window_cmd_help_about (GtkAction   *action,
     NULL
   };
 
+  const gchar *artists[] = {
+    "Ulisse Perusin <uli.peru@gmail.com>",
+    NULL
+  };
+
   const gchar *translator_credits = _("translator-credits");
   const gchar *copyright = "Copyright \xc2\xa9 2008 Emmanuele Bassi";
+
+  const gchar *license_text =
+    _("This program is free software: you can redistribute it and/or "
+      "modify it under the terms of the GNU General Public License as "
+      "published by the Free Software Foundation, either version 3 of "
+      "the License, or (at your option) any later version.");
 
   gtk_about_dialog_set_url_hook (about_url_hook, NULL, NULL);
 
@@ -1039,11 +1050,15 @@ tweet_window_cmd_help_about (GtkAction   *action,
                          "program-name", "Tweet",
                          "title", _("About Tweet"),
                          "comments", _("Twitter desktop client"),
+                         "logo-icon-name", "tweet",
                          "version", VERSION,
                          "copyright", copyright,
                          "authors", authors,
+                         "artists", artists,
                          "translator-credits", translator_credits,
                          "website", "http://live.gnome.org/Tweet",
+                         "license", license_text,
+                         "wrap-license", TRUE,
                          NULL);
 }
 
