@@ -39,11 +39,13 @@ typedef struct _TwitterClientClass      TwitterClientClass;
 
 /**
  * TwitterAuthState:
- * @TWITTER_AUTH_NEGOTIATING:
- * @TWITTER_AUTH_RETRY:
- * @TWITTER_AUTH_FAILED:
- * @TWITTER_AUTH_SUCCESS:
+ * @TWITTER_AUTH_NEGOTIATING: Initial phase of the authentication
+ * @TWITTER_AUTH_RETRY: Retry the authentication
+ * @TWITTER_AUTH_FAILED: Authentication failed
+ * @TWITTER_AUTH_SUCCESS: Authentication succeded
  *
+ * Enumeration used to distinguish the states of the authentication process
+ * in the #TwitterClient::authenticate signal handlers.
  */
 typedef enum {
   TWITTER_AUTH_NEGOTIATING,
@@ -58,6 +60,9 @@ typedef enum {
  * #TwitterClient allows to connect to the Twitter web service
  * and operate using the RESTful API provided from any GLib-based
  * application.
+ *
+ * The #TwitterClient-struct struct contains private data only, and
+ * should only be accessed using the functions below.
  */
 struct _TwitterClient
 {
@@ -69,9 +74,14 @@ struct _TwitterClient
 
 /**
  * TwitterClientClass;
- * @authenticate: class handler for the ::authenticate signal
- * @status_received: class handler for the ::status-received signal
- * @user_received: class handler for the ::user-received signal
+ * @authenticate: class handler for the #TwitterClient::authenticate signal
+ * @user_verified: class handler for the #TwitterClient::user-verified signal
+ * @session_ended: class handler for the #TwitterClient::session-eneded signal
+ * @status_received: class handler for the #TwitterClient::status-received
+ *   signal
+ * @user_received: class handler for the #TwitterClient::user-received signal
+ * @timeline_complete: class handler for the #TwitterClient::timeline_complete
+ *   signal
  *
  * Base class for #TwitterClient.
  */

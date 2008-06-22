@@ -33,11 +33,16 @@
  * set.
  *
  * Authentication is handled automatically by setting the
- * TwitterClient:email and TwitterClient:password properties.
+ * #TwitterClient:email and #TwitterClient:password properties.
  * These two properties can be set at construction time or by
  * using twitter_client_set_user(). Interactive authentication
- * can be implemented by using the TwitterClient::authenticate
- * signal as well.
+ * can be implemented by using the #TwitterClient::authenticate
+ * signal as well: when the signal passes the #TwitterAuthState value
+ * or %TWITTER_AUTH_NEGOTIATING the handler should set the user
+ * credentials with twitter_client_set_user(); in case of error,
+ * the ::authenticate signal will use %TWITTER_AUTH_RETRY until the
+ * authentication succeeds or the signal handler returns %FALSE,
+ * in which case the %TWITTER_AUTH_FAILED state will be used.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -214,6 +219,38 @@ twitter_client_class_init (TwitterClientClass *klass)
                                                         NULL,
                                                         G_PARAM_READWRITE));
 
+  /**
+   * TwitterClient::authenticate:
+   * @client: the #TwitterClient that received the signal
+   * @state: the state of the authentication process
+   *
+   * Handles the authentication of the user onto the Twitter services.
+   *
+   * The authentication can be a multi-state process. If the user's
+   * credentials were not set before issuing a command that requires
+   * authentication, the ::authenticate signal will be emitted with the
+   * %TWITTER_AUTH_NEGOTIATING state. In this case, the credentials must
+   * be set and the handler must return %TRUE.
+   *
+   * |[
+   *   if (state == TWITTER_AUTH_NEGOTIATING)
+   *     {
+   *       twitter_client_set_user (client, email, password);
+   *       return TRUE;
+   *     }
+   * ]|
+   *
+   * In case of failed authentication, the %TWITTER_AUTH_RETRY state
+   * will be used until the handler sets the correct credentials and
+   * returns %TRUE or aborts the authentication process and returns
+   * %FALSE; in the latter case, the signal will be emitted one last
+   * time with the %TWITTER_AUTH_FAILED state.
+   *
+   * If the authentication was successful, the signal will be emitted
+   * with the %TWITTER_AUTH_SUCCESS state.
+   *
+   * Return value: %TRUE if the user credentials were correctly set
+   */
   client_signals[AUTHENTICATE] =
     g_signal_new (I_("authenticate"),
                   G_TYPE_FROM_CLASS (gobject_class),
