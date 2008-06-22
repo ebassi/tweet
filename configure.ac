@@ -162,6 +162,7 @@ AC_CONFIG_FILES([
         data/icons/16x16/apps/Makefile
         data/icons/22x22/Makefile
         data/icons/22x22/apps/Makefile
+        data/icons/22x22/status/Makefile
         data/icons/32x32/Makefile
         data/icons/32x32/actions/Makefile
         data/icons/32x32/apps/Makefile
