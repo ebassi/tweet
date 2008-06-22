@@ -210,13 +210,11 @@ tweet_window_status_message (TweetWindow     *window,
                         window);
     }
 
-  gtk_status_icon_set_visible (priv->status_icon, TRUE);
 
   va_start (args, format);
   message = g_strdup_vprintf (format, args);
   va_end (args);
 
-  gtk_status_icon_set_tooltip (priv->status_icon, message);
 
   switch (status_mode)
     {
@@ -224,16 +222,21 @@ tweet_window_status_message (TweetWindow     *window,
       break;
 
     case TWEET_STATUS_ERROR:
-      g_warning (message);
+      gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-error")
+      gtk_status_icon_set_visible (priv->status_icon, TRUE);
+      gtk_status_icon_set_tooltip (priv->status_icon, message);
       break;
 
     case TWEET_STATUS_NO_CONNECTION:
-      g_warning (message);
+      gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-no-connection")
+      gtk_status_icon_set_visible (priv->status_icon, TRUE);
+      gtk_status_icon_set_tooltip (priv->status_icon, message);
       break;
 
     case TWEET_STATUS_RECEIVED:
-      g_print (message);
-      g_print ("\n");
+      gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-new-status")
+      gtk_status_icon_set_visible (priv->status_icon, TRUE);
+      gtk_status_icon_set_tooltip (priv->status_icon, message);
       break;
     }
 
