@@ -846,13 +846,25 @@ tweet_window_constructed (GObject *gobject)
                                               window,
                                               NULL);
 #else
-  twitter_client_get_friends_timeline (priv->client, NULL, 0);
+  {
+    const gchar *email_address;
+    gint refresh_time;
 
-  if (tweet_config_get_refresh_time (priv->config) > 0)
-    priv->refresh_id =
-      g_timeout_add_seconds (tweet_config_get_refresh_time (priv->config),
-                             refresh_timeout,
-                             window);
+    g_signal_connect (priv->client,
+                      "user-received", G_CALLBACK (on_user_received),
+                      window);
+
+    email_address = tweet_config_get_username (priv->config);
+    twitter_client_show_user_from_email (priv->client, email_address);
+
+    twitter_client_get_friends_timeline (priv->client, NULL, 0);
+
+    refresh_time = tweet_config_get_refresh_time (priv->config);
+    if (refresh_time > 0)
+      priv->refresh_id = g_timeout_add_seconds (refresh_time,
+                                                refresh_timeout,
+                                                window);
+  }
 #endif /* HAVE_NM_GLIB */
 }
 
