@@ -700,7 +700,7 @@ on_user_received (TwitterClient *client,
       priv->user = NULL;
 
       tweet_window_status_message (window, TWEET_STATUS_ERROR,
-                                   _("Unable to retrieve used `%s': %s"),
+                                   _("Unable to retrieve user `%s': %s"),
                                    tweet_config_get_username (priv->config),
                                    error->message);
       return;
