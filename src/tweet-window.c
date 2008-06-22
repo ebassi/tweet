@@ -222,19 +222,19 @@ tweet_window_status_message (TweetWindow     *window,
       break;
 
     case TWEET_STATUS_ERROR:
-      gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-error")
+      gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-error");
       gtk_status_icon_set_visible (priv->status_icon, TRUE);
       gtk_status_icon_set_tooltip (priv->status_icon, message);
       break;
 
     case TWEET_STATUS_NO_CONNECTION:
-      gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-no-connection")
+      gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-no-connection");
       gtk_status_icon_set_visible (priv->status_icon, TRUE);
       gtk_status_icon_set_tooltip (priv->status_icon, message);
       break;
 
     case TWEET_STATUS_RECEIVED:
-      gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-new-status")
+      gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-new-status");
       gtk_status_icon_set_visible (priv->status_icon, TRUE);
       gtk_status_icon_set_tooltip (priv->status_icon, message);
       break;
