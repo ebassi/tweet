@@ -1189,8 +1189,11 @@ tweet_window_init (TweetWindow *window)
   priv->status_model = TWEET_STATUS_MODEL (tweet_status_model_new ());
 
   priv->config = tweet_config_get_default ();
-  priv->client = twitter_client_new_for_user (tweet_config_get_username (priv->config),
-                                              tweet_config_get_password (priv->config));
+  priv->client = g_object_new (TWITTER_TYPE_CLIENT,
+                               "email", tweet_config_get_username (priv->config),
+                               "password", tweet_config_get_password (priv->config),
+                               "user-agent", "Tweet",
+                               NULL);
   g_signal_connect (priv->client,
                     "status-received", G_CALLBACK (on_status_received),
                     window);
