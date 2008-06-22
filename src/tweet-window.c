@@ -265,8 +265,6 @@ on_status_received (TwitterClient *client,
       if (error->domain == TWITTER_ERROR &&
           error->code == TWITTER_ERROR_NOT_MODIFIED)
         {
-          tweet_window_status_message (window, TWEET_STATUS_MESSAGE,
-                                       _("No new statuses"));
           g_get_current_time (&priv->last_update);
         }
       else
