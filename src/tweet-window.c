@@ -1076,7 +1076,7 @@ tweet_window_cmd_help_about (GtkAction   *action,
 }
 
 static gboolean
-on_canvas_focus_in (GtkWidget *widget,
+on_canvas_focus_in (GtkWidget     *widget,
                     GdkEventFocus *event,
                     TweetWindow   *window)
 {
@@ -1094,7 +1094,7 @@ on_canvas_focus_in (GtkWidget *widget,
 }
 
 static gboolean
-on_canvas_focus_out (GtkWidget *widget,
+on_canvas_focus_out (GtkWidget     *widget,
                      GdkEventFocus *event,
                      TweetWindow   *window)
 {
@@ -1104,6 +1104,18 @@ on_canvas_focus_out (GtkWidget *widget,
   gtk_widget_queue_draw (widget);
 
   clutter_stage_set_key_focus (CLUTTER_STAGE (stage), NULL);
+
+  return FALSE;
+}
+
+static gboolean
+tweet_window_focus_in (GtkWidget     *widget,
+                       GdkEventFocus *event)
+{
+  TweetWindowPrivate *priv = TWEET_WINDOW (widget)->priv;
+
+  if (priv->status_icon)
+    gtk_status_icon_set_visible (priv->status_icon, FALSE);
 
   return FALSE;
 }
@@ -1120,6 +1132,7 @@ tweet_window_class_init (TweetWindowClass *klass)
   gobject_class->constructed = tweet_window_constructed;
 
   widget_class->style_set = tweet_window_style_set;
+  widget_class->focus_in_event = tweet_window_focus_in;
 }
 
 static const GtkActionEntry action_entries[] = {
