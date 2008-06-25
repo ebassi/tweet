@@ -206,7 +206,7 @@ tweet_url_label_dispose (GObject *object)
 
   if (self->url_regex)
     {
-      g_object_unref (self->url_regex);
+      g_regex_unref (self->url_regex);
       self->url_regex = NULL;
     }
 
