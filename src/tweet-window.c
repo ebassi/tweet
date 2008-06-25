@@ -1007,35 +1007,7 @@ about_url_hook (GtkAboutDialog *dialog,
                 const gchar    *link_,
                 gpointer        user_data)
 {
-  GdkScreen *screen;
-  gint pid;
-  GError *error;
-  gchar **argv;
-
-  if (gtk_widget_has_screen (GTK_WIDGET (dialog)))
-    screen = gtk_widget_get_screen (GTK_WIDGET (dialog));
-  else
-    screen = gdk_screen_get_default ();
-
-  argv = g_new (gchar*, 3);
-  argv[0] = g_strdup ("xdg-open");
-  argv[1] = g_strdup (link_);
-  argv[2] = NULL;
-
-  error = NULL;
-  gdk_spawn_on_screen (screen,
-                       NULL,
-                       argv, NULL,
-                       G_SPAWN_SEARCH_PATH,
-                       NULL, NULL,
-                       &pid, &error);
-  if (error)
-    {
-      g_critical ("Unable to launch gnome-open: %s", error->message);
-      g_error_free (error);
-    }
-
-  g_strfreev (argv);
+  tweet_show_url (GTK_WIDGET (dialog), link_);
 }
 
 static void
