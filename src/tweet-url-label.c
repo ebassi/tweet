@@ -28,6 +28,7 @@
 static void tweet_url_label_dispose (GObject *object);
 static void tweet_url_label_finalize (GObject *object);
 static void tweet_url_label_notify (GObject *object, GParamSpec *pspec);
+static void tweet_url_label_paint (ClutterActor *actor);
 
 typedef struct _TweetUrlLabelMatch TweetUrlLabelMatch;
 
@@ -78,10 +79,13 @@ static void
 tweet_url_label_class_init (TweetUrlLabelClass *klass)
 {
   GObjectClass *gobject_class = (GObjectClass *) klass;
+  ClutterActorClass *actor_class = (ClutterActorClass *) klass;
 
   gobject_class->dispose = tweet_url_label_dispose;
   gobject_class->finalize = tweet_url_label_finalize;
   gobject_class->notify = tweet_url_label_notify;
+
+  actor_class->paint = tweet_url_label_paint;
 }
 
 static void
@@ -113,6 +117,46 @@ tweet_url_label_new (void)
 }
 
 static void
+tweet_url_label_paint (ClutterActor *actor)
+{
+  TweetUrlLabel *self = TWEET_URL_LABEL (actor);
+  PangoLayout *layout;
+  int i;
+
+  /* Set the attributes in the label's layout so that the URLs will be
+     in blue */
+  if (self->matches->len > 0)
+    {
+      PangoAttrList *attrs;
+
+      layout = clutter_label_get_layout (CLUTTER_LABEL (self));
+
+      attrs = pango_layout_get_attributes (layout);
+      if (attrs == NULL)
+	attrs = pango_attr_list_new ();
+      else
+	pango_attr_list_ref (attrs);
+
+      for (i = 0; i < self->matches->len; i++)
+	{
+	  TweetUrlLabelMatch *match = &g_array_index (self->matches,
+						      TweetUrlLabelMatch, i);
+	  PangoAttribute *attr = pango_attr_foreground_new (0, 0, 65535);
+
+	  attr->start_index = match->start;
+	  attr->end_index = match->end;
+	  pango_attr_list_change (attrs, attr);
+	}
+
+      pango_layout_set_attributes (layout, attrs);
+
+      pango_attr_list_unref (attrs);
+    }
+
+  CLUTTER_ACTOR_CLASS (tweet_url_label_parent_class)->paint (actor);
+}
+
+static void
 tweet_url_label_update_matches (TweetUrlLabel *self)
 {
   /* Clear any existing matches */
@@ -121,11 +165,16 @@ tweet_url_label_update_matches (TweetUrlLabel *self)
   if (self->url_regex)
     {
       GMatchInfo *match_info;
+      PangoLayout *layout;
+      const gchar *text;
+
+      /* Get the text of the label from the layout so that it won't
+	 include the markup */
+      layout = clutter_label_get_layout (CLUTTER_LABEL (self));
+      text = pango_layout_get_text (layout);
 
       /* Find each URL and keep track of its location */
-      g_regex_match (self->url_regex,
-		     clutter_label_get_text (CLUTTER_LABEL (self)),
-		     0, &match_info);
+      g_regex_match (self->url_regex, text, 0, &match_info);
       while (g_match_info_matches (match_info))
 	{
 	  TweetUrlLabelMatch match;
@@ -142,8 +191,8 @@ tweet_url_label_update_matches (TweetUrlLabel *self)
 static void
 tweet_url_label_notify (GObject *object, GParamSpec *pspec)
 {
-  /* Update the URL matches whenever the text of the label changes */
-  if (!strcmp (pspec->name, "text"))
+  /* Recalculate the positions of the URLs if the text changes */
+  if (!strcmp (pspec->name, "text") || !strcmp (pspec->name, "use-markup"))
     tweet_url_label_update_matches (TWEET_URL_LABEL (object));
 
   if (G_OBJECT_CLASS (tweet_url_label_parent_class)->notify)
