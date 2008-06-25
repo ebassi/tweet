@@ -199,6 +199,7 @@ tweet_window_status_message (TweetWindow     *window,
                              ...)
 {
   TweetWindowPrivate *priv = window->priv;
+  gboolean show_status_icon = FALSE;
   va_list args;
   gchar *message;
 
@@ -215,7 +216,6 @@ tweet_window_status_message (TweetWindow     *window,
   message = g_strdup_vprintf (format, args);
   va_end (args);
 
-
   switch (status_mode)
     {
     case TWEET_STATUS_MESSAGE:
@@ -223,24 +223,28 @@ tweet_window_status_message (TweetWindow     *window,
 
     case TWEET_STATUS_ERROR:
       gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-error");
-      gtk_status_icon_set_visible (priv->status_icon, TRUE);
       gtk_status_icon_set_tooltip (priv->status_icon, message);
+      show_status_icon = TRUE;
       break;
 
     case TWEET_STATUS_NO_CONNECTION:
       gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-no-connection");
-      gtk_status_icon_set_visible (priv->status_icon, TRUE);
       gtk_status_icon_set_tooltip (priv->status_icon, message);
+      show_status_icon = TRUE;
       break;
 
     case TWEET_STATUS_RECEIVED:
       gtk_status_icon_set_from_icon_name (priv->status_icon, "tweet-new-status");
-      gtk_status_icon_set_visible (priv->status_icon, TRUE);
       gtk_status_icon_set_tooltip (priv->status_icon, message);
+      show_status_icon = TRUE;
       break;
     }
 
   g_free (message);
+
+  /* avoid flickering the status icon if we have focus */
+  if (show_status_icon && !GTK_WIDGET_HAS_FOCUS (window))
+    gtk_status_icon_set_visible (priv->status_icon, TRUE);
 }
 
 static void
