@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "tweet-url-label.h"
+#include "tweet-utils.h"
 
 static void tweet_url_label_dispose (GObject *object);
 static void tweet_url_label_finalize (GObject *object);
@@ -33,6 +34,8 @@ static gboolean tweet_url_label_motion_event (ClutterActor *Actor,
 					      ClutterMotionEvent *event);
 static gboolean tweet_url_label_leave_event (ClutterActor *actor,
 					     ClutterCrossingEvent *event);
+static gboolean tweet_url_label_button_press_event (ClutterActor *actor,
+						    ClutterButtonEvent *event);
 
 typedef struct _TweetUrlLabelMatch TweetUrlLabelMatch;
 
@@ -92,6 +95,7 @@ tweet_url_label_class_init (TweetUrlLabelClass *klass)
   actor_class->paint = tweet_url_label_paint;
   actor_class->motion_event = tweet_url_label_motion_event;
   actor_class->leave_event = tweet_url_label_leave_event;
+  actor_class->button_press_event = tweet_url_label_button_press_event;
 }
 
 static void
@@ -242,6 +246,41 @@ tweet_url_label_leave_event (ClutterActor *actor, ClutterCrossingEvent *event)
     ? (CLUTTER_ACTOR_CLASS (tweet_url_label_parent_class)
        ->leave_event (actor, event))
     : FALSE;
+}
+
+static gboolean
+tweet_url_label_button_press_event (ClutterActor *actor,
+				    ClutterButtonEvent *event)
+{
+  TweetUrlLabel *self = TWEET_URL_LABEL (actor);
+  
+  if (self->selected_match != -1 && event->button == 1)
+    {
+      PangoLayout *layout;
+      const gchar *label_text;
+      gint label_text_len;
+      TweetUrlLabelMatch *match = &g_array_index (self->matches,
+						  TweetUrlLabelMatch,
+						  self->selected_match);
+
+      /* Get the text of the URL from a substring of the label text */
+      layout = clutter_label_get_layout (CLUTTER_LABEL (self));
+      label_text = pango_layout_get_text (layout);
+      label_text_len = strlen (label_text);
+      /* Make sure the match range is still valid */
+      if (match->start >= 0 && match->end >= match->start
+	  && match->end <= label_text_len)
+	{
+	  gchar *url_text = g_strndup (label_text + match->start,
+				       match->end - match->start);
+	  tweet_show_url (NULL, url_text);
+	  g_free (url_text);
+	}
+
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 static void
