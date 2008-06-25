@@ -29,6 +29,10 @@ static void tweet_url_label_dispose (GObject *object);
 static void tweet_url_label_finalize (GObject *object);
 static void tweet_url_label_notify (GObject *object, GParamSpec *pspec);
 static void tweet_url_label_paint (ClutterActor *actor);
+static gboolean tweet_url_label_motion_event (ClutterActor *Actor,
+					      ClutterMotionEvent *event);
+static gboolean tweet_url_label_leave_event (ClutterActor *actor,
+					     ClutterCrossingEvent *event);
 
 typedef struct _TweetUrlLabelMatch TweetUrlLabelMatch;
 
@@ -86,6 +90,8 @@ tweet_url_label_class_init (TweetUrlLabelClass *klass)
   gobject_class->notify = tweet_url_label_notify;
 
   actor_class->paint = tweet_url_label_paint;
+  actor_class->motion_event = tweet_url_label_motion_event;
+  actor_class->leave_event = tweet_url_label_leave_event;
 }
 
 static void
@@ -108,6 +114,7 @@ tweet_url_label_init (TweetUrlLabel *self)
     }
 
   self->matches = g_array_new (FALSE, FALSE, sizeof (TweetUrlLabelMatch));
+  self->selected_match = -1;
 }
 
 ClutterActor *
@@ -146,6 +153,16 @@ tweet_url_label_paint (ClutterActor *actor)
 	  attr->start_index = match->start;
 	  attr->end_index = match->end;
 	  pango_attr_list_change (attrs, attr);
+
+	  /* If the cursor is over this URL then also make it
+	     underlined */
+	  if (i == self->selected_match)
+	    {
+	      attr = pango_attr_underline_new (PANGO_UNDERLINE_SINGLE);
+	      attr->start_index = match->start;
+	      attr->end_index = match->end;
+	      pango_attr_list_change (attrs, attr);
+	    }
 	}
 
       pango_layout_set_attributes (layout, attrs);
@@ -154,6 +171,77 @@ tweet_url_label_paint (ClutterActor *actor)
     }
 
   CLUTTER_ACTOR_CLASS (tweet_url_label_parent_class)->paint (actor);
+}
+
+static gboolean
+tweet_url_label_motion_event (ClutterActor *actor, ClutterMotionEvent *event)
+{
+  TweetUrlLabel *self = TWEET_URL_LABEL (actor);
+  gint new_selected_match = -1;
+
+  if (self->matches->len > 0)
+    {
+      gint actor_x, actor_y, layout_x, layout_y;
+      gint index, i;
+      PangoLayout *layout;
+
+      /* Simplistically convert the cursor position from
+	 stage-relative to actor-relative. This won't work if the
+	 actor is scaled or rotated */
+      clutter_actor_get_abs_position (actor, &actor_x, &actor_y);
+      layout_x = event->x - actor_x;
+      layout_y = event->y - actor_y;
+
+      /* Convert the pixel position into a text byte index */
+      layout = clutter_label_get_layout (CLUTTER_LABEL (self));
+      if (pango_layout_xy_to_index (layout,
+				    layout_x * PANGO_SCALE,
+				    layout_y * PANGO_SCALE,
+				    &index, NULL))
+	{
+	  /* Check whether that byte index is covered by any of the
+	     URL matches */
+	  for (i = 0; i < self->matches->len; i++)
+	    {
+	      TweetUrlLabelMatch *match;
+	      match = &g_array_index (self->matches, TweetUrlLabelMatch, i);
+
+	      if (index >= match->start && index < match->end)
+		{
+		  new_selected_match = i;
+		  break;
+		}
+	    }
+	}
+    }
+  
+  if (new_selected_match != self->selected_match)
+    {
+      self->selected_match = new_selected_match;
+      clutter_actor_queue_redraw (actor);
+    }
+
+  return CLUTTER_ACTOR_CLASS (tweet_url_label_parent_class)->motion_event
+    ? (CLUTTER_ACTOR_CLASS (tweet_url_label_parent_class)
+       ->motion_event (actor, event))
+    : FALSE;
+}
+
+static gboolean
+tweet_url_label_leave_event (ClutterActor *actor, ClutterCrossingEvent *event)
+{
+  TweetUrlLabel *self = TWEET_URL_LABEL (actor);
+  
+  if (self->selected_match != -1)
+    {
+      self->selected_match = -1;
+      clutter_actor_queue_redraw (actor);
+    }
+
+  return CLUTTER_ACTOR_CLASS (tweet_url_label_parent_class)->leave_event
+    ? (CLUTTER_ACTOR_CLASS (tweet_url_label_parent_class)
+       ->leave_event (actor, event))
+    : FALSE;
 }
 
 static void
@@ -186,6 +274,14 @@ tweet_url_label_update_matches (TweetUrlLabel *self)
 	}
       g_match_info_free (match_info);
     }
+
+  /* If there is at least one URL then make sure the actor is reactive
+     so we can detect when the cursor moves over it */
+  if (self->matches->len > 0)
+    clutter_actor_set_reactive (CLUTTER_ACTOR (self), TRUE);
+
+  /* We no longer know if the mouse is over the current URL */
+  self->selected_match = -1;
 }
 
 static void

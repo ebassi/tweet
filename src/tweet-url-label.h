@@ -60,6 +60,7 @@ struct _TweetUrlLabel
   GRegex *url_regex;
   
   GArray *matches;
+  gint selected_match;
 };
 
 GType tweet_url_label_get_type (void) G_GNUC_CONST;
