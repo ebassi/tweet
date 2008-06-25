@@ -47,6 +47,7 @@ tweet_h = \
 	tweet-status-model.h \
 	tweet-status-renderer.h \
 	tweet-status-view.h \
+	tweet-url-label.h \
 	tweet-utils.h \
 	tweet-window.h \
 	$(NULL)
@@ -103,6 +104,7 @@ libtweet_ui_la_SOURCES = \
 	tweet-status-renderer.h \
 	tweet-status-view.c \
 	tweet-status-view.h \
+	tweet-url-label.c \
 	tweet-utils.c \
 	tweet-utils.h \
 	tweet-window.c \
