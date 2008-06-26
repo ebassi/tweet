@@ -255,10 +255,16 @@ on_status_received (TwitterClient *client,
 
   if (error)
     {
+      TweetAnimation *animation;
+
       tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
-      tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
-                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
-                           NULL);
+      animation =
+        tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
+                             "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
+                             NULL);
+      g_signal_connect_swapped (animation,
+                                "completed", G_CALLBACK (clutter_actor_hide),
+                                priv->spinner);
 
       /* if the content was not modified since the last update,
        * silently ignore the error; Twitter-GLib still emits it
@@ -295,11 +301,16 @@ on_timeline_complete (TwitterClient *client,
                       TweetWindow   *window)
 {
   TweetWindowPrivate *priv = window->priv;
+  TweetAnimation *animation;
 
   tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
-  tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
-                       "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
-                       NULL);
+  animation =
+    tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
+                         "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
+                         NULL);
+  g_signal_connect_swapped (animation,
+                            "completed", G_CALLBACK (clutter_actor_hide),
+                            priv->spinner);
 
   if (priv->n_status_received > 0)
     {
@@ -812,10 +823,9 @@ tweet_window_constructed (GObject *gobject)
   tweet_spinner_set_image (TWEET_SPINNER (priv->spinner), img);
   clutter_container_add_actor (CLUTTER_CONTAINER (stage), priv->spinner);
   clutter_actor_set_size (priv->spinner, 128, 128);
-  clutter_actor_set_anchor_point (priv->spinner, 64, 64);
   clutter_actor_set_position (priv->spinner,
-                              (canvas_req.width + (2 * CANVAS_PADDING)) / 2,
-                              canvas_req.height / 2);
+                              (canvas_req.width + (2 * CANVAS_PADDING) - 128) / 2,
+                              (canvas_req.height - 128) / 2);
   clutter_actor_show (priv->spinner);
   tweet_spinner_start (TWEET_SPINNER (priv->spinner));
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
@@ -850,13 +860,19 @@ tweet_window_constructed (GObject *gobject)
     }
   else
     {
+      TweetAnimation *animation;
+
       tweet_window_status_message (window, TWEET_STATUS_NO_CONNECTION,
                                    _("No network connection available"));
 
       tweet_spinner_stop (TWEET_SPINNER (priv->spinner));
-      tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
-                           "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
-                           NULL);
+      animation =
+        tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
+                             "opacity", tweet_interval_new (G_TYPE_UCHAR, 127, 0),
+                             NULL);
+      g_signal_connect_swapped (animation,
+                                "completed", G_CALLBACK (clutter_actor_hide),
+                                priv->spinner);
     }
 
   priv->nm_state = nm_state;
@@ -1145,8 +1161,8 @@ on_canvas_size_allocate (GtkWidget     *widget,
                           allocation->height);
 
   clutter_actor_set_position (priv->spinner,
-                              (allocation->width + (2 * CANVAS_PADDING)) / 2,
-                              allocation->height / 2);
+                              (allocation->width + (2 * CANVAS_PADDING) - 128) / 2,
+                              (allocation->height - 128) / 2);
 }
 
 static gboolean
