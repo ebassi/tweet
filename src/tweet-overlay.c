@@ -172,9 +172,6 @@ tweet_overlay_pick (ClutterActor       *actor,
   TweetOverlayPrivate *priv = TWEET_OVERLAY (actor)->priv;
   GList *l;
 
-  if (!clutter_actor_should_pick_paint (actor))
-    return;
-
   CLUTTER_ACTOR_CLASS (tweet_overlay_parent_class)->pick (actor, pick_color);
 
   for (l = priv->children; l != NULL; l = l->next)
