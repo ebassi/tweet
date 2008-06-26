@@ -1143,6 +1143,10 @@ on_canvas_size_allocate (GtkWidget     *widget,
   clutter_actor_set_size (priv->status_view,
                           allocation->width,
                           allocation->height);
+
+  clutter_actor_set_position (priv->spinner,
+                              (allocation->width + (2 * CANVAS_PADDING)) / 2,
+                              allocation->height / 2);
 }
 
 static gboolean
