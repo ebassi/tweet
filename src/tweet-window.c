@@ -782,6 +782,7 @@ tweet_window_constructed (GObject *gobject)
   TweetWindowPrivate *priv = window->priv;
   ClutterActor *stage;
   ClutterActor *img;
+  GtkRequisition canvas_req = { 0, };
 #ifdef HAVE_NM_GLIB
   libnm_glib_state nm_state;
 #endif /* HAVE_NM_GLIB */
@@ -794,14 +795,16 @@ tweet_window_constructed (GObject *gobject)
   if (!img)
     g_critical ("Unable to load the `%s' stock icon", GTK_STOCK_REFRESH);
 
+  gtk_widget_size_request (priv->canvas, &canvas_req);
+
   priv->spinner = tweet_spinner_new ();
   tweet_spinner_set_image (TWEET_SPINNER (priv->spinner), img);
   clutter_container_add_actor (CLUTTER_CONTAINER (stage), priv->spinner);
   clutter_actor_set_size (priv->spinner, 128, 128);
   clutter_actor_set_anchor_point (priv->spinner, 64, 64);
   clutter_actor_set_position (priv->spinner,
-                              WINDOW_WIDTH / 2,
-                              CANVAS_HEIGHT / 2);
+                              (canvas_req.width + (2 * CANVAS_PADDING)) / 2,
+                              canvas_req.height / 2);
   clutter_actor_show (priv->spinner);
   tweet_spinner_start (TWEET_SPINNER (priv->spinner));
   tweet_actor_animate (priv->spinner, TWEET_LINEAR, 500,
