@@ -6,10 +6,6 @@
 
 #include "tweet-canvas.h"
 
-#define TWEET_CANVAS_MIN_WIDTH          350
-#define TWEET_CANVAS_MIN_HEIGHT         500
-#define TWEET_CANVAS_BORDER_WIDTH       6
-
 enum
 {
   PROP_0,

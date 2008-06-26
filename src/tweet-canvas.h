@@ -13,6 +13,9 @@ G_BEGIN_DECLS
 #define TWEET_IS_CANVAS_CLASS(klass)    (G_TYPE_CHECK_CLASS_TYPE ((klass), TWEET_TYPE_CANVAS))
 #define TWEET_CANVAS_GET_CLASS(obj)     (G_TYPE_INSTANCE_GET_CLASS ((obj), TWEET_TYPE_CANVAS, TweetCanvasClass))
 
+#define TWEET_CANVAS_MIN_WIDTH          350
+#define TWEET_CANVAS_MIN_HEIGHT         500
+
 typedef struct _TweetCanvas             TweetCanvas;
 typedef struct _TweetCanvasClass        TweetCanvasClass;
 
