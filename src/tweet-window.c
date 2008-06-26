@@ -540,6 +540,7 @@ on_status_view_button_release (ClutterActor       *actor,
       ClutterGeometry geometry = { 0, };
       ClutterActor *stage;
       ClutterColor info_color = { 255, 255, 255, 255 };
+      GtkRequisition canvas_req = { 0, };
 
       priv->in_press = FALSE;
 
@@ -596,18 +597,31 @@ on_status_view_button_release (ClutterActor       *actor,
       clutter_actor_set_reactive (priv->info, FALSE);
       clutter_actor_show (priv->info);
 
-      /* the status info is non-reactive until it has
-       * been fully "unrolled" by the animation
-       */
-      animation =
-        tweet_actor_animate (priv->info, TWEET_LINEAR, 250,
-                             "y", tweet_interval_new (G_TYPE_INT, geometry.y + CANVAS_PADDING, 100 + CANVAS_PADDING),
-                             "height", tweet_interval_new (G_TYPE_INT, 16, (CANVAS_HEIGHT - (100 * 2))),
-                             "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 224),
-                             NULL);
-      g_signal_connect (animation,
-                        "completed", G_CALLBACK (on_status_info_visible),
-                        window);
+      {
+        gint old_y, new_y;
+        gint old_height, new_height;
+
+        gtk_widget_size_request (priv->canvas, &canvas_req);
+
+        old_y = geometry.y + CANVAS_PADDING;
+        new_y = 100 + CANVAS_PADDING;
+
+        old_height = 16;
+        new_height = canvas_req.height - (100 * 2);
+
+         /* the status info is non-reactive until it has
+          * been fully "unrolled" by the animation
+          */
+        animation =
+          tweet_actor_animate (priv->info, TWEET_LINEAR, 250,
+                               "y", tweet_interval_new (G_TYPE_INT, old_y, new_y),
+                               "height", tweet_interval_new (G_TYPE_INT, old_height, new_height),
+                               "opacity", tweet_interval_new (G_TYPE_UCHAR, 0, 224),
+                               NULL);
+        g_signal_connect (animation,
+                          "completed", G_CALLBACK (on_status_info_visible),
+                          window);
+      }
 
       /* set the status view as not reactive to avoid opening
        * the status info on double tap
