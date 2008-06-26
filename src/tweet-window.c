@@ -43,6 +43,7 @@
 #include <twitter-glib/twitter-glib.h>
 
 #include "tweet-animation.h"
+#include "tweet-canvas.h"
 #include "tweet-config.h"
 #include "tweet-preferences.h"
 #include "tweet-spinner.h"
@@ -1112,6 +1113,24 @@ on_canvas_focus_out (GtkWidget     *widget,
   return FALSE;
 }
 
+static void
+on_canvas_size_allocate (GtkWidget     *widget,
+                         GtkAllocation *allocation,
+                         TweetWindow   *window)
+{
+  TweetWindowPrivate *priv = window->priv;
+
+  if (!priv->scroll)
+    return;
+
+  clutter_actor_set_size (priv->scroll,
+                          allocation->width,
+                          allocation->height);
+  clutter_actor_set_size (priv->status_view,
+                          allocation->width,
+                          allocation->height);
+}
+
 static gboolean
 tweet_window_focus_in (GtkWidget     *widget,
                        GdkEventFocus *event)
@@ -1193,9 +1212,9 @@ tweet_window_init (TweetWindow *window)
   GError *error;
   ClutterActor *stage, *view;
   ClutterColor stage_color = { 0, 0, 0, 255 };
+  GtkRequisition canvas_req = { 0, };
 
   GTK_WINDOW (window)->type = GTK_WINDOW_TOPLEVEL;
-  gtk_window_set_resizable (GTK_WINDOW (window), FALSE);
   gtk_window_set_default_size (GTK_WINDOW (window), WINDOW_WIDTH, 600);
   gtk_window_set_title (GTK_WINDOW (window), "Tweet");
 
@@ -1257,28 +1276,29 @@ tweet_window_init (TweetWindow *window)
   gtk_container_add (GTK_CONTAINER (priv->vbox), frame);
   gtk_widget_show (frame);
 
-  priv->canvas = gtk_clutter_embed_new ();
+  priv->canvas = tweet_canvas_new ();
+  tweet_canvas_set_border_width (TWEET_CANVAS (priv->canvas), CANVAS_PADDING);
+
   g_signal_connect (priv->canvas,
                     "focus-in-event", G_CALLBACK (on_canvas_focus_in),
                     window);
   g_signal_connect (priv->canvas,
                     "focus-out-event", G_CALLBACK (on_canvas_focus_out),
                     window);
-  GTK_WIDGET_SET_FLAGS (priv->canvas, GTK_CAN_FOCUS);
+  g_signal_connect (priv->canvas,
+                    "size-allocate", G_CALLBACK (on_canvas_size_allocate),
+                    window);
 
-  gtk_widget_set_size_request (priv->canvas,
-                               CANVAS_WIDTH + CANVAS_PADDING,
-                               CANVAS_HEIGHT + CANVAS_PADDING);
+  GTK_WIDGET_SET_FLAGS (priv->canvas, GTK_CAN_FOCUS);
   gtk_container_add (GTK_CONTAINER (frame), priv->canvas);
 
+  gtk_widget_size_request (priv->canvas, &canvas_req);
+
   stage = gtk_clutter_embed_get_stage (GTK_CLUTTER_EMBED (priv->canvas));
-  gtk_widget_set_size_request (priv->canvas,
-                               CANVAS_WIDTH + CANVAS_PADDING,
-                               CANVAS_HEIGHT + CANVAS_PADDING);
   clutter_stage_set_color (CLUTTER_STAGE (stage), &stage_color);
   clutter_actor_set_size (stage,
-                          CANVAS_WIDTH + CANVAS_PADDING,
-                          CANVAS_HEIGHT + CANVAS_PADDING);
+                          canvas_req.width + CANVAS_PADDING,
+                          canvas_req.height + CANVAS_PADDING);
 
   view = tweet_status_view_new (priv->status_model);
   g_signal_connect (view,
@@ -1293,7 +1313,7 @@ tweet_window_init (TweetWindow *window)
   clutter_actor_set_reactive (view, TRUE);
   priv->status_view = view;
 
-  clutter_actor_set_size (priv->scroll, CANVAS_WIDTH, CANVAS_HEIGHT);
+  clutter_actor_set_size (priv->scroll, canvas_req.width, canvas_req.height);
   clutter_actor_set_position (priv->scroll, CANVAS_PADDING, CANVAS_PADDING);
   clutter_container_add_actor (CLUTTER_CONTAINER (stage), priv->scroll);
   clutter_actor_set_reactive (priv->scroll, TRUE);
