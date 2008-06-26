@@ -1099,10 +1099,14 @@ tidy_list_view_paint_or_pick (ClutterActor *actor,
       ClutterUnit row_height = row->height;
 
       /* TODO: Skip columns that aren't visible */
-      if (has_clip &&
-          (((row_offset + row_height + v_paddingu) < y) ||
-           ((row_offset - v_paddingu / 2) > y + height)))
+
+      /* skip rows before the clip region */
+      if (has_clip && ((row_offset + row_height + v_paddingu) < y))
         continue;
+
+      /* skip rows after the clip region */
+      if (has_clip && ((row_offset - v_paddingu / 2) > y + height))
+        break;
 
       /* hinting */
       if (!pick && G_LIKELY (priv->rules_hint) && (row->index % 2))
