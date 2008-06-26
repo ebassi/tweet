@@ -53,11 +53,8 @@
 #include "tweet-utils.h"
 #include "tweet-window.h"
 
-#define CANVAS_WIDTH    350
-#define CANVAS_HEIGHT   500
 #define CANVAS_PADDING  6
-
-#define WINDOW_WIDTH    (CANVAS_WIDTH + (2 * CANVAS_PADDING))
+#define WINDOW_WIDTH    (TWEET_CANVAS_MIN_WIDTH + (2 * CANVAS_PADDING))
 
 typedef enum {
   TWEET_WINDOW_RECENT,
