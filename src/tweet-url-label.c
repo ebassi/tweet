@@ -50,33 +50,33 @@ struct _TweetUrlLabelMatch
 /* Taken from http://tinyurl.com/2ss83t */
 static const char tweet_url_label_regex[] =
   "\\b\n"
-  "# Match the leading part (proto://hostname, or just hostname)\n"
+  /* Match the leading part (proto://hostname, or just hostname) */
   "(\n"
-  "  # http://, or https:// leading part\n"
+  /* http://, or https:// leading part */
   "  (https?)://[-\\w]+(\\.\\w[-\\w]*)+\n"
   "|\n"
-  "  # or, try to find a hostname with more specific sub-expression\n"
-  "  (?i: [a-z0-9] (?:[-a-z0-9]*[a-z0-9])? \\. )+ # sub domains\n"
-  "  # Now ending .com, etc. For these, require lowercase\n"
+  /* or, try to find a hostname with more specific sub-expression */
+  "  (?i: [a-z0-9] (?:[-a-z0-9]*[a-z0-9])? \\. )+\n" /* sub domains */
+  /* Now ending .com, etc. For these, require lowercase */
   "  (?-i: com\\b\n"
   "      | edu\\b\n"
   "      | biz\\b\n"
   "      | gov\\b\n"
-  "      | in(?:t|fo)\\b # .int or .info\n"
+  "      | in(?:t|fo)\\b\n" /* .int or .info */
   "      | mil\\b\n"
   "      | net\\b\n"
   "      | org\\b\n"
-  "      | [a-z][a-z]\\.[a-z][a-z]\\b # two-letter country code\n"
+  "      | [a-z][a-z]\\.[a-z][a-z]\\b\n" /* two-letter country code */
   "  )\n"
   ")\n"
 
-  "# Allow an optional port number\n"
+  /* Allow an optional port number */
   "( : \\d+ )?\n"
 
-  "# The rest of the URL is optional, and begins with /\n"
+  /* The rest of the URL is optional, and begins with */
   "(\n"
   "  /\n"
-  "  # The rest are heuristics for what seems to work well\n"
+  /* The rest are heuristics for what seems to work well */
   "  [^.!,?;\"'<>()\\[\\]{}\\s\\x7F-\\xFF]*\n"
   "  (\n"
   "    [.!,?]+ [^.!,?;\"\\'<>()\\[\\]{}\\s\\x7F-\\xFF]+\n"
