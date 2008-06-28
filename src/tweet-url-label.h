@@ -21,6 +21,7 @@
 
 #include <clutter/clutter-label.h>
 #include <glib/gregex.h>
+#include <gdk/gdkcursor.h>
 
 G_BEGIN_DECLS
 
@@ -61,6 +62,9 @@ struct _TweetUrlLabel
   
   GArray *matches;
   gint selected_match;
+
+  /* Cache a reference to the hand cursor */
+  GdkCursor *hand_cursor;
 };
 
 GType tweet_url_label_get_type (void) G_GNUC_CONST;

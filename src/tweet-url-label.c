@@ -25,10 +25,14 @@
 
 #include <tidy/tidy-list-view.h>
 #include <tidy/tidy-adjustment.h>
+#include <gdk/gdkcursor.h>
+#include <gdk/gdkdisplay.h>
 
 #include "tweet-url-label.h"
 #include "tweet-utils.h"
+#include "tweet-hot-actor.h"
 
+static void tweet_hot_actor_iface_init (TweetHotActorIface *iface);
 static void tweet_url_label_dispose (GObject *object);
 static void tweet_url_label_finalize (GObject *object);
 static void tweet_url_label_notify (GObject *object, GParamSpec *pspec);
@@ -39,6 +43,10 @@ static gboolean tweet_url_label_leave_event (ClutterActor *actor,
 					     ClutterCrossingEvent *event);
 static gboolean tweet_url_label_button_press_event (ClutterActor *actor,
 						    ClutterButtonEvent *event);
+static GdkCursor *tweet_url_label_get_cursor (TweetHotActor *actor,
+					      GdkDisplay    *display,
+					      int            x,
+					      int            y);
 
 typedef struct _TweetUrlLabelMatch TweetUrlLabelMatch;
 
@@ -83,7 +91,11 @@ static const char tweet_url_label_regex[] =
   "  )*\n"
   ")?\n";
 
-G_DEFINE_TYPE (TweetUrlLabel, tweet_url_label, CLUTTER_TYPE_LABEL);
+G_DEFINE_TYPE_WITH_CODE (TweetUrlLabel,
+			 tweet_url_label,
+			 CLUTTER_TYPE_LABEL,
+			 G_IMPLEMENT_INTERFACE (TWEET_TYPE_HOT_ACTOR,
+						tweet_hot_actor_iface_init));
 
 static void
 tweet_url_label_class_init (TweetUrlLabelClass *klass)
@@ -99,6 +111,12 @@ tweet_url_label_class_init (TweetUrlLabelClass *klass)
   actor_class->motion_event = tweet_url_label_motion_event;
   actor_class->leave_event = tweet_url_label_leave_event;
   actor_class->button_press_event = tweet_url_label_button_press_event;
+}
+
+static void
+tweet_hot_actor_iface_init (TweetHotActorIface *iface)
+{
+  iface->get_cursor = tweet_url_label_get_cursor;
 }
 
 static void
@@ -122,6 +140,7 @@ tweet_url_label_init (TweetUrlLabel *self)
 
   self->matches = g_array_new (FALSE, FALSE, sizeof (TweetUrlLabelMatch));
   self->selected_match = -1;
+  self->hand_cursor = NULL;
 }
 
 ClutterActor *
@@ -358,6 +377,33 @@ tweet_url_label_notify (GObject *object, GParamSpec *pspec)
     G_OBJECT_CLASS (tweet_url_label_parent_class)->notify (object, pspec);
 }
 
+static GdkCursor *
+tweet_url_label_get_cursor (TweetHotActor *actor,
+			    GdkDisplay    *display,
+			    int            x,
+			    int            y)
+{
+  TweetUrlLabel *self = TWEET_URL_LABEL (actor);
+  
+  /* If there is no URL selected then use the default cursor */
+  if (self->selected_match == -1)
+    return NULL;
+
+  /* Don't create a new cursor if we have a cached one for the same
+     display */
+  if (self->hand_cursor == NULL
+      || gdk_cursor_get_display (self->hand_cursor) != display)
+    {
+      /* Create a new hand cursor */
+      if (self->hand_cursor)
+	gdk_cursor_unref (self->hand_cursor);
+      
+      self->hand_cursor = gdk_cursor_new_for_display (display, GDK_HAND2);
+    }
+
+  return self->hand_cursor;
+}
+
 static void
 tweet_url_label_dispose (GObject *object)
 {
@@ -367,6 +413,12 @@ tweet_url_label_dispose (GObject *object)
     {
       g_regex_unref (self->url_regex);
       self->url_regex = NULL;
+    }
+
+  if (self->hand_cursor)
+    {
+      gdk_cursor_unref (self->hand_cursor);
+      self->hand_cursor = NULL;
     }
 
   G_OBJECT_CLASS (tweet_url_label_parent_class)->dispose (object);
