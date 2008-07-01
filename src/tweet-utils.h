@@ -61,6 +61,9 @@ void          tweet_texture_set_from_icon_name (ClutterTexture *texture,
 
 gchar *tweet_format_time_for_display (GTimeVal *time_);
 
+void tweet_show_url (GtkWidget      *widget,
+		     const gchar    *link_);
+
 G_END_DECLS
 
 #endif /* __TWEET_UTILS_H__ */

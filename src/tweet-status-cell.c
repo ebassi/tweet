@@ -36,6 +36,7 @@
 
 #include "tweet-status-cell.h"
 #include "tweet-utils.h"
+#include "tweet-url-label.h"
 
 #define ICON_WIDTH      48
 #define ICON_HEIGHT     48

@@ -52,6 +52,7 @@
 #include "tweet-status-view.h"
 #include "tweet-utils.h"
 #include "tweet-window.h"
+#include "tweet-hot-actor.h"
 
 #define CANVAS_PADDING  6
 #define WINDOW_WIDTH    (TWEET_CANVAS_MIN_WIDTH + (2 * CANVAS_PADDING))
@@ -115,6 +116,8 @@ struct _TweetWindowPrivate
   guint nm_id;
   libnm_glib_state nm_state;
 #endif
+
+  GdkCursor *hot_cursor;
 };
 
 G_DEFINE_TYPE (TweetWindow, tweet_window, GTK_TYPE_WINDOW);
@@ -165,6 +168,12 @@ tweet_window_dispose (GObject *gobject)
     {
       g_object_unref (priv->action_group);
       priv->action_group = NULL;
+    }
+
+  if (priv->hot_cursor)
+    {
+      gdk_cursor_unref (priv->hot_cursor);
+      priv->hot_cursor = NULL;
     }
 
 #ifdef HAVE_NM_GLIB
@@ -651,6 +660,39 @@ on_status_view_button_release (ClutterActor       *actor,
   return FALSE;
 }
 
+static gboolean
+on_stage_motion (ClutterStage       *stage,
+		 ClutterMotionEvent *event,
+		 TweetWindow        *window)
+{
+  GdkCursor *new_hot_cursor = NULL;
+  TweetWindowPrivate *priv = window->priv;
+
+  if (TWEET_IS_HOT_ACTOR (event->source))
+    {
+      GdkDisplay *display = gtk_widget_get_display (priv->canvas);
+      new_hot_cursor
+	= tweet_hot_actor_get_cursor (TWEET_HOT_ACTOR (event->source),
+				      display,
+				      event->x, event->y);
+    }
+
+  if (new_hot_cursor != priv->hot_cursor)
+    {
+      if (new_hot_cursor)
+	gdk_cursor_ref (new_hot_cursor);
+
+      if (priv->hot_cursor)
+	gdk_cursor_unref (priv->hot_cursor);
+
+      priv->hot_cursor = new_hot_cursor;
+
+      gdk_window_set_cursor (priv->canvas->window, new_hot_cursor);
+    }
+
+  return FALSE;
+}
+
 static inline void
 tweet_window_clear (TweetWindow *window)
 {
@@ -1038,35 +1080,7 @@ about_url_hook (GtkAboutDialog *dialog,
                 const gchar    *link_,
                 gpointer        user_data)
 {
-  GdkScreen *screen;
-  gint pid;
-  GError *error;
-  gchar **argv;
-
-  if (gtk_widget_has_screen (GTK_WIDGET (dialog)))
-    screen = gtk_widget_get_screen (GTK_WIDGET (dialog));
-  else
-    screen = gdk_screen_get_default ();
-
-  argv = g_new (gchar*, 3);
-  argv[0] = g_strdup ("xdg-open");
-  argv[1] = g_strdup (link_);
-  argv[2] = NULL;
-
-  error = NULL;
-  gdk_spawn_on_screen (screen,
-                       NULL,
-                       argv, NULL,
-                       G_SPAWN_SEARCH_PATH,
-                       NULL, NULL,
-                       &pid, &error);
-  if (error)
-    {
-      g_critical ("Unable to launch gnome-open: %s", error->message);
-      g_error_free (error);
-    }
-
-  g_strfreev (argv);
+  tweet_show_url (GTK_WIDGET (dialog), link_);
 }
 
 static void
@@ -1333,6 +1347,10 @@ tweet_window_init (TweetWindow *window)
   clutter_actor_set_size (stage,
                           canvas_req.width + CANVAS_PADDING,
                           canvas_req.height + CANVAS_PADDING);
+
+  g_signal_connect (stage, "motion-event",
+		    G_CALLBACK (on_stage_motion),
+		    window);
 
   view = tweet_status_view_new (priv->status_model);
   g_signal_connect (view,

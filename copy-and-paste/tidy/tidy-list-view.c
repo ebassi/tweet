@@ -1033,7 +1033,8 @@ tidy_list_view_query_coords (ClutterActor    *actor,
 }
 
 static void
-tidy_list_view_paint (ClutterActor *actor)
+tidy_list_view_paint_or_pick (ClutterActor *actor,
+			      gboolean pick)
 {
   TidyListViewPrivate *priv;
   ClutterColor *hint_color = NULL;
@@ -1108,7 +1109,7 @@ tidy_list_view_paint (ClutterActor *actor)
         break;
 
       /* hinting */
-      if (G_LIKELY (priv->rules_hint) && (row->index % 2))
+      if (!pick && G_LIKELY (priv->rules_hint) && (row->index % 2))
         {
           cogl_enable (CGL_ENABLE_BLEND);
           cogl_color (hint_color);
@@ -1148,6 +1149,26 @@ tidy_list_view_paint (ClutterActor *actor)
 
   if (hint_color != &default_hint_color)
     clutter_color_free (hint_color);
+}
+
+static void
+tidy_list_view_pick (ClutterActor       *actor,
+		     const ClutterColor *color)
+{
+  /* Chain up so we get a bounding box pained (if we are reactive) */
+  CLUTTER_ACTOR_CLASS (tidy_list_view_parent_class)->pick (actor, color);
+
+  /* Just forward to the paint call which in turn will trigger
+   * the child actors also getting 'picked'.
+   */
+  if (CLUTTER_ACTOR_IS_MAPPED (actor))
+    tidy_list_view_paint_or_pick (actor, TRUE);
+}
+
+static void
+tidy_list_view_paint (ClutterActor *actor)
+{
+  tidy_list_view_paint_or_pick (actor, FALSE);
 }
 
 static gboolean
@@ -1353,6 +1374,7 @@ tidy_list_view_class_init (TidyListViewClass *klass)
   actor_class->request_coords = tidy_list_view_request_coords;
   actor_class->query_coords = tidy_list_view_query_coords;
   actor_class->paint = tidy_list_view_paint;
+  actor_class->pick = tidy_list_view_pick;
   actor_class->button_press_event = tidy_list_view_button_press;
   actor_class->scroll_event = tidy_list_view_scroll;
   actor_class->key_press_event = tidy_list_view_key_press;

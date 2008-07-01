@@ -39,6 +39,7 @@
 #include "tweet-animation.h"
 #include "tweet-status-info.h"
 #include "tweet-utils.h"
+#include "tweet-url-label.h"
 
 #define ICON_WIDTH      64
 #define ICON_HEIGHT     64
@@ -283,7 +284,7 @@ tweet_status_info_constructed (GObject *gobject)
   g_free (created_at);
   g_free (escaped);
 
-  info->label = clutter_label_new ();
+  info->label = tweet_url_label_new ();
   clutter_label_set_color (CLUTTER_LABEL (info->label), &text_color);
   clutter_label_set_font_name (CLUTTER_LABEL (info->label), font_name);
   clutter_label_set_line_wrap (CLUTTER_LABEL (info->label), TRUE);
