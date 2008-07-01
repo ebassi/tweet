@@ -1174,7 +1174,7 @@ tweet_window_focus_in (GtkWidget     *widget,
   if (priv->status_icon)
     gtk_status_icon_set_visible (priv->status_icon, FALSE);
 
-  return FALSE;
+  return GTK_WIDGET_CLASS (tweet_window_parent_class)->focus_in_event (widget, event);
 }
 
 static void
