@@ -176,7 +176,7 @@ tweet_status_cell_constructed (GObject *gobject)
   g_free (created_at);
   g_free (escaped);
 
-  cell->label = tweet_url_label_new ();
+  cell->label = clutter_label_new ();
   clutter_label_set_color (CLUTTER_LABEL (cell->label), &text_color);
   clutter_label_set_font_name (CLUTTER_LABEL (cell->label), cell->font_name);
   clutter_label_set_line_wrap (CLUTTER_LABEL (cell->label), TRUE);
