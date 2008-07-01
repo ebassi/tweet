@@ -217,25 +217,6 @@ tweet_url_label_motion_event (ClutterActor *actor, ClutterMotionEvent *event)
 	 actor is scaled or rotated */
       clutter_actor_get_abs_position (actor, &actor_x, &actor_y);
       
-      /* If the actor is inside a TidyListView then it will be drawn
-	 at a different location from its actor position. This hack is
-	 needed to compensate for that */
-      parent_actor = actor;
-      while ((parent_actor = clutter_actor_get_parent (parent_actor)))
-	if (TIDY_IS_LIST_VIEW (parent_actor))
-	  {
-	    TidyAdjustment *vadjust;
-	      
-	    g_object_get (parent_actor, "vadjustment", &vadjust, NULL);
-
-	    if (vadjust)
-	      {
-		ClutterFixed offset = tidy_adjustment_get_valuex (vadjust);
-		actor_y -= CLUTTER_FIXED_TO_INT (offset);
-	      }
-	    break;
-	  }
-
       layout_x = event->x - actor_x;
       layout_y = event->y - actor_y;
 
