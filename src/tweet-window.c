@@ -950,10 +950,23 @@ tweet_window_style_set (GtkWidget *widget,
                         GtkStyle  *old_style)
 {
   TweetWindowPrivate *priv = TWEET_WINDOW (widget)->priv;
+  GdkScreen *screen;
+  gdouble dpi;
   ClutterColor active_color = { 0, };
   ClutterColor text_color = { 0, };
   ClutterColor bg_color = { 0, };
   gchar *font_name;
+
+  if (gtk_widget_has_screen (widget))
+    screen = gtk_widget_get_screen (widget);
+  else
+    screen = gdk_screen_get_default ();
+
+  dpi = gdk_screen_get_resolution (screen);
+  if (dpi < 0)
+    dpi = 96.0;
+
+  clutter_backend_set_resolution (clutter_get_default_backend (), dpi);
 
   tweet_widget_get_base_color (widget, GTK_STATE_SELECTED, &active_color);
   tweet_widget_get_text_color (widget, GTK_STATE_NORMAL, &text_color);
