@@ -1,52 +1,6 @@
-Tweet - A simple Twitter desktop client
-===============================================================================
+Tweet has been dead for years; right now, the code is just an historical
+oddity, left only for archival purposes.
 
-Tweet is a desktop client for the Twitter web service. The Twitter
-web service is described as:
+If you want a desktop client for Twitter, I can recommend [CoreBird][cb].
 
-  Twitter is for staying in touch and keeping up with friends no matter
-  where you are or what you’re doing. For some friends you might want
-  instant mobile updates - for others, you can just check the web. Invite
-  your friends to Twitter and decide how connected you want you to be.
-                -- from http://twitter.com
-
-In short, is a web-based SMS-like service.
-
-Tweet is a client written to read your friends' status and update your
-own without using a web browser.
-
-Tweet homepage is available at: http://live.gnome.org/Tweet
-
-REQUIREMENTS
--------------------------------------------------------------------------------
-Tweet depends on:
-
-  - GLib >= 2.16
-  - JSON-GLib >= 0.6
-  - Clutter >= 0.6.2
-  - ClutterGtk >= 0.6.1
-  - ClutterCairo >= 0.6.1
-  - libsoup >= 2.4.1
-  - GTK+ >= 2.12
-
-And has a soft requirement on:
-
-  - libnm_glib
-
-Tweet is based on, and provides for third parties, a GObject-based library
-for reading and updating the Twitter status; the library is installed and
-it is available so that other applications can integrate with it.
-
-INSTALLATION
--------------------------------------------------------------------------------
-Se the INSTALL file.
-
-COPYRIGHT AND LICENSING
--------------------------------------------------------------------------------
-Tweet is released under the terms of the GNU General Public License,
-version 3 or, at your option, any later version.
-
-Twitter-GLib is released under the terms of the GNU Lesser General
-Public License version 2.1 or, at your option, any later version.
-
-Tweet and Twitter-GLib are Copyright (C) 2008  Emmanuele Bassi.
+[cb]: http://corebird.baedert.org/
